@@ -14,6 +14,17 @@ Open `dist/index.html` in a browser, or serve the `dist/` folder with GitHub Pag
 - **Compare** with Pin reference: the pinned curves stay on every plot as dots in the same color, while solid lines follow your edits. Export the current S-parameters as Touchstone text.
 - **Save** a project as a `.tdrp` file on your computer and **Open** it later, or drop the file onto the page. **Export JSON** writes the same project as readable text, and Open takes either. Ctrl/⌘ S, Ctrl/⌘ Shift S and Ctrl/⌘ O work too.
 
+## Examples
+
+The Example menu groups 15 built-in channels, each with a short note on what to look at:
+
+- **Basics:** clean line, impedance tolerance ripple, painted taper, lossy creep on a 10 in line.
+- **Discontinuities:** shunt C vs series L, via stub resonance, a pad compensated with series L, Rx pad capacitance.
+- **TDR artifacts:** resolution of two close pads, masking by an earlier mismatch, a ghost spike after a via stub.
+- **Realistic channels:** board launch with a via stub, probed 42 Ω stripline with good and bad contact, a 5 in serpentine with corner capacitance.
+
+Each example is a plain project file in `examples/`, bundled into the page at build time. New ones are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Privacy
 
 TDR Painter has no server side. It sends nothing anywhere, uses no analytics or cookies, and keeps nothing in browser storage. A project exists only as the `.tdrp` or `.json` file you save; Open reads a file you pick and validates every value before using it.
@@ -63,7 +74,7 @@ The profile is run-length encoded as `[impedance in Ω, number of cells]`. Eleme
 
 ```sh
 npm run build   # src/ + fonts/ -> dist/index.html and dist/tdr-painter.artifact.html
-npm test        # build, engine checks, .tdrp container checks, privacy check (Node 18+, no dependencies)
+npm test        # build, engine, .tdrp container, examples and privacy checks (Node 18+, no dependencies)
 python test/skrf_crosscheck.py   # optional, needs scikit-rf
 python test/ui_smoke.py          # optional, needs Playwright and Chrome
 ```
@@ -72,10 +83,13 @@ python test/ui_smoke.py          # optional, needs Playwright and Chrome
 | --- | --- |
 | `src/engine.js` | Physics: dielectric model, cascade, S-parameters, TDR, ILD fit |
 | `src/tdrp.js` | `.tdrp` container: ZIP writer and reader with CRC-32 checks |
-| `src/page.html` | UI; `/*ENGINE*/` and `/*TDRP*/` are replaced by those files at build time |
+| `src/project.js` | Project format: defaults, limits and the validating parser, shared with the tests |
+| `examples/` | Example projects (JSON) bundled into the page's Example menu |
+| `tools/make-examples.js` | Regenerates the built-in examples |
+| `src/page.html` | UI; the `/*…*/` placeholders are replaced by the modules and examples at build time |
 | `build.js` | Produces the two single-file builds in `dist/` |
 | `fonts/` | Self-hosted Archivo, Instrument Sans and JetBrains Mono (latin and greek subsets) with their licenses |
-| `test/` | Engine, container and privacy tests, scikit-rf cross-check, browser smoke test |
+| `test/` | Engine, container, example and privacy tests, scikit-rf cross-check, browser smoke test |
 
 ## References
 
@@ -84,6 +98,7 @@ python test/ui_smoke.py          # optional, needs Playwright and Chrome
 - A. Healey, "Fitted insertion loss and insertion loss deviation," IEEE P802.3ba Task Force, Jul. 2009.
 - Panasonic MEGTRON 6 R-5775(N) data sheet.
 - PKWARE, APPNOTE.TXT, .ZIP File Format Specification (local and central headers, CRC-32).
+- H. Johnson, "Who's Afraid of the Big Bad Bend?", EDN (right-angle corner capacitance, about 0.012 pF for an 8 mil microstrip).
 
 ## License
 

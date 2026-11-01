@@ -1,0 +1,73 @@
+{
+ "format": "tdr-painter-project",
+ "formatVersion": 1,
+ "app": "0.5.0",
+ "name": "Masking: two identical 30 Ω sections",
+ "savedAt": "2026-11-01T00:00:00.000Z",
+ "params": {
+  "lenIn": 2,
+  "z0": 50,
+  "Dk": 3.35,
+  "Df": 0.004,
+  "frefGHz": 12,
+  "dsLowHz": 1000,
+  "dsHighHz": 1000000000000,
+  "condLoss": 0.4,
+  "condRefGHz": 10,
+  "rdc": 0.2,
+  "fmaxGHz": 50,
+  "nf": 1001,
+  "zTx": 50,
+  "zRx": 50,
+  "beta": 4.2,
+  "lossless": true
+ },
+ "profile": {
+  "cells": 500,
+  "runs": [
+   [
+    50,
+    100
+   ],
+   [
+    42,
+    1
+   ],
+   [
+    30,
+    48
+   ],
+   [
+    42,
+    1
+   ],
+   [
+    50,
+    150
+   ],
+   [
+    42,
+    1
+   ],
+   [
+    30,
+    48
+   ],
+   [
+    42,
+    1
+   ],
+   [
+    50,
+    150
+   ]
+  ]
+ },
+ "elements": [],
+ "example": {
+  "category": "TDR artifacts",
+  "order": 31,
+  "note": "Both sections are painted at exactly 30 Ω, but the TDR reads the second one higher, because less of the step gets through the first. The bounce between the two sections also shows up later as a small ghost. Loss is off so only masking remains.",
+  "author": "TDR Painter"
+ }
+}

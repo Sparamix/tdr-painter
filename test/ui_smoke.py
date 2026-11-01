@@ -107,7 +107,7 @@ async def main():
         check("all examples load", True, f"{n - 1} examples")
 
         # ---- projects: save -> change -> open restores exactly ----
-        await pg.select_option("#preset", "0")
+        await pg.select_option("#preset", label="Board launch + via stub")
         await pg.fill("#p_DkN", "3.7"); await pg.press("#p_DkN", "Enter")
         await pg.fill("#p_zRxN", "85"); await pg.press("#p_zRxN", "Enter")
         await st("(() => { const e = __tdrState.elems[0]; e.locked = true; })()")
@@ -134,7 +134,7 @@ async def main():
         tmp_t = ROOT / "test" / "_roundtrip.tdrp"
         tmp = ROOT / "test" / "_roundtrip.json"
         for label, path, data in ((".tdrp", tmp_t, tdrp_bytes), ("JSON", tmp, saved_json.encode())):
-            await pg.select_option("#preset", "2")   # replace everything
+            await pg.select_option("#preset", label="45 Ω trace (impedance tolerance)")   # replace everything
             await pg.fill("#p_DkN", "4.2"); await pg.press("#p_DkN", "Enter")
             path.write_bytes(data)
             await pg.set_input_files("#projFile", str(path))

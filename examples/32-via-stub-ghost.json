@@ -1,0 +1,67 @@
+{
+ "format": "tdr-painter-project",
+ "formatVersion": 1,
+ "app": "0.5.0",
+ "name": "Ghost after a via stub",
+ "savedAt": "2026-11-01T00:00:00.000Z",
+ "params": {
+  "lenIn": 2.5,
+  "z0": 50,
+  "Dk": 3.35,
+  "Df": 0.004,
+  "frefGHz": 12,
+  "dsLowHz": 1000,
+  "dsHighHz": 1000000000000,
+  "condLoss": 0.4,
+  "condRefGHz": 10,
+  "rdc": 0.2,
+  "fmaxGHz": 50,
+  "nf": 1001,
+  "zTx": 50,
+  "zRx": 50,
+  "beta": 4.2,
+  "lossless": false
+ },
+ "profile": {
+  "cells": 500,
+  "runs": [
+   [
+    50,
+    500
+   ]
+  ]
+ },
+ "elements": [
+  {
+   "type": "C",
+   "x": 0.5,
+   "value": 0.25,
+   "count": 1,
+   "pitch": 0.15,
+   "locked": false
+  },
+  {
+   "type": "C",
+   "x": 1.1,
+   "value": 0.08,
+   "count": 1,
+   "pitch": 0.15,
+   "locked": false
+  },
+  {
+   "type": "stub",
+   "x": 1.1,
+   "stubZ": 45,
+   "stubLen": 60,
+   "count": 1,
+   "pitch": 0.15,
+   "locked": false
+  }
+ ],
+ "example": {
+  "category": "TDR artifacts",
+  "order": 32,
+  "note": "Look past the via: around 1.8 in the TDR shows an inductive-looking spike, but nothing is painted there. It is the via’s reflection bouncing off the capacitive pad at 0.5 in and coming back, so it lands about 2 × (1.1 − 0.5) in after the via. Remove the pad and the spike disappears.",
+  "author": "TDR Painter"
+ }
+}

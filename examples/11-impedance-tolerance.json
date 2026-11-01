@@ -1,0 +1,41 @@
+{
+ "format": "tdr-painter-project",
+ "formatVersion": 1,
+ "app": "0.5.0",
+ "name": "45 Ω trace (impedance tolerance)",
+ "savedAt": "2026-11-01T00:00:00.000Z",
+ "params": {
+  "lenIn": 2,
+  "z0": 50,
+  "Dk": 3.35,
+  "Df": 0.004,
+  "frefGHz": 12,
+  "dsLowHz": 1000,
+  "dsHighHz": 1000000000000,
+  "condLoss": 0.4,
+  "condRefGHz": 10,
+  "rdc": 0.2,
+  "fmaxGHz": 50,
+  "nf": 1001,
+  "zTx": 50,
+  "zRx": 50,
+  "beta": 4.2,
+  "lossless": false
+ },
+ "profile": {
+  "cells": 500,
+  "runs": [
+   [
+    45,
+    500
+   ]
+  ]
+ },
+ "elements": [],
+ "example": {
+  "category": "Basics",
+  "order": 11,
+  "note": "The whole trace is 10% low. The TDR reads 45 Ω, and S11 ripples with nulls every 1/(2τ) ≈ 1.6 GHz, where τ is the one-way delay. Change the Length and watch the ripple spacing follow.",
+  "author": "TDR Painter"
+ }
+}

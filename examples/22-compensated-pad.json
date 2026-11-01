@@ -1,0 +1,66 @@
+{
+ "format": "tdr-painter-project",
+ "formatVersion": 1,
+ "app": "0.5.0",
+ "name": "Pad compensated with series L",
+ "savedAt": "2026-11-01T00:00:00.000Z",
+ "params": {
+  "lenIn": 2,
+  "z0": 50,
+  "Dk": 3.35,
+  "Df": 0.004,
+  "frefGHz": 12,
+  "dsLowHz": 1000,
+  "dsHighHz": 1000000000000,
+  "condLoss": 0.4,
+  "condRefGHz": 10,
+  "rdc": 0.2,
+  "fmaxGHz": 50,
+  "nf": 1001,
+  "zTx": 50,
+  "zRx": 50,
+  "beta": 4.2,
+  "lossless": false
+ },
+ "profile": {
+  "cells": 500,
+  "runs": [
+   [
+    50,
+    500
+   ]
+  ]
+ },
+ "elements": [
+  {
+   "type": "L",
+   "x": 0.98,
+   "value": 0.19,
+   "count": 1,
+   "pitch": 0.15,
+   "locked": false
+  },
+  {
+   "type": "C",
+   "x": 1,
+   "value": 0.15,
+   "count": 1,
+   "pitch": 0.15,
+   "locked": false
+  },
+  {
+   "type": "L",
+   "x": 1.02,
+   "value": 0.19,
+   "count": 1,
+   "pitch": 0.15,
+   "locked": false
+  }
+ ],
+ "example": {
+  "category": "Discontinuities",
+  "order": 22,
+  "note": "A 0.15 pF pad flanked by two 0.19 nH sections behaves like a short 50 Ω line, because √(L/C) ≈ Z₀. Pin reference, then remove both L chips to see how much the compensation buys in return loss.",
+  "author": "TDR Painter"
+ }
+}

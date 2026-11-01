@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0 (2026-11-01)
+
+- Examples are now data: `examples/*.json`, bundled at build time, shown in a grouped menu with a note on what to look at. 15 built-in examples, including probed 42 Ω stripline with good and bad contact, a 5 in serpentine with corner capacitance, a ghost spike after a via stub, masking, resolution, pad compensation and lossy creep.
+- `src/project.js` holds the project format and its validating parser, shared by the page and `test/examples.test.js`, which checks every example for range, note and passivity.
+- The element strip uses up to three rows, so stacked elements (a probe tip's R and L next to the pad C) all stay visible.
+- Series R goes down to 0.01 Ω for good contacts.
+- CONTRIBUTING.md and an *Example idea* issue template.
+
 ## 0.4.1 (2026-11-01)
 
 - Pinned reference curves are now dotted and keep the color of the curve they were pinned from (orange for TDR and S11, blue for S21 and ILD), so they no longer look like the gray dashed S21 fit. One rule across the page: solid is the live result, dashed is a helper, dotted is the pinned reference.

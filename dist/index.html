@@ -159,6 +159,11 @@ button.nudge { animation: nudge 0.22s ease-in-out 2; }
 .pstatus.err { color: var(--danger); }
 .pfallback { display: flex; flex-direction: column; gap: 6px; }
 .pfallback textarea { width: 100%; min-height: 90px; resize: vertical; font-family: var(--font-data); font-size: 11.5px; background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
+.exnote { background: var(--ink-soft); border-radius: var(--r); padding: 10px 14px; display: flex; flex-direction: column; gap: 4px; }
+.exnote-head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.exnote-head strong { font-family: var(--font-display); font-stretch: 105%; font-weight: 700; font-size: 14.5px; }
+.exnote-by { font-size: 12px; color: var(--fg-3); }
+.exnote p { margin: 0; color: var(--fg-2); max-width: 110ch; }
 .foot { color: var(--fg-3); font-size: 12px; font-family: var(--font-data); }
 .ed-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px 18px; }
 .pair { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; }
@@ -215,6 +220,10 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   </header>
 
   <div class="pstatus" id="projStatus" role="status" aria-live="polite"></div>
+  <aside class="exnote" id="exNote" hidden aria-label="About this example">
+    <div class="exnote-head"><span class="label-sm">Example</span><strong id="exNoteTitle"></strong><span class="exnote-by" id="exNoteBy"></span></div>
+    <p id="exNoteText"></p>
+  </aside>
   <div class="pfallback" id="projFallback" hidden>
     <textarea id="projFallbackText" readonly aria-label="Project JSON to copy"></textarea>
     <div><button id="projCopy">Copy project text</button></div>
@@ -289,7 +298,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
 
     <aside class="rail" id="rail"></aside>
   </div>
-  <footer class="foot">TDR Painter v0.4.1 · Runs entirely in your browser. Projects are .tdrp or .json files you save and open yourself; nothing is uploaded or stored.</footer>
+  <footer class="foot">TDR Painter v0.5.0 · Runs entirely in your browser. Projects are .tdrp or .json files you save and open yourself; nothing is uploaded or stored.</footer>
 </div>
 
 <script>
@@ -834,6 +843,106 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   else root.TDRP = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 
+/* Project format: defaults, limits, profile encoding and the validating parser.
+ * Shared by the page and the tests, so examples submitted as .json files are checked by exactly
+ * the code that will open them. A project file is untrusted input: every value is clamped.
+ */
+(function (root) {
+  'use strict';
+
+  const FORMAT = 'tdr-painter-project';
+  const FORMAT_VERSION = 1;
+
+  const DEFAULTS = {
+    lenIn: 2, z0: 50, Dk: 3.35, Df: 0.004, frefGHz: 12, dsLowHz: 1e3, dsHighHz: 1e12,
+    condLoss: 0.4, condRefGHz: 10, rdc: 0.2, fmaxGHz: 50, nf: 1001,
+    zTx: 50, zRx: 50, beta: 4.2, lossless: false,
+  };
+  // Same ranges as the page's sliders (stored in base units: Hz, inches, ohms).
+  const LIMITS = {
+    lenIn: [0.25, 10], z0: [20, 120], Dk: [1, 6], Df: [0, 0.03], frefGHz: [0.1, 60],
+    dsLowHz: [10, 1e6], dsHighHz: [1e11, 1e13], condLoss: [0, 2], condRefGHz: [10, 10], rdc: [0, 2],
+    fmaxGHz: [5, 110], nf: [1001, 1001], zTx: [10, 150], zRx: [10, 150], beta: [0, 14],
+  };
+  const Z_LIMITS = [5, 200];
+  const ELEMENT = {
+    types: ['C', 'L', 'R', 'stub'],
+    value: { C: [0.005, 1], L: [0.01, 2], R: [0.01, 25] },     // pF, nH, ohm
+    stubZ: [20, 90], stubLen: [2, 250], count: [1, 30], pitch: [0.02, 1],
+  };
+  const CATEGORIES = ['Basics', 'Discontinuities', 'TDR artifacts', 'Realistic channels', 'Community'];
+
+  const num = (v, lo, hi, dflt) => (typeof v === 'number' && isFinite(v)) ? Math.max(lo, Math.min(hi, v)) : dflt;
+  const text = (v, max) => typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, max) : '';
+
+  /** Run-length encode a profile as [[ohms, cells], ...], rounded to 1 mohm. */
+  function encodeProfile(prof) {
+    const runs = [];
+    for (let i = 0; i < prof.length;) {
+      const z = Math.round(prof[i] * 1000) / 1000;
+      let j = i + 1;
+      while (j < prof.length && Math.round(prof[j] * 1000) / 1000 === z) j++;
+      runs.push([z, j - i]);
+      i = j;
+    }
+    return runs;
+  }
+
+  /** Validate a parsed project object. Returns {name, P, prof, elements, view, example}; throws Error with a readable message. */
+  function parse(obj, ns) {
+    if (!obj || typeof obj !== 'object' || obj.format !== FORMAT) throw new Error('That file isn’t a TDR Painter project.');
+    if ((obj.formatVersion | 0) > FORMAT_VERSION) throw new Error(`That project was saved by a newer TDR Painter (format ${obj.formatVersion | 0}). Update the page to open it.`);
+    const P = { ...DEFAULTS };
+    const src = obj.params && typeof obj.params === 'object' ? obj.params : {};
+    for (const k of Object.keys(DEFAULTS)) {
+      if (k === 'lossless') { P.lossless = src.lossless === true; continue; }
+      P[k] = num(src[k], LIMITS[k][0], LIMITS[k][1], DEFAULTS[k]);
+    }
+    const runs = obj.profile && Array.isArray(obj.profile.runs) ? obj.profile.runs : null;
+    const cells = [];
+    if (runs) for (const r of runs) {
+      if (!Array.isArray(r)) continue;
+      const z = num(r[0], Z_LIMITS[0], Z_LIMITS[1], P.z0);
+      const n = Math.max(0, Math.min(100000 - cells.length, Math.round(r[1]) || 0));
+      for (let k = 0; k < n; k++) cells.push(z);
+      if (cells.length >= 100000) break;
+    }
+    if (!cells.length) throw new Error('That project has no impedance profile.');
+    const prof = new Float64Array(ns);   // resample if the file uses a different cell count
+    for (let i = 0; i < ns; i++) prof[i] = cells[Math.min(cells.length - 1, Math.floor((i + 0.5) / ns * cells.length))];
+    const elements = [];
+    for (const e of Array.isArray(obj.elements) ? obj.elements.slice(0, 200) : []) {
+      if (!e || typeof e !== 'object' || !ELEMENT.types.includes(e.type)) continue;
+      const o = {
+        type: e.type, x: num(e.x, 0, P.lenIn, 0),
+        count: Math.round(num(e.count, ELEMENT.count[0], ELEMENT.count[1], 1)),
+        pitch: num(e.pitch, ELEMENT.pitch[0], ELEMENT.pitch[1], 0.15), locked: e.locked === true,
+      };
+      if (e.type === 'stub') {
+        o.value = 0;
+        o.stubZ = num(e.stubZ, ELEMENT.stubZ[0], ELEMENT.stubZ[1], 45);
+        o.stubLen = Math.round(num(e.stubLen, ELEMENT.stubLen[0], ELEMENT.stubLen[1], 60));
+      } else {
+        const lim = ELEMENT.value[e.type];
+        o.value = num(e.value, lim[0], lim[1], lim[0]);
+      }
+      elements.push(o);
+    }
+    const v = obj.view || {};
+    const view = (typeof v.zMin === 'number' && typeof v.zMax === 'number' && v.zMax > v.zMin + 1 && v.zMax - v.zMin < 1000) ? { zMin: v.zMin, zMax: v.zMax } : null;
+    const ex = obj.example && typeof obj.example === 'object' ? obj.example : null;
+    const example = ex ? {
+      category: CATEGORIES.includes(ex.category) ? ex.category : 'Community',
+      note: text(ex.note, 600), author: text(ex.author, 80), order: num(ex.order, -1e6, 1e6, 1000), isDefault: ex.default === true,
+    } : null;
+    return { name: text(obj.name, 80), P, prof, elements, view, example };
+  }
+
+  const api = { FORMAT, FORMAT_VERSION, DEFAULTS, LIMITS, Z_LIMITS, ELEMENT, CATEGORIES, encodeProfile, parse };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.TDRProject = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
 </script>
 <script>
 (function () {
@@ -843,11 +952,26 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   const NS = 500;
   const $ = (s) => document.querySelector(s);
 
-  const DEFAULTS = {
-    lenIn: 2, z0: 50, Dk: 3.35, Df: 0.004, frefGHz: 12, dsLowHz: 1e3, dsHighHz: 1e12,
-    condLoss: 0.4, condRefGHz: 10, rdc: 0.2, fmaxGHz: 50, nf: 1001,
-    zTx: 50, zRx: 50, beta: 4.2, lossless: false,
-  };
+  const PJ = window.TDRProject;
+  const DEFAULTS = PJ.DEFAULTS;
+  // Built-in and community examples from examples/*.json, bundled by build.js.
+  const EXAMPLES = [
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.5.0","name":"Clean 50 Ω line","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[],"example":{"category":"Basics","order":10,"note":"A matched, lossy 2 in stripline and nothing else. S11 stays far down, and all of the insertion loss is conductor and dielectric loss: the power plot shows it as absorbed, not reflected.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.5.0","name":"45 Ω trace (impedance tolerance)","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false},"profile":{"cells":500,"runs":[[45,500]]},"elements":[],"example":{"category":"Basics","order":11,"note":"The whole trace is 10% low. The TDR reads 45 Ω, and S11 ripples with nulls every 1/(2τ) ≈ 1.6 GHz, where τ is the one-way delay. Change the Length and watch the ripple spacing follow.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.5.0","name":"Painted taper 50 → 40 → 50 Ω","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false},"profile":{"cells":500,"runs":[[50,100],[49.95,1],[49.85,1],[49.75,1],[49.65,1],[49.55,1],[49.45,1],[49.35,1],[49.25,1],[49.15,1],[49.05,1],[48.95,1],[48.85,1],[48.75,1],[48.65,1],[48.55,1],[48.45,1],[48.35,1],[48.25,1],[48.15,1],[48.05,1],[47.95,1],[47.85,1],[47.75,1],[47.65,1],[47.55,1],[47.45,1],[47.35,1],[47.25,1],[47.15,1],[47.05,1],[46.95,1],[46.85,1],[46.75,1],[46.65,1],[46.55,1],[46.45,1],[46.35,1],[46.25,1],[46.15,1],[46.05,1],[45.95,1],[45.85,1],[45.75,1],[45.65,1],[45.55,1],[45.45,1],[45.35,1],[45.25,1],[45.15,1],[45.05,1],[44.95,1],[44.85,1],[44.75,1],[44.65,1],[44.55,1],[44.45,1],[44.35,1],[44.25,1],[44.15,1],[44.05,1],[43.95,1],[43.85,1],[43.75,1],[43.65,1],[43.55,1],[43.45,1],[43.35,1],[43.25,1],[43.15,1],[43.05,1],[42.95,1],[42.85,1],[42.75,1],[42.65,1],[42.55,1],[42.45,1],[42.35,1],[42.25,1],[42.15,1],[42.05,1],[41.95,1],[41.85,1],[41.75,1],[41.65,1],[41.55,1],[41.45,1],[41.35,1],[41.25,1],[41.15,1],[41.05,1],[40.95,1],[40.85,1],[40.75,1],[40.65,1],[40.55,1],[40.45,1],[40.35,1],[40.25,1],[40.15,1],[40.05,1],[40,100],[40.05,1],[40.15,1],[40.25,1],[40.35,1],[40.45,1],[40.55,1],[40.65,1],[40.75,1],[40.85,1],[40.95,1],[41.05,1],[41.15,1],[41.25,1],[41.35,1],[41.45,1],[41.55,1],[41.65,1],[41.75,1],[41.85,1],[41.95,1],[42.05,1],[42.15,1],[42.25,1],[42.35,1],[42.45,1],[42.55,1],[42.65,1],[42.75,1],[42.85,1],[42.95,1],[43.05,1],[43.15,1],[43.25,1],[43.35,1],[43.45,1],[43.55,1],[43.65,1],[43.75,1],[43.85,1],[43.95,1],[44.05,1],[44.15,1],[44.25,1],[44.35,1],[44.45,1],[44.55,1],[44.65,1],[44.75,1],[44.85,1],[44.95,1],[45.05,1],[45.15,1],[45.25,1],[45.35,1],[45.45,1],[45.55,1],[45.65,1],[45.75,1],[45.85,1],[45.95,1],[46.05,1],[46.15,1],[46.25,1],[46.35,1],[46.45,1],[46.55,1],[46.65,1],[46.75,1],[46.85,1],[46.95,1],[47.05,1],[47.15,1],[47.25,1],[47.35,1],[47.45,1],[47.55,1],[47.65,1],[47.75,1],[47.85,1],[47.95,1],[48.05,1],[48.15,1],[48.25,1],[48.35,1],[48.45,1],[48.55,1],[48.65,1],[48.75,1],[48.85,1],[48.95,1],[49.05,1],[49.15,1],[49.25,1],[49.35,1],[49.45,1],[49.55,1],[49.65,1],[49.75,1],[49.85,1],[49.95,1],[50,100]]},"elements":[],"example":{"category":"Basics","order":12,"note":"Gradual transitions reflect much less at high frequency than abrupt ones. Pin reference, then use Plateau with a narrow Width to paint the same 40 Ω dip with sharp edges, and compare S11 above a few GHz.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.5.0","name":"Lossy creep on a 10 in line","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":10,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[],"example":{"category":"Basics","order":13,"note":"The painted line is flat, yet the TDR climbs along it: series resistance from skin effect adds up with distance, so a lossy line looks like a rising impedance. Tick Lossless in the Conductor panel and the climb disappears.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.5.0","name":"Shunt C and series L","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[{"type":"C","x":0.6,"value":0.1,"count":1,"pitch":0.15,"locked":false},{"type":"L","x":1.4,"value":0.25,"count":1,"pitch":0.15,"locked":false}],"example":{"category":"Discontinuities","order":20,"note":"Capacitance pulls the TDR down and inductance pushes it up. The area of each feature gives its value: C = −(2/Z₀)∫ρ dt and L = 2Z₀∫ρ dt over round-trip time. Drag either chip and watch the S11 ripple pattern change.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.5.0","name":"Via stub resonance, 60 mil","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[{"type":"C","x":1,"value":0.08,"count":1,"pitch":0.15,"locked":false},{"type":"stub","x":1,"stubZ":45,"stubLen":60,"count":1,"pitch":0.15,"locked":false}],"example":{"category":"Discontinuities","order":21,"note":"An open 60 mil stub notches S21 near v/(4ℓ) ≈ 27 GHz, yet the TDR shows only a modest dip. Select the S chip and drag Stub length: the notch moves while the TDR barely changes. Back-drilling shortens exactly this stub.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.5.0","name":"Pad compensated with series L","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[{"type":"L","x":0.98,"value":0.19,"count":1,"pitch":0.15,"locked":false},{"type":"C","x":1,"value":0.15,"count":1,"pitch":0.15,"locked":false},{"type":"L","x":1.02,"value":0.19,"count":1,"pitch":0.15,"locked":false}],"example":{"category":"Discontinuities","order":22,"note":"A 0.15 pF pad flanked by two 0.19 nH sections behaves like a short 50 Ω line, because √(L/C) ≈ Z₀. Pin reference, then remove both L chips to see how much the compensation buys in return loss.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.5.0","name":"Rx pad capacitance, 0.25 pF","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[{"type":"C","x":2,"value":0.25,"count":1,"pitch":0.15,"locked":false}],"example":{"category":"Discontinuities","order":23,"note":"A capacitive receiver pad at the far end. Return loss degrades with frequency, and the TDR dips right where the line ends. Try the Rx impedance slider to see a resistive mismatch on top of it.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.5.0","name":"Resolution: two pads 40 mil apart","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[{"type":"C","x":0.98,"value":0.1,"count":1,"pitch":0.15,"locked":false},{"type":"C","x":1.02,"value":0.1,"count":1,"pitch":0.15,"locked":false}],"example":{"category":"TDR artifacts","order":30,"note":"Two 0.1 pF pads only 40 mil apart. At f_max 50 GHz the TDR rise time blurs them into one dip. Raise f_max to 110 GHz to separate them, or drop it to 20 GHz to merge them completely. The resolution readout under the plot tracks this.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.5.0","name":"Masking: two identical 30 Ω sections","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":true},"profile":{"cells":500,"runs":[[50,100],[42,1],[30,48],[42,1],[50,150],[42,1],[30,48],[42,1],[50,150]]},"elements":[],"example":{"category":"TDR artifacts","order":31,"note":"Both sections are painted at exactly 30 Ω, but the TDR reads the second one higher, because less of the step gets through the first. The bounce between the two sections also shows up later as a small ghost. Loss is off so only masking remains.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.5.0","name":"Ghost after a via stub","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2.5,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[{"type":"C","x":0.5,"value":0.25,"count":1,"pitch":0.15,"locked":false},{"type":"C","x":1.1,"value":0.08,"count":1,"pitch":0.15,"locked":false},{"type":"stub","x":1.1,"stubZ":45,"stubLen":60,"count":1,"pitch":0.15,"locked":false}],"example":{"category":"TDR artifacts","order":32,"note":"Look past the via: around 1.8 in the TDR shows an inductive-looking spike, but nothing is painted there. It is the via’s reflection bouncing off the capacitive pad at 0.5 in and coming back, so it lands about 2 × (1.1 − 0.5) in after the via. Remove the pad and the spike disappears.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.5.0","name":"Board launch + via stub","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false},"profile":{"cells":500,"runs":[[49.387,1],[49.178,1],[48.917,1],[48.599,1],[48.219,1],[47.776,1],[47.271,1],[46.711,1],[46.106,1],[45.471,1],[44.825,1],[44.191,1],[43.594,1],[43.061,1],[42.615,1],[42.283,1],[42.077,1],[42.011,1],[42.09,1],[42.312,1],[42.669,1],[43.148,1],[43.733,1],[44.405,1],[45.148,1],[45.945,1],[46.785,1],[47.658,1],[48.559,1],[49.483,1],[50.424,1],[51.375,1],[52.325,1],[53.254,1],[54.14,1],[54.953,1],[55.661,1],[56.233,1],[56.643,1],[56.869,1],[56.905,1],[56.753,1],[56.431,1],[55.964,1],[55.389,1],[54.745,1],[54.071,1],[53.407,1],[52.776,1],[52.205,1],[51.707,1],[51.288,1],[50.947,1],[50.679,1],[50.475,1],[50.323,1],[50.215,1],[50.139,1],[50.088,1],[50.054,1],[50.032,1],[50.019,1],[50.011,1],[50.006,1],[50.003,1],[50,370],[50.003,1],[50.006,1],[50.011,1],[50.019,1],[50.032,1],[50.054,1],[50.088,1],[50.139,1],[50.215,1],[50.323,1],[50.475,1],[50.679,1],[50.947,1],[51.288,1],[51.707,1],[52.205,1],[52.776,1],[53.405,1],[54.071,1],[54.745,1],[55.389,1],[55.964,1],[56.431,1],[56.753,1],[56.905,1],[56.869,1],[56.643,1],[56.233,1],[55.661,1],[54.953,1],[54.14,1],[53.254,1],[52.325,1],[51.375,1],[50.424,1],[49.483,1],[48.559,1],[47.658,1],[46.785,1],[45.945,1],[45.148,1],[44.405,1],[43.733,1],[43.148,1],[42.669,1],[42.312,1],[42.09,1],[42.011,1],[42.077,1],[42.283,1],[42.615,1],[43.061,1],[43.594,1],[44.191,1],[44.825,1],[45.471,1],[46.106,1],[46.711,1],[47.271,1],[47.776,1],[48.219,1],[48.599,1],[48.917,1],[49.178,1],[49.387,1]]},"elements":[{"type":"C","x":1,"value":0.08,"count":1,"pitch":0.15,"locked":false},{"type":"stub","x":1,"stubZ":45,"stubLen":60,"count":1,"pitch":0.15,"locked":false}],"example":{"category":"Realistic channels","order":40,"note":"Connector launches at both ends (capacitive pad, then inductive pin) and a via with a 60 mil stub in the middle. A typical first look at a channel: the stub dominates S21 near 27 GHz, the launches set the return loss.","author":"TDR Painter","default":true}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.5.0","name":"Probes on 42 Ω stripline, good contact","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":1.56,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false},"profile":{"cells":500,"runs":[[50,170],[46.08,1],[42,158],[46.08,1],[50,170]]},"elements":[{"type":"R","x":0.5,"value":0.02,"count":1,"pitch":0.15,"locked":false},{"type":"L","x":0.5,"value":0.12,"count":1,"pitch":0.15,"locked":false},{"type":"C","x":0.52,"value":0.06,"count":1,"pitch":0.15,"locked":false},{"type":"C","x":1.04,"value":0.06,"count":1,"pitch":0.15,"locked":false},{"type":"L","x":1.06,"value":0.12,"count":1,"pitch":0.15,"locked":false},{"type":"R","x":1.06,"value":0.02,"count":1,"pitch":0.15,"locked":false}],"example":{"category":"Realistic channels","order":41,"note":"50 Ω coax (the first and last 0.5 in), an inductive probe tip (0.12 nH), a capacitive pad (0.06 pF), 0.5 in of 42 Ω stripline, then the same in reverse. Tip and pad partly cancel; the 42 Ω section sets the low-frequency ripple. Both contacts are 0.02 Ω. Try 0.25 nH tips to see a spring-probe fixture.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.5.0","name":"Probes on 42 Ω stripline, bad Tx contact","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":1.56,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false},"profile":{"cells":500,"runs":[[50,170],[46.08,1],[42,158],[46.08,1],[50,170]]},"elements":[{"type":"R","x":0.5,"value":3,"count":1,"pitch":0.15,"locked":false},{"type":"L","x":0.5,"value":0.12,"count":1,"pitch":0.15,"locked":false},{"type":"C","x":0.52,"value":0.06,"count":1,"pitch":0.15,"locked":false},{"type":"C","x":1.04,"value":0.06,"count":1,"pitch":0.15,"locked":false},{"type":"L","x":1.06,"value":0.12,"count":1,"pitch":0.15,"locked":false},{"type":"R","x":1.06,"value":0.02,"count":1,"pitch":0.15,"locked":false}],"example":{"category":"Realistic channels","order":42,"note":"Same fixture, but the Tx probe lands with 3 Ω of contact resistance. The TDR steps up by about 3 Ω at the tip and stays up to DC, so the 42 Ω stripline now reads about 46 Ω instead of 43 Ω: a bad contact quietly corrupts every impedance behind it. S11 also no longer matches S22.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.5.0","name":"Serpentine, 5 in, corner capacitance","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":5,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[{"type":"C","x":0.6,"value":0.012,"count":13,"pitch":0.3,"locked":false},{"type":"C","x":0.62,"value":0.012,"count":13,"pitch":0.3,"locked":false}],"example":{"category":"Realistic channels","order":43,"note":"A 5 in trace with 13 U-turns, each made of two 90° corners of about 0.012 pF. One corner is negligible, but at a regular 0.3 in pitch they add up near v/(2p) ≈ 11 GHz and its harmonics; look at S11 and ILD there. This 1-D model leaves out coupling between the parallel runs, which in a real serpentine shortens the delay.","author":"TDR Painter"}}
+];
   const state = {
     P: { ...DEFAULTS },
     prof: new Float64Array(NS).fill(50),
@@ -886,29 +1010,23 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   }
 
   /* ---------- examples ---------- */
-  const PRESETS = [
-    { name: 'Board launch + via stub', run() {
-      bump(0.07, 0.06, -8); bump(0.16, 0.05, 7);
-      bump(state.P.lenIn - 0.07, 0.06, -8); bump(state.P.lenIn - 0.16, 0.05, 7);
-      const x = state.P.lenIn / 2;
-      state.elems.push(el('C', x, { value: 0.08 }), el('stub', x, { stubZ: 45, stubLen: 60 }));
-    } },
-    { name: 'Clean 50 Ω line', run() {} },
-    { name: '45 Ω trace (impedance tolerance)', run() { state.prof.fill(45); } },
-    { name: 'Via with 60 mil stub', run() { const x = state.P.lenIn / 2; state.elems.push(el('C', x, { value: 0.08 }), el('stub', x, { stubLen: 60 })); } },
-    { name: 'Periodic loading, 12 × 0.06 pF', run() { state.elems.push(el('C', 0.15, { value: 0.06, count: 12, pitch: 0.15 })); } },
-    { name: 'Bad probe contact, 4 Ω', run() { state.elems.push(el('R', 0.02, { value: 4 })); } },
-    { name: 'Rx pad capacitance, 0.25 pF', run() { state.elems.push(el('C', state.P.lenIn, { value: 0.25 })); } },
-    { name: 'Painted taper 50 → 40 → 50 Ω', run() { plateau(0.4, 1.6, 40, 0.4); } },
-  ];
-  function loadPreset(k) {
-    pushUndo();
-    state.prof.fill(state.P.z0);
-    state.elems = []; state.selId = null;
-    PRESETS[k].run();
-    state.projectName = ''; $('#projName').value = '';
-    autoRange(true);
-    renderEditor(); schedule();
+  function loadExample(k) {
+    const ex = EXAMPLES[k];
+    if (!ex) return;
+    let p;
+    try { p = PJ.parse(ex, NS); } catch (e) { projStatus(`Example “${ex.name}” could not be loaded: ${e.message}`, true); return; }
+    applyProject(p, p.name);
+    sel.value = String(k);
+    showExampleNote(p);
+  }
+  function showExampleNote(p) {
+    const box = $('#exNote');
+    const note = p && p.example && p.example.note;
+    box.hidden = !note;
+    if (!note) return;
+    $('#exNoteTitle').textContent = p.name;
+    $('#exNoteText').textContent = note;
+    $('#exNoteBy').textContent = p.example.author && p.example.author !== 'TDR Painter' ? 'Contributed by ' + p.example.author : '';
   }
 
   /* ---------- undo ---------- */
@@ -1170,18 +1288,21 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     // lay chips out in up to two rows so co-located elements stay visible
     const lay = state.elems.map(e => { const label = chipLabel(e); const cw = ctx.measureText(label).width + 14 + (e.locked ? 12 : 0); return { e, label, cw, cx: F.X(e.x) }; })
       .sort((a, b) => a.cx - b.cx);
-    const ends = [-1e9, -1e9];
+    // up to three rows, so elements stacked at one spot (a probe tip: R, L, pad C) all stay visible
+    const ends = [-1e9, -1e9, -1e9];
     for (const c of lay) {
-      if (c.cx - c.cw / 2 > ends[0] + 3) c.row = 0; else if (c.cx - c.cw / 2 > ends[1] + 3) c.row = 1; else c.row = ends[0] <= ends[1] ? 0 : 1;
-      ends[c.row] = Math.max(ends[c.row], c.cx + c.cw / 2);
+      let r = ends.findIndex(e => c.cx - c.cw / 2 > e + 3);
+      if (r < 0) r = ends.indexOf(Math.min(...ends));
+      c.row = r; ends[r] = Math.max(ends[r], c.cx + c.cw / 2);
     }
-    const twoRows = lay.some(c => c.row === 1);
+    const nrows = 1 + Math.max(0, ...lay.map(c => c.row));
+    const hh = nrows === 1 ? 22 : nrows === 2 ? 18 : 13, gapY = nrows === 3 ? 14 : 20;
+    if (nrows === 3) ctx.font = '500 10px "JetBrains Mono", ui-monospace, Menlo, monospace';
     const mid = (ly0 + ly1) / 2;
     lay.sort((a, b) => (a.e.id === state.selId) - (b.e.id === state.selId));
     for (const c of lay) {
       const e = c.e, sel = e.id === state.selId;
-      const cy = twoRows ? (c.row ? mid + 10 : mid - 10) : mid;
-      const hh = twoRows ? 18 : 22;
+      const cy = mid + (c.row - (nrows - 1) / 2) * gapY;
       ctx.fillStyle = sel ? TK.ink : TK.panel;
       ctx.strokeStyle = sel ? TK.ink : TK['fg-3']; ctx.lineWidth = 1;
       roundRect(ctx, c.cx - c.cw / 2, cy - hh / 2, c.cw, hh, 5); ctx.fill(); ctx.stroke();
@@ -1442,7 +1563,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   const SPEC = {
     C: { name: 'Shunt capacitance', glyph: 'C', v: { label: 'Capacitance', unit: 'pF', min: 0.005, max: 1, step: 0.005 } },
     L: { name: 'Series inductance', glyph: 'L', v: { label: 'Inductance', unit: 'nH', min: 0.01, max: 2, step: 0.01 } },
-    R: { name: 'Series resistance', glyph: 'R', v: { label: 'Resistance', unit: 'Ω', min: 0.1, max: 25, step: 0.1 } },
+    R: { name: 'Series resistance', glyph: 'R', v: { label: 'Resistance', unit: 'Ω', min: 0.01, max: 25, step: 0.01 } },
     stub: { name: 'Open stub (via stub)', glyph: 'S' },
   };
   function pairHTML(id, label, unit, min, max, step) {
@@ -1570,8 +1691,21 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   document.addEventListener('keydown', (ev) => { if ((ev.ctrlKey || ev.metaKey) && ev.key === 'z' && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) { ev.preventDefault(); undo(); } });
   const sel = $('#preset');
   { const o = document.createElement('option'); o.value = ''; o.textContent = 'Choose an example…'; o.disabled = true; sel.appendChild(o); }
-  PRESETS.forEach((p, i) => { const o = document.createElement('option'); o.value = i; o.textContent = p.name; sel.appendChild(o); });
-  sel.addEventListener('change', () => loadPreset(+sel.value));
+  {
+    const groups = new Map();
+    EXAMPLES.forEach((ex, i) => {
+      const cat = PJ.CATEGORIES.includes(ex.example && ex.example.category) ? ex.example.category : 'Community';
+      if (!groups.has(cat)) groups.set(cat, []);
+      groups.get(cat).push(i);
+    });
+    for (const cat of PJ.CATEGORIES) {
+      if (!groups.has(cat)) continue;
+      const g = document.createElement('optgroup'); g.label = cat;
+      for (const i of groups.get(cat)) { const o = document.createElement('option'); o.value = String(i); o.textContent = EXAMPLES[i].name; g.appendChild(o); }
+      sel.appendChild(g);
+    }
+  }
+  sel.addEventListener('change', () => loadExample(+sel.value));
   $('#pin').addEventListener('click', () => {
     if (!R) return;
     state.ref = { f: Array.from(R.f, v => v / 1e9), s11db: R.s11db.slice(), s21db: R.s21db.slice(), ild: R.ild.slice(), tx: R.tx.slice(), tz: R.tz.slice() };
@@ -1672,7 +1806,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     const P = state.P, s = R.s;
     const v2 = Math.abs(P.zTx - P.zRx) > 1e-9;
     const lines = [];
-    lines.push('! TDR Painter v0.4.1 export, ' + new Date().toISOString().slice(0, 10));
+    lines.push('! TDR Painter v0.5.0 export, ' + new Date().toISOString().slice(0, 10));
     if (state.projectName) lines.push('! project: ' + state.projectName.replace(/[\r\n]/g, ' '));
     lines.push(`! ${P.lenIn} in line, Z0 ${P.z0} ohm, Dk ${P.Dk} Df ${P.Df} @ ${P.frefGHz} GHz (Djordjevic-Sarkar), cond ${P.lossless ? 0 : P.condLoss} dB/in @10 GHz, Rdc ${P.lossless ? 0 : P.rdc} ohm/in`);
     for (const e of state.elems) lines.push(`! element ${chipLabel(e)} at ${e.x} in${e.count > 1 ? ', pitch ' + e.pitch + ' in' : ''}`);
@@ -1696,24 +1830,12 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   /* ---------- projects: plain .json files on the viewer's own computer ----------
      Nothing is sent anywhere or kept in browser storage. Save hands a file to the browser's
      download (or, inside claude.ai, to its save dialog); Open reads a file the viewer picks. */
-  const APP_VERSION = '0.4.1';
-  const PROJ_FORMAT = 'tdr-painter-project';
-  const LIMITS = { nf: [1001, 1001], condRefGHz: [10, 10] };
-  GROUPS.forEach(g => g.items.forEach(it => { const sc = it.scale || 1; LIMITS[it.k] = [it.min * sc, it.max * sc]; }));
-  const num = (v, lo, hi, dflt) => (typeof v === 'number' && isFinite(v)) ? Math.max(lo, Math.min(hi, v)) : dflt;
-
+  const APP_VERSION = '0.5.0';
   function projectData(name) {
-    const runs = [];
-    for (let i = 0; i < NS;) {
-      const z = Math.round(state.prof[i] * 1000) / 1000;
-      let j = i + 1;
-      while (j < NS && Math.round(state.prof[j] * 1000) / 1000 === z) j++;
-      runs.push([z, j - i]); i = j;
-    }
     return {
-      format: PROJ_FORMAT, formatVersion: 1, app: APP_VERSION, name, savedAt: new Date().toISOString(),
+      format: PJ.FORMAT, formatVersion: PJ.FORMAT_VERSION, app: APP_VERSION, name, savedAt: new Date().toISOString(),
       params: { ...state.P },
-      profile: { cells: NS, runs },
+      profile: { cells: NS, runs: PJ.encodeProfile(state.prof) },
       elements: state.elems.map(e => e.type === 'stub'
         ? { type: e.type, x: e.x, stubZ: e.stubZ, stubLen: e.stubLen, count: e.count, pitch: e.pitch, locked: !!e.locked }
         : { type: e.type, x: e.x, value: e.value, count: e.count, pitch: e.pitch, locked: !!e.locked }),
@@ -1721,42 +1843,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     };
   }
 
-  // Validate and clamp everything; a project file is untrusted input.
-  function parseProject(obj) {
-    if (!obj || typeof obj !== 'object' || obj.format !== PROJ_FORMAT) throw new Error('That file isn’t a TDR Painter project.');
-    if ((obj.formatVersion | 0) > 1) throw new Error(`That project was saved by a newer TDR Painter (format ${obj.formatVersion | 0}). Update the page to open it.`);
-    const P = { ...DEFAULTS };
-    const src = obj.params && typeof obj.params === 'object' ? obj.params : {};
-    for (const k of Object.keys(DEFAULTS)) {
-      if (k === 'lossless') { P.lossless = src.lossless === true; continue; }
-      const lim = LIMITS[k];
-      if (lim) P[k] = num(src[k], lim[0], lim[1], DEFAULTS[k]);
-    }
-    const runs = obj.profile && Array.isArray(obj.profile.runs) ? obj.profile.runs : null;
-    const cells = [];
-    if (runs) for (const r of runs) {
-      if (!Array.isArray(r)) continue;
-      const z = num(r[0], 5, 200, P.z0);
-      const n = Math.max(0, Math.min(100000 - cells.length, Math.round(r[1]) || 0));
-      for (let k = 0; k < n; k++) cells.push(z);
-      if (cells.length >= 100000) break;
-    }
-    if (!cells.length) throw new Error('That project has no impedance profile.');
-    const prof = new Float64Array(NS);   // resample if a future version uses a different cell count
-    for (let i = 0; i < NS; i++) prof[i] = cells[Math.min(cells.length - 1, Math.floor((i + 0.5) / NS * cells.length))];
-    const elements = [];
-    for (const e of Array.isArray(obj.elements) ? obj.elements.slice(0, 200) : []) {
-      if (!e || typeof e !== 'object' || !Object.prototype.hasOwnProperty.call(SPEC, e.type)) continue;
-      const o = { type: e.type, x: num(e.x, 0, P.lenIn, 0), count: Math.round(num(e.count, 1, 30, 1)), pitch: num(e.pitch, 0.02, 1, 0.15), locked: e.locked === true };
-      if (e.type === 'stub') { o.value = 0; o.stubZ = num(e.stubZ, 20, 90, 45); o.stubLen = Math.round(num(e.stubLen, 2, 250, 60)); }
-      else { const v = SPEC[e.type].v; o.value = num(e.value, v.min, v.max, v.min); }
-      elements.push(o);
-    }
-    const v = obj.view || {};
-    const view = (typeof v.zMin === 'number' && typeof v.zMax === 'number' && v.zMax > v.zMin + 1 && v.zMax - v.zMin < 1000) ? { zMin: v.zMin, zMax: v.zMax } : null;
-    const name = typeof obj.name === 'string' ? obj.name.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 80) : '';
-    return { name, P, prof, elements, view };
-  }
+  const parseProject = (obj) => PJ.parse(obj, NS);   // validates and clamps; a project file is untrusted input
 
   function refreshControls() {
     railShows.forEach(f => f());
@@ -1824,6 +1911,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     try { p = parseProject(obj); } catch (e) { projStatus(e.message, true); return; }
     applyProject(p, label.replace(/(\.tdrp)?(\.zip|\.json|\.tdrp)$/i, ''));
     $('#projFallback').hidden = true;
+    showExampleNote(p);
     projStatus(`Opened ${label}. Undo brings back what you had before.`);
   }
   async function openProjectFile(f) {
@@ -1868,11 +1956,11 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
 
   /* ---------- boot ---------- */
   buildRail();
-  sel.value = 0;
-  PRESETS[0].run();
-  autoRange(true);
-  renderEditor();
-  schedule();
+  {
+    const k = Math.max(0, EXAMPLES.findIndex(ex => ex.example && ex.example.default === true));
+    if (EXAMPLES.length) loadExample(k); else { autoRange(true); renderEditor(); schedule(); }
+    state.undo = [];
+  }
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => schedule(true));
   const ro = new ResizeObserver(() => schedule(true));
   ro.observe(document.body);
