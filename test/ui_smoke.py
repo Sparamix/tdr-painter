@@ -4,8 +4,10 @@
     npm run build && python test/ui_smoke.py
 """
 import asyncio
+import io
 import json
 import os
+import zipfile
 import pathlib
 import sys
 
@@ -115,21 +117,45 @@ async def main():
         async with pg.expect_download() as dl_info:
             await pg.click("#projSave")
         dl = await dl_info.value
-        check("save names the file from the project", dl.suggested_filename == "Via study rev A.json", dl.suggested_filename)
-        saved = pathlib.Path(await dl.path()).read_text()
-        doc = json.loads(saved)
-        check("saved file is a v1 project", doc.get("format") == "tdr-painter-project" and doc.get("formatVersion") == 1)
-        await pg.select_option("#preset", "2")   # replace everything
-        await pg.fill("#p_DkN", "4.2"); await pg.press("#p_DkN", "Enter")
+        check("save writes <name>.tdrp", dl.suggested_filename == "Via study rev A.tdrp", dl.suggested_filename)
+        tdrp_bytes = pathlib.Path(await dl.path()).read_bytes()
+        with zipfile.ZipFile(io.BytesIO(tdrp_bytes)) as z:
+            check(".tdrp is a valid ZIP whose CRCs check out", z.testzip() is None and z.namelist() == ["project.json"])
+            doc = json.loads(z.read("project.json"))
+        check(".tdrp holds a v1 project", doc.get("format") == "tdr-painter-project" and doc.get("formatVersion") == 1)
+        async with pg.expect_download() as dl_info:
+            await pg.click("#projJson")
+        dl = await dl_info.value
+        saved_json = pathlib.Path(await dl.path()).read_text()
+        check("Export JSON writes <name>.json with the same project", dl.suggested_filename == "Via study rev A.json"
+              and {k: v for k, v in json.loads(saved_json).items() if k != "savedAt"} == {k: v for k, v in doc.items() if k != "savedAt"})
+        check(".tdrp is smaller than the JSON export", len(tdrp_bytes) < len(saved_json), f"{len(saved_json)} -> {len(tdrp_bytes)} B")
+
+        tmp_t = ROOT / "test" / "_roundtrip.tdrp"
         tmp = ROOT / "test" / "_roundtrip.json"
-        tmp.write_text(saved)
-        await pg.set_input_files("#projFile", str(tmp))
-        await pg.wait_for_timeout(150)
-        after = await st(snap_js)
-        check("open restores params, profile and elements", after == before)
-        check("open restores the project name", await pg.input_value("#projName") == "Via study / rev:A")
+        for label, path, data in ((".tdrp", tmp_t, tdrp_bytes), ("JSON", tmp, saved_json.encode())):
+            await pg.select_option("#preset", "2")   # replace everything
+            await pg.fill("#p_DkN", "4.2"); await pg.press("#p_DkN", "Enter")
+            path.write_bytes(data)
+            await pg.set_input_files("#projFile", str(path))
+            await pg.wait_for_timeout(150)
+            check(f"open {label} restores params, profile and elements", await st(snap_js) == before)
+            check(f"open {label} restores the project name", await pg.input_value("#projName") == "Via study / rev:A")
         await pg.click("#undo")
         check("undo after open restores the previous project", await st("__tdrState.P.Dk") == 4.2)
+
+        # a damaged .tdrp is refused and nothing changes
+        bad = bytearray(tdrp_bytes); bad[len(bad) // 3] ^= 0x10
+        tmp_t.write_bytes(bytes(bad))
+        await pg.set_input_files("#projFile", str(tmp_t))
+        await pg.wait_for_timeout(150)
+        check("damaged .tdrp is refused, state unchanged", "damaged" in await pg.inner_text("#projStatus") and await st("__tdrState.P.Dk") == 4.2,
+              await pg.inner_text("#projStatus"))
+        tmp_t.write_bytes(tdrp_bytes[: len(tdrp_bytes) - 40])
+        await pg.set_input_files("#projFile", str(tmp_t))
+        await pg.wait_for_timeout(150)
+        check("truncated .tdrp is refused", "damaged" in await pg.inner_text("#projStatus") and await st("__tdrState.P.Dk") == 4.2)
+        tmp_t.unlink()
 
         # malformed and foreign files are refused without changing anything
         tmp.write_text("{not json")
@@ -177,8 +203,12 @@ async def claude_host():
             await pg.click("#projSave")
             await pg.wait_for_timeout(150)
             if mode == "granted":
-                saves = await pg.evaluate("window.__saves.map(s => [s.filename, JSON.parse(s.data).format])")
-                check("claude.ai: save goes to the platform dialog", saves == [["In claude.json", "tdr-painter-project"]], saves)
+                saves = await pg.evaluate("window.__saves.map(s => [s.filename, String.fromCharCode(...new Uint8Array(s.data.buffer || s.data).slice(0, 2))])")
+                check("claude.ai: .tdrp.zip goes to the platform dialog", saves == [["In claude.tdrp.zip", "PK"]], saves)
+                await pg.click("#projJson")
+                await pg.wait_for_timeout(150)
+                last = await pg.evaluate("(() => { const s = window.__saves[window.__saves.length - 1]; return [s.filename, JSON.parse(s.data).format]; })()")
+                check("claude.ai: Export JSON goes to the platform dialog", last == ["In claude.json", "tdr-painter-project"], last)
             else:
                 shown = await pg.is_visible("#projFallback")
                 text = await pg.input_value("#projFallbackText")

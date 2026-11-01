@@ -12,11 +12,11 @@ Open `dist/index.html` in a browser, or serve the `dist/` folder with GitHub Pag
 - **Drop in** a shunt C, series L, series R or open (via) stub. Drag the chips in the strip under the plot, set copies and pitch for periodic loading.
 - **Lock** an element so it can't be dragged by accident, or **Clone** it to get a copy beside it that you can drag into place.
 - **Compare** with Pin reference, and export the current S-parameters as Touchstone text.
-- **Save** a project as a `.json` file on your computer and **Open** it later, or drop the file onto the page. Ctrl/⌘ S and Ctrl/⌘ O work too.
+- **Save** a project as a `.tdrp` file on your computer and **Open** it later, or drop the file onto the page. **Export JSON** writes the same project as readable text, and Open takes either. Ctrl/⌘ S, Ctrl/⌘ Shift S and Ctrl/⌘ O work too.
 
 ## Privacy
 
-TDR Painter has no server side. It sends nothing anywhere, uses no analytics or cookies, and keeps nothing in browser storage. A project exists only as the `.json` file you save; Open reads a file you pick and validates every value before using it.
+TDR Painter has no server side. It sends nothing anywhere, uses no analytics or cookies, and keeps nothing in browser storage. A project exists only as the `.tdrp` or `.json` file you save; Open reads a file you pick and validates every value before using it.
 
 You don't have to take that on trust:
 
@@ -29,11 +29,15 @@ The claude.ai build is the same code. There, Save goes through claude.ai's own s
 
 ## Project files
 
-A project is plain JSON (format version 1):
+**`.tdrp`** (the default) is a standard ZIP archive with one entry, `project.json`, compressed with the browser's built-in deflate. Each entry carries a CRC-32 of its contents, and Open verifies it, so a damaged or truncated file is refused instead of loading wrong values. Rename it to `.zip` and any unzip tool opens it. The page writes and reads this format itself with no library: no ZIP64, no encryption, at most 5 MB unpacked. Inside claude.ai the save dialog only accepts known extensions, so there the file is named `name.tdrp.zip`.
+
+**`.json`** (Export JSON) is the same project as readable, diff-friendly text, handy for examples kept in git. Open accepts both and tells them apart by content, not by extension.
+
+`project.json`, format version 1:
 
 ```json
 {
-  "format": "tdr-painter-project", "formatVersion": 1, "app": "0.3.0",
+  "format": "tdr-painter-project", "formatVersion": 1, "app": "0.4.0",
   "name": "Via stub study", "savedAt": "2026-11-01T07:20:00.000Z",
   "params":   { "lenIn": 2, "z0": 50, "Dk": 3.35, "Df": 0.004, "frefGHz": 12, "zTx": 50, "zRx": 50, "fmaxGHz": 50, "beta": 4.2, "...": "..." },
   "profile":  { "cells": 500, "runs": [[50, 230], [49.2, 1], "..."] },
@@ -42,7 +46,7 @@ A project is plain JSON (format version 1):
 }
 ```
 
-The profile is run-length encoded as `[impedance in Ω, number of cells]`. Element `type` is `C` (pF), `L` (nH), `R` (Ω) or `stub`. Values out of range are clamped on open, and unknown fields are ignored.
+The profile is run-length encoded as `[impedance in Ω, number of cells]`. Element `type` is `C` (pF), `L` (nH), `R` (Ω) or `stub`. Values out of range are clamped on open, and unknown fields are ignored. A typical project is about 4.5 KB as JSON and under 1 KB as `.tdrp`.
 
 ## How it works
 
@@ -59,7 +63,7 @@ The profile is run-length encoded as `[impedance in Ω, number of cells]`. Eleme
 
 ```sh
 npm run build   # src/ + fonts/ -> dist/index.html and dist/tdr-painter.artifact.html
-npm test        # build, engine checks against analytic cases, privacy check (Node, no dependencies)
+npm test        # build, engine checks, .tdrp container checks, privacy check (Node 18+, no dependencies)
 python test/skrf_crosscheck.py   # optional, needs scikit-rf
 python test/ui_smoke.py          # optional, needs Playwright and Chrome
 ```
@@ -67,10 +71,11 @@ python test/ui_smoke.py          # optional, needs Playwright and Chrome
 | Path | What it is |
 | --- | --- |
 | `src/engine.js` | Physics: dielectric model, cascade, S-parameters, TDR, ILD fit |
-| `src/page.html` | UI; `/*ENGINE*/` is replaced by the engine at build time |
+| `src/tdrp.js` | `.tdrp` container: ZIP writer and reader with CRC-32 checks |
+| `src/page.html` | UI; `/*ENGINE*/` and `/*TDRP*/` are replaced by those files at build time |
 | `build.js` | Produces the two single-file builds in `dist/` |
 | `fonts/` | Self-hosted Archivo, Instrument Sans and JetBrains Mono (latin and greek subsets) with their licenses |
-| `test/` | Engine tests, privacy check, scikit-rf cross-check, browser smoke test |
+| `test/` | Engine, container and privacy tests, scikit-rf cross-check, browser smoke test |
 
 ## References
 
@@ -78,6 +83,7 @@ python test/ui_smoke.py          # optional, needs Playwright and Chrome
 - D. J. Dascher, "Measuring Parasitic Capacitance and Inductance Using TDR," Hewlett-Packard Journal, Apr. 1996.
 - A. Healey, "Fitted insertion loss and insertion loss deviation," IEEE P802.3ba Task Force, Jul. 2009.
 - Panasonic MEGTRON 6 R-5775(N) data sheet.
+- PKWARE, APPNOTE.TXT, .ZIP File Format Specification (local and central headers, CRC-32).
 
 ## License
 

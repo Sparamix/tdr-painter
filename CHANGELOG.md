@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0 (2026-11-01)
+
+- New `.tdrp` project file: a standard ZIP holding `project.json`, deflated with the browser's built-in compressor and protected by a CRC-32 per entry. Open verifies it and refuses damaged, truncated, encrypted or oversized files. Typical projects shrink from about 4.5 KB to under 1 KB.
+- Save writes `.tdrp` (`.tdrp.zip` inside claude.ai); Export JSON keeps the readable format; Open accepts both and detects the type by content.
+- `src/tdrp.js` with its own tests, including interop with Python's `zipfile` and zip-bomb limits.
+
 ## 0.3.0 (2026-11-01)
 
 - Save a project as a `.json` file and Open it again (file picker, drag and drop, Ctrl/⌘ S and Ctrl/⌘ O). Opening validates and clamps every value, and Undo brings back the previous project.

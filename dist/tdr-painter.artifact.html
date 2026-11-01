@@ -191,9 +191,10 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     <div class="top-actions">
       <div class="projbar" role="group" aria-label="Project file">
         <input type="text" id="projName" maxlength="80" placeholder="Untitled project" autocomplete="off" aria-label="Project name, used as the file name">
-        <button id="projOpen" title="Open a project .json from your computer (Ctrl/⌘ O). You can also drop the file on the page.">Open…</button>
-        <button id="projSave" class="primary" title="Save this project as a .json file on your computer (Ctrl/⌘ S)">Save</button>
-        <input type="file" id="projFile" accept=".json,application/json" hidden>
+        <button id="projOpen" title="Open a .tdrp or .json project from your computer (Ctrl/⌘ O). You can also drop the file on the page.">Open…</button>
+        <button id="projSave" class="primary" title="Save as a .tdrp project file: compressed, with a checksum (Ctrl/⌘ S)">Save</button>
+        <button id="projJson" class="ghost" title="Export as readable JSON, for git or hand edits (Ctrl/⌘ Shift S)">Export JSON</button>
+        <input type="file" id="projFile" hidden>
       </div>
       <label class="label-sm" for="preset">Example</label>
       <select id="preset" aria-label="Load an example"></select>
@@ -277,7 +278,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
 
     <aside class="rail" id="rail"></aside>
   </div>
-  <footer class="foot">TDR Painter v0.3.0 · Runs entirely in your browser. Projects are files you save and open yourself; nothing is uploaded or stored.</footer>
+  <footer class="foot">TDR Painter v0.4.0 · Runs entirely in your browser. Projects are .tdrp or .json files you save and open yourself; nothing is uploaded or stored.</footer>
 </div>
 
 <script>
@@ -669,6 +670,157 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   const api = { C0, IN, makeDS, prepare, buildCascade, solve, tdr, riseTime, ildFit, excursions, fft, besselI0 };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.TDREngine = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+/* .tdrp project container: a standard ZIP archive (PKWARE APPNOTE) holding project.json.
+ * Entries are deflated with the browser's built-in CompressionStream('deflate-raw'), or stored when that
+ * would not be smaller. Every entry carries a CRC-32 of its uncompressed bytes, which read() verifies,
+ * so a damaged or truncated file is refused instead of loading wrong values.
+ * Deliberately small: no ZIP64, no encryption, no multi-disk, single-file archives of a few KiB.
+ */
+(function (root) {
+  'use strict';
+
+  const CRC_TABLE = (() => {
+    const t = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+      t[n] = c >>> 0;
+    }
+    return t;
+  })();
+  function crc32(bytes) {
+    let c = 0xffffffff;
+    for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  }
+
+  class TdrpError extends Error {
+    constructor(code, message) { super(message); this.code = code; }
+  }
+  const fail = (code, msg) => { throw new TdrpError(code, msg); };
+
+  const SIG_LOCAL = 0x04034b50, SIG_CENTRAL = 0x02014b50, SIG_END = 0x06054b50;
+  const FLAG_UTF8 = 0x0800;
+
+  async function pipe(bytes, stream) {
+    return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer());
+  }
+  // Inflate with a hard output cap, so a hostile archive cannot exhaust memory.
+  async function inflateRaw(bytes, maxBytes) {
+    const reader = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw')).getReader();
+    const chunks = [];
+    let total = 0;
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        total += value.length;
+        if (total > maxBytes) { reader.cancel().catch(() => {}); fail('too_large', 'The project inside the file is unreasonably large.'); }
+        chunks.push(value);
+      }
+    } catch (e) {
+      if (e instanceof TdrpError) throw e;
+      fail('damaged', 'The file is damaged: its compressed data could not be read.');
+    }
+    const out = new Uint8Array(total);
+    let o = 0;
+    for (const c of chunks) { out.set(c, o); o += c.length; }
+    return out;
+  }
+
+  function dosDateTime(d) {
+    const year = Math.max(1980, d.getFullYear());
+    return {
+      time: (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1),
+      date: ((year - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate(),
+    };
+  }
+
+  /** Build a ZIP from [{name, data: Uint8Array}]. Returns Uint8Array. */
+  async function write(files, now) {
+    const enc = new TextEncoder();
+    const { time, date } = dosDateTime(now || new Date());
+    const parts = [], central = [];
+    let offset = 0;
+    for (const f of files) {
+      const name = enc.encode(f.name);
+      const data = f.data;
+      const crc = crc32(data);
+      let method = 8, body = await pipe(data, new CompressionStream('deflate-raw'));
+      if (body.length >= data.length) { method = 0; body = data; }
+      const lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, SIG_LOCAL, true); lh.setUint16(4, 20, true); lh.setUint16(6, FLAG_UTF8, true);
+      lh.setUint16(8, method, true); lh.setUint16(10, time, true); lh.setUint16(12, date, true);
+      lh.setUint32(14, crc, true); lh.setUint32(18, body.length, true); lh.setUint32(22, data.length, true);
+      lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+      const ch = new DataView(new ArrayBuffer(46));
+      ch.setUint32(0, SIG_CENTRAL, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true);
+      ch.setUint16(8, FLAG_UTF8, true); ch.setUint16(10, method, true); ch.setUint16(12, time, true);
+      ch.setUint16(14, date, true); ch.setUint32(16, crc, true); ch.setUint32(20, body.length, true);
+      ch.setUint32(24, data.length, true); ch.setUint16(28, name.length, true);
+      ch.setUint32(42, offset, true);   // extra, comment, disk, attributes stay 0
+      parts.push(new Uint8Array(lh.buffer), name, body);
+      central.push(new Uint8Array(ch.buffer), name);
+      offset += 30 + name.length + body.length;
+    }
+    const cdSize = central.reduce((s, p) => s + p.length, 0);
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, SIG_END, true);
+    end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+    end.setUint32(12, cdSize, true); end.setUint32(16, offset, true);
+    const all = [...parts, ...central, new Uint8Array(end.buffer)];
+    const out = new Uint8Array(all.reduce((s, p) => s + p.length, 0));
+    let o = 0;
+    for (const p of all) { out.set(p, o); o += p.length; }
+    return out;
+  }
+
+  const isZip = (b) => b.length >= 4 && b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04;
+
+  /** Read the entry `name` from ZIP bytes, verifying size and CRC-32. Returns Uint8Array. */
+  async function read(bytes, name, maxBytes) {
+    maxBytes = maxBytes || 5e6;
+    if (!isZip(bytes)) fail('not_zip', 'This is not a .tdrp project file.');
+    const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    let eocd = -1;
+    for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 22 - 65535); i--) {
+      if (dv.getUint32(i, true) === SIG_END) { eocd = i; break; }
+    }
+    if (eocd < 0) fail('damaged', 'The file is damaged or incomplete: its directory is missing.');
+    const count = dv.getUint16(eocd + 10, true);
+    const cdSize = dv.getUint32(eocd + 12, true), cdOff = dv.getUint32(eocd + 16, true);
+    if (cdOff + cdSize > eocd) fail('damaged', 'The file is damaged: its directory points outside the file.');
+    const dec = new TextDecoder();
+    let p = cdOff;
+    for (let k = 0; k < count; k++) {
+      if (p + 46 > eocd || dv.getUint32(p, true) !== SIG_CENTRAL) fail('damaged', 'The file is damaged: its directory is corrupt.');
+      const flags = dv.getUint16(p + 8, true), method = dv.getUint16(p + 10, true);
+      const crc = dv.getUint32(p + 16, true), csize = dv.getUint32(p + 20, true), usize = dv.getUint32(p + 24, true);
+      const nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
+      const lho = dv.getUint32(p + 42, true);
+      const entryName = dec.decode(bytes.subarray(p + 46, p + 46 + nlen));
+      p += 46 + nlen + xlen + clen;
+      if (entryName !== name) continue;
+      if (flags & 1) fail('unsupported', 'Encrypted project files are not supported.');
+      if (csize === 0xffffffff || usize === 0xffffffff || lho === 0xffffffff) fail('unsupported', 'ZIP64 project files are not supported.');
+      if (method !== 0 && method !== 8) fail('unsupported', 'The project uses a compression method this page does not read.');
+      if (usize > maxBytes) fail('too_large', 'The project inside the file is unreasonably large.');
+      if (lho + 30 > bytes.length || dv.getUint32(lho, true) !== SIG_LOCAL) fail('damaged', 'The file is damaged: an entry header is corrupt.');
+      const start = lho + 30 + dv.getUint16(lho + 26, true) + dv.getUint16(lho + 28, true);
+      if (start + csize > bytes.length) fail('damaged', 'The file is damaged or incomplete: data is missing.');
+      const body = bytes.subarray(start, start + csize);
+      const data = method === 8 ? await inflateRaw(body, maxBytes) : body.slice();
+      if (data.length !== usize || crc32(data) !== crc) fail('damaged', 'The file is damaged: its checksum does not match, so nothing was loaded.');
+      return data;
+    }
+    fail('not_project', `The archive has no ${name}, so it is not a TDR Painter project.`);
+  }
+
+  const api = { crc32, write, read, isZip, TdrpError };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.TDRP = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>
@@ -1465,7 +1617,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       <li>With loss on, the orange trace sits a little above the painted line and creeps upward along it. Skin-effect resistance and internal inductance raise the low-frequency impedance. Tick Lossless to see it vanish.</li>
       <li>Labels on short painted bumps use the TDR area method: <code>L = 2Z₀∫ρ dt</code>, <code>C = −(2/Z₀)∫ρ dt</code> over round-trip time. Long excursions show average impedance and length instead.</li>
       <li>ILD is dB(S21) minus a least-squares fit of a0 + a1√f + a2·f + a4·f² over the whole sweep.</li>
-      <li>Privacy: the page makes no network requests and keeps nothing, not even in browser storage. Save writes a .json file to your computer and Open reads one back. The standalone build adds a Content-Security-Policy that blocks every outgoing connection, so the browser itself enforces this.</li>
+      <li>Privacy: the page makes no network requests and keeps nothing, not even in browser storage. Save writes a .tdrp file to your computer (a ZIP holding project.json, with a CRC-32 that Open verifies) and Open reads it back; Export JSON writes the same project as readable text. The standalone build adds a Content-Security-Policy that blocks every outgoing connection, so the browser itself enforces this.</li>
       <li>Nothing radiates and nothing couples. Power that is neither reflected nor transmitted is absorbed in the line or in series R.</li>
     </ul></details>`;
     rail.innerHTML = html;
@@ -1505,7 +1657,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     const P = state.P, s = R.s;
     const v2 = Math.abs(P.zTx - P.zRx) > 1e-9;
     const lines = [];
-    lines.push('! TDR Painter v0.3.0 export, ' + new Date().toISOString().slice(0, 10));
+    lines.push('! TDR Painter v0.4.0 export, ' + new Date().toISOString().slice(0, 10));
     if (state.projectName) lines.push('! project: ' + state.projectName.replace(/[\r\n]/g, ' '));
     lines.push(`! ${P.lenIn} in line, Z0 ${P.z0} ohm, Dk ${P.Dk} Df ${P.Df} @ ${P.frefGHz} GHz (Djordjevic-Sarkar), cond ${P.lossless ? 0 : P.condLoss} dB/in @10 GHz, Rdc ${P.lossless ? 0 : P.rdc} ohm/in`);
     for (const e of state.elems) lines.push(`! element ${chipLabel(e)} at ${e.x} in${e.count > 1 ? ', pitch ' + e.pitch + ' in' : ''}`);
@@ -1529,7 +1681,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   /* ---------- projects: plain .json files on the viewer's own computer ----------
      Nothing is sent anywhere or kept in browser storage. Save hands a file to the browser's
      download (or, inside claude.ai, to its save dialog); Open reads a file the viewer picks. */
-  const APP_VERSION = '0.3.0';
+  const APP_VERSION = '0.4.0';
   const PROJ_FORMAT = 'tdr-painter-project';
   const LIMITS = { nf: [1001, 1001], condRefGHz: [10, 10] };
   GROUPS.forEach(g => g.items.forEach(it => { const sc = it.scale || 1; LIMITS[it.k] = [it.min * sc, it.max * sc]; }));
@@ -1618,29 +1770,36 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     $('#projFallback').hidden = false;
     const t = $('#projFallbackText'); t.value = json; t.focus(); t.select();
   }
-  async function saveProjectFile() {
+  function offerFile(data, filename, type) {   // standalone page: an ordinary browser download, generated locally
+    const url = URL.createObjectURL(new Blob([data], { type }));
+    const a = document.createElement('a'); a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+  async function saveProject(kind) {
     const name = $('#projName').value.trim();
     state.projectName = name;
-    const json = JSON.stringify(projectData(name || 'Untitled project'), null, 1) + '\n';
-    const filename = fileBase(name) + '.json';
+    const proj = projectData(name || 'Untitled project');
+    const pretty = JSON.stringify(proj, null, 1) + '\n';
     $('#projFallback').hidden = true;
-    if (!inClaude) {   // standalone page: an ordinary browser download, generated locally
-      const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
-      const a = document.createElement('a'); a.href = url; a.download = filename;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-      projStatus(`Saved ${filename} to your downloads.`);
-      return;
+    let data, filename, type;
+    if (kind === 'json') { data = pretty; filename = fileBase(name) + '.json'; type = 'application/json'; }
+    else {
+      try { data = await window.TDRP.write([{ name: 'project.json', data: new TextEncoder().encode(JSON.stringify(proj)) }]); }
+      catch (e) { showFallback(pretty, 'This browser can’t build a .tdrp file. Copy the project text below into a .json file.'); return; }
+      // claude.ai's save dialog only takes known extensions, so the archive keeps a .zip suffix there
+      filename = fileBase(name) + (inClaude ? '.tdrp.zip' : '.tdrp'); type = 'application/octet-stream';
     }
+    if (!inClaude) { offerFile(data, filename, type); projStatus(`Saved ${filename} to your downloads.`); return; }
     let dl = null;
     try { dl = await window.claude.use('downloads'); } catch (e) { dl = null; }
-    if (!dl) { showFallback(json, 'Saving files isn’t available in this view. Copy the project text below into a .json file.'); return; }
-    try { await dl.save({ filename, data: json }); projStatus(`Saved ${filename}.`); }
+    if (!dl) { showFallback(pretty, 'Saving files isn’t available in this view. Copy the project text below into a .json file.'); return; }
+    try { await dl.save({ filename, data }); projStatus(`Saved ${filename}.`); }
     catch (e) {
       const c = e && e.code;
       if (c === 'declined') projStatus('Save cancelled.');
       else if (c === 'rate_limited') projStatus('A save is already waiting for your confirmation.', true);
-      else showFallback(json, 'The file couldn’t be saved here. Copy the project text below into a .json file.');
+      else showFallback(pretty, 'The file couldn’t be saved here. Copy the project text below into a .json file.');
     }
   }
   function openProjectText(text, label) {
@@ -1648,22 +1807,30 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     try { obj = JSON.parse(text); } catch (e) { projStatus(`${label} isn’t valid JSON, so it can’t be opened.`, true); return; }
     let p;
     try { p = parseProject(obj); } catch (e) { projStatus(e.message, true); return; }
-    applyProject(p, label.replace(/\.json$/i, ''));
+    applyProject(p, label.replace(/(\.tdrp)?(\.zip|\.json|\.tdrp)$/i, ''));
     $('#projFallback').hidden = true;
     projStatus(`Opened ${label}. Undo brings back what you had before.`);
   }
   async function openProjectFile(f) {
     if (!f) return;
     if (f.size > 5e6) { projStatus(`${f.name} is too large to be a TDR Painter project.`, true); return; }
-    let text;
-    try { text = await f.text(); } catch (e) { projStatus(`Couldn’t read ${f.name}.`, true); return; }
-    openProjectText(text, f.name);
+    let bytes;
+    try { bytes = new Uint8Array(await f.arrayBuffer()); } catch (e) { projStatus(`Couldn’t read ${f.name}.`, true); return; }
+    if (window.TDRP.isZip(bytes)) {
+      let inner;
+      try { inner = await window.TDRP.read(bytes, 'project.json'); }
+      catch (e) { projStatus(`${f.name}: ${e.message || 'could not be read.'}`, true); return; }
+      openProjectText(new TextDecoder().decode(inner), f.name);
+      return;
+    }
+    openProjectText(new TextDecoder().decode(bytes).replace(/^﻿/, ''), f.name);
   }
-  $('#projSave').addEventListener('click', saveProjectFile);
+  $('#projSave').addEventListener('click', () => saveProject('tdrp'));
+  $('#projJson').addEventListener('click', () => saveProject('json'));
   $('#projOpen').addEventListener('click', () => $('#projFile').click());
   $('#projFile').addEventListener('change', (ev) => { const f = ev.target.files && ev.target.files[0]; ev.target.value = ''; openProjectFile(f); });
   $('#projName').addEventListener('input', (ev) => { state.projectName = ev.target.value.trim(); });
-  $('#projName').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); saveProjectFile(); } });
+  $('#projName').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); saveProject('tdrp'); } });
   $('#projCopy').addEventListener('click', () => {
     const t = $('#projFallbackText');
     try { navigator.clipboard.writeText(t.value).then(() => projStatus('Copied. Paste it into a text file ending in .json.'), () => { t.focus(); t.select(); }); }
@@ -1680,7 +1847,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   document.addEventListener('keydown', (ev) => {
     if (!(ev.ctrlKey || ev.metaKey) || ev.altKey) return;
     const k = ev.key.toLowerCase();
-    if (k === 's') { ev.preventDefault(); saveProjectFile(); }
+    if (k === 's') { ev.preventDefault(); saveProject(ev.shiftKey ? 'json' : 'tdrp'); }
     else if (k === 'o') { ev.preventDefault(); $('#projFile').click(); }
   });
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Inlines src/engine.js and the self-hosted fonts into src/page.html and writes two single-file builds:
+// Inlines src/engine.js, src/tdrp.js and the self-hosted fonts into src/page.html and writes two single-file builds:
 //   dist/index.html                 standalone page (open from disk, or serve with GitHub Pages);
 //                                   carries a Content-Security-Policy that blocks every network connection
 //   dist/tdr-painter.artifact.html  head-less fragment for a claude.ai Artifact (the host adds the skeleton)
@@ -16,9 +16,11 @@ const fontsCss = rd('fonts/fonts.css').replace(/url\(([\w.-]+\.woff2)\)/g, (_, f
   `url(data:font/woff2;base64,${rd(path.join('fonts', f), null).toString('base64')})`);
 
 const engine = rd('src/engine.js');
+const tdrp = rd('src/tdrp.js');
 const page = rd('src/page.html')
   .replace('/*FONTS*/', () => fontsCss)
   .replace('/*ENGINE*/', () => engine)
+  .replace('/*TDRP*/', () => tdrp)
   .replace(/__VERSION__/g, pkg.version);
 
 fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
