@@ -130,6 +130,7 @@ input[type=range] { accent-color: var(--ink); width: 120px; }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--fg-2); }
 .legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
 .legend i.dash { background: repeating-linear-gradient(90deg, var(--dc, var(--refline)) 0 4px, transparent 4px 7px) !important; }
+.legend i.dots { height: 4px; background: radial-gradient(circle, var(--dc) 1.3px, transparent 1.7px) 0 50% / 5px 4px repeat-x !important; opacity: 0.8; }
 .readout {
   font-family: var(--font-data); font-size: 12px; color: var(--fg-2); font-variant-numeric: tabular-nums;
   display: flex; flex-wrap: wrap; gap: 4px 16px; min-height: 18px;
@@ -208,7 +209,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       </div>
       <label class="label-sm" for="preset">Example</label>
       <select id="preset" aria-label="Load an example"></select>
-      <button id="pin" title="Keep the current curves as a dashed reference">Pin reference</button>
+      <button id="pin" title="Keep the current curves as a dotted reference">Pin reference</button>
       <button id="unpin" class="ghost" disabled>Clear reference</button>
     </div>
   </header>
@@ -255,7 +256,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
         <div class="legend">
           <span><i style="background:var(--ink)"></i>Painted profile Z(x)</span>
           <span><i style="background:var(--refl)"></i>TDR a scope would show (from S11)</span>
-          <span id="lgRefT" hidden><i class="dash"></i>Pinned reference</span>
+          <span id="lgRefT" hidden><i class="dots" style="--dc:var(--refl)"></i>Pinned TDR</span>
         </div>
         <div class="readout" id="tread"></div>
         <div class="editor" id="editor"></div>
@@ -265,17 +266,17 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
         <div class="card">
           <h3>Return loss <small>dB(S11), dB(S22)</small></h3>
           <canvas id="cRL" aria-label="Return loss versus frequency"></canvas>
-          <div class="legend"><span><i style="background:var(--refl)"></i>S11 (Tx side)</span><span><i class="dash" style="--dc:var(--port2)"></i>S22 (Rx side, dashed)</span><span class="lgRef" hidden><i class="dash"></i>Reference S11</span></div>
+          <div class="legend"><span><i style="background:var(--refl)"></i>S11 (Tx side)</span><span><i class="dash" style="--dc:var(--port2)"></i>S22 (Rx side, dashed)</span><span class="lgRef" hidden><i class="dots" style="--dc:var(--refl)"></i>Pinned S11</span></div>
         </div>
         <div class="card">
           <h3>Insertion loss <small>dB(S21) and its fit</small></h3>
           <canvas id="cIL" aria-label="Insertion loss versus frequency"></canvas>
-          <div class="legend"><span><i style="background:var(--trans)"></i>S21</span><span><i class="dash" style="--dc:var(--fg-3)"></i>Fit a0 + a1√f + a2·f + a4·f²</span><span class="lgRef" hidden><i class="dash"></i>Reference S21</span></div>
+          <div class="legend"><span><i style="background:var(--trans)"></i>S21</span><span><i class="dash" style="--dc:var(--fg-3)"></i>Fit a0 + a1√f + a2·f + a4·f²</span><span class="lgRef" hidden><i class="dots" style="--dc:var(--trans)"></i>Pinned S21</span></div>
         </div>
         <div class="card">
           <h3>Insertion loss deviation <small>dB(S21) minus fit</small></h3>
           <canvas id="cILD" aria-label="Insertion loss deviation versus frequency"></canvas>
-          <div class="legend"><span><i style="background:var(--trans)"></i>ILD (extra loss points down)</span><span class="lgRef" hidden><i class="dash"></i>Reference ILD</span></div>
+          <div class="legend"><span><i style="background:var(--trans)"></i>ILD (extra loss points down)</span><span class="lgRef" hidden><i class="dots" style="--dc:var(--trans)"></i>Pinned ILD</span></div>
         </div>
         <div class="card">
           <h3>Where the power goes <small>|S21|² + |S11|² + absorbed = 1</small></h3>
@@ -288,7 +289,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
 
     <aside class="rail" id="rail"></aside>
   </div>
-  <footer class="foot">TDR Painter v0.4.0 · Runs entirely in your browser. Projects are .tdrp or .json files you save and open yourself; nothing is uploaded or stored.</footer>
+  <footer class="foot">TDR Painter v0.4.1 · Runs entirely in your browser. Projects are .tdrp or .json files you save and open yourself; nothing is uploaded or stored.</footer>
 </div>
 
 <script>
@@ -1023,10 +1024,14 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     for (const v of yt) ctx.fillText(yd != null ? fmt(v, yd) : yfmt(v), F.x0 - 6, F.Y(v));
     ctx.restore();
   }
-  function polyline(ctx, F, xs, ys, color, width, dash, from) {
+  // Round dots: a near-zero dash with round caps, spaced 5 px along the path.
+  const DOTS = [0.01, 5];
+  function pinned(ctx, F, xs, ys, color, from) { polyline(ctx, F, xs, ys, color, 2.6, DOTS, from, 0.8); }
+  function polyline(ctx, F, xs, ys, color, width, dash, from, alpha) {
     ctx.save();
     ctx.beginPath(); ctx.rect(F.x0, F.y0 - 1, F.x1 - F.x0, F.y1 - F.y0 + 2); ctx.clip();
     ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    if (alpha != null) ctx.globalAlpha = alpha;
     if (dash) ctx.setLineDash(dash);
     ctx.beginPath();
     let pen = false;
@@ -1095,7 +1100,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     }
     ctx.restore();
     // reference TDR
-    if (state.ref) polyline(ctx, F, state.ref.tx, state.ref.tz, TK.refline, 1.5, [5, 4]);
+    if (state.ref) pinned(ctx, F, state.ref.tx, state.ref.tz, TK.refl);
     // painted fill + line
     ctx.save();
     ctx.beginPath(); ctx.rect(F.x0, F.y0, F.x1 - F.x0, F.y1 - F.y0); ctx.clip();
@@ -1241,7 +1246,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     if (ref) lo = Math.min(lo, minmax(ref.s11db, 1)[0]);
     const rlMin = Math.max(-80, Math.min(-30, Math.floor((lo - 3) / 10) * 10));
     fPlot('#cRL', rlMin, 0, 0, (ctx, F) => {
-      if (ref) polyline(ctx, F, ref.f, ref.s11db, TK.refline, 1.5, [5, 4]);
+      if (ref) pinned(ctx, F, ref.f, ref.s11db, TK.refl);
       polyline(ctx, F, fG, R.s11db, TK.refl, 2);
       polyline(ctx, F, fG, R.s22db, TK.port2, 1.5, [5, 4]);
     });
@@ -1250,7 +1255,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     const span = Math.max(1, -il);
     const st = span > 20 ? 10 : span > 8 ? 2 : span > 3 ? 1 : 0.5;
     fPlot('#cIL', Math.floor((il - span * 0.05) / st) * st, Math.max(0.25, st / 2), st < 1 ? 1 : 0, (ctx, F) => {
-      if (ref) polyline(ctx, F, ref.f, ref.s21db, TK.refline, 1.5, [5, 4]);
+      if (ref) pinned(ctx, F, ref.f, ref.s21db, TK.trans);
       polyline(ctx, F, fG, R.fit, TK['fg-3'], 1.5, [6, 4]);
       polyline(ctx, F, fG, R.s21db, TK.trans, 2);
     });
@@ -1260,7 +1265,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     const lim = Math.max(0.1, Math.max(Math.abs(a), Math.abs(b)) * 1.15);
     fPlot('#cILD', -lim, lim, lim < 1 ? 2 : 1, (ctx, F) => {
       ctx.save(); ctx.strokeStyle = TK['fg-3']; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(F.x0, Math.round(F.Y(0)) + 0.5); ctx.lineTo(F.x1, Math.round(F.Y(0)) + 0.5); ctx.stroke(); ctx.restore();
-      if (ref) polyline(ctx, F, ref.f, ref.ild, TK.refline, 1.5, [5, 4], 1);
+      if (ref) pinned(ctx, F, ref.f, ref.ild, TK.trans, 1);
       polyline(ctx, F, fG, R.ild, TK.trans, 2, null, 1);
     });
     // power balance
@@ -1667,7 +1672,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     const P = state.P, s = R.s;
     const v2 = Math.abs(P.zTx - P.zRx) > 1e-9;
     const lines = [];
-    lines.push('! TDR Painter v0.4.0 export, ' + new Date().toISOString().slice(0, 10));
+    lines.push('! TDR Painter v0.4.1 export, ' + new Date().toISOString().slice(0, 10));
     if (state.projectName) lines.push('! project: ' + state.projectName.replace(/[\r\n]/g, ' '));
     lines.push(`! ${P.lenIn} in line, Z0 ${P.z0} ohm, Dk ${P.Dk} Df ${P.Df} @ ${P.frefGHz} GHz (Djordjevic-Sarkar), cond ${P.lossless ? 0 : P.condLoss} dB/in @10 GHz, Rdc ${P.lossless ? 0 : P.rdc} ohm/in`);
     for (const e of state.elems) lines.push(`! element ${chipLabel(e)} at ${e.x} in${e.count > 1 ? ', pitch ' + e.pitch + ' in' : ''}`);
@@ -1691,7 +1696,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   /* ---------- projects: plain .json files on the viewer's own computer ----------
      Nothing is sent anywhere or kept in browser storage. Save hands a file to the browser's
      download (or, inside claude.ai, to its save dialog); Open reads a file the viewer picks. */
-  const APP_VERSION = '0.4.0';
+  const APP_VERSION = '0.4.1';
   const PROJ_FORMAT = 'tdr-painter-project';
   const LIMITS = { nf: [1001, 1001], condRefGHz: [10, 10] };
   GROUPS.forEach(g => g.items.forEach(it => { const sc = it.scale || 1; LIMITS[it.k] = [it.min * sc, it.max * sc]; }));

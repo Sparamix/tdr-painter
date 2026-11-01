@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1 (2026-11-01)
+
+- Pinned reference curves are now dotted and keep the color of the curve they were pinned from (orange for TDR and S11, blue for S21 and ILD), so they no longer look like the gray dashed S21 fit. One rule across the page: solid is the live result, dashed is a helper, dotted is the pinned reference.
+
 ## 0.4.0 (2026-11-01)
 
 - New `.tdrp` project file: a standard ZIP holding `project.json`, deflated with the browser's built-in compressor and protected by a CRC-32 per entry. Open verifies it and refuses damaged, truncated, encrypted or oversized files. Typical projects shrink from about 4.5 KB to under 1 KB.
