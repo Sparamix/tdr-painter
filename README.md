@@ -10,6 +10,7 @@ Open `dist/index.html` in a browser, or serve the `dist/` folder with GitHub Pag
 
 - **Paint** the profile with Draw, Push / pull, Plateau, Smooth and Erase. Short bumps are labeled with their equivalent lumped L or C.
 - **Drop in** a shunt C, series L, series R or open (via) stub. Drag the chips in the strip under the plot, set copies and pitch for periodic loading.
+- **Lock** an element so it can't be dragged by accident, or **Clone** it to get a copy beside it that you can drag into place.
 - **Compare** with Pin reference, and export the current S-parameters as Touchstone text.
 
 ## How it works

@@ -116,6 +116,13 @@ input[type=range] { accent-color: var(--ink); width: 120px; }
 }
 .ed-head strong { font-family: var(--font-display); font-stretch: 105%; font-size: 16px; }
 .ed-hint { color: var(--fg-2); font-size: 13px; flex: 1 1 220px; min-width: 0; }
+.ed-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.ed-actions button { display: inline-flex; align-items: center; gap: 6px; }
+.ed-actions svg { width: 14px; height: 14px; flex: none; }
+@keyframes nudge { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+button.nudge { animation: nudge 0.22s ease-in-out 2; }
+@media (prefers-reduced-motion: reduce) { button.nudge { animation: none; outline: 2px solid var(--refl); outline-offset: 2px; } }
+.foot { color: var(--fg-3); font-size: 12px; font-family: var(--font-data); }
 .ed-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px 18px; }
 .pair { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; }
 .pair label { font-size: 12.5px; color: var(--fg-2); grid-column: 1 / -1; }
@@ -231,6 +238,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
 
     <aside class="rail" id="rail"></aside>
   </div>
+  <footer class="foot">TDR Painter v__VERSION__</footer>
 </div>
 
 <script>
@@ -283,7 +291,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   }
   function el(type, x, extra) {
     const base = { C: { value: 0.15 }, L: { value: 0.3 }, R: { value: 2 }, stub: { value: 0, stubZ: 45, stubLen: 60 } }[type];
-    return { id: state.nextId++, type, x, count: 1, pitch: 0.15, ...base, ...extra };
+    return { id: state.nextId++, type, x, count: 1, pitch: 0.15, locked: false, ...base, ...extra };
   }
 
   /* ---------- examples ---------- */
@@ -559,7 +567,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       }
     }
     // lay chips out in up to two rows so co-located elements stay visible
-    const lay = state.elems.map(e => { const label = chipLabel(e); const cw = ctx.measureText(label).width + 14; return { e, label, cw, cx: F.X(e.x) }; })
+    const lay = state.elems.map(e => { const label = chipLabel(e); const cw = ctx.measureText(label).width + 14 + (e.locked ? 12 : 0); return { e, label, cw, cx: F.X(e.x) }; })
       .sort((a, b) => a.cx - b.cx);
     const ends = [-1e9, -1e9];
     for (const c of lay) {
@@ -577,13 +585,23 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       ctx.strokeStyle = sel ? TK.ink : TK['fg-3']; ctx.lineWidth = 1;
       roundRect(ctx, c.cx - c.cw / 2, cy - hh / 2, c.cw, hh, 5); ctx.fill(); ctx.stroke();
       ctx.fillStyle = sel ? TK.panel : TK.fg;
-      ctx.fillText(c.label, c.cx, cy + 0.5);
+      if (e.locked) {
+        drawLock(ctx, c.cx - c.cw / 2 + 10, cy, sel ? TK.panel : TK.fg);
+        ctx.fillText(c.label, c.cx + 6, cy + 0.5);
+      } else ctx.fillText(c.label, c.cx, cy + 0.5);
       state.chips.push({ id: e.id, x0: c.cx - c.cw / 2, x1: c.cx + c.cw / 2, y0: cy - hh / 2 - 2, y1: cy + hh / 2 + 2 });
     }
     if (!state.elems.length) {
       ctx.fillStyle = TK['fg-3']; ctx.font = FONT_DATA; ctx.textAlign = 'left';
       ctx.fillText('Use “Drop in” to add a shunt C, series L, series R or open stub', F.x0 + 10, (ly0 + ly1) / 2);
     }
+  }
+  function drawLock(ctx, x, y, color) {
+    ctx.save();
+    ctx.fillStyle = color; ctx.strokeStyle = color; ctx.lineWidth = 1.3;
+    ctx.fillRect(x - 3.5, y - 0.5, 7, 5.5);
+    ctx.beginPath(); ctx.moveTo(x - 2.2, y - 0.5); ctx.lineTo(x - 2.2, y - 2.3); ctx.arc(x, y - 2.3, 2.2, Math.PI, 0); ctx.lineTo(x + 2.2, y - 0.5); ctx.stroke();
+    ctx.restore();
   }
   function chipLabel(e) {
     const tag = e.count > 1 ? ' ×' + e.count : '';
@@ -716,12 +734,19 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     if (py > h - LANE) {
       const hit = (state.chips || []).filter(c => px >= c.x0 - 4 && px <= c.x1 + 4 && py >= c.y0 - 3 && py <= c.y1 + 3).reverse()[0];
       if (hit) {
-        pushUndo();
-        state.selId = hit.id;
         const e = state.elems.find(e => e.id === hit.id);
-        state.drag = { id: hit.id, off: TF.xi(px) - e.x };
-        tdrCv.setPointerCapture(ev.pointerId);
-        renderEditor();
+        state.selId = hit.id;
+        if (e.locked) {
+          // locked: select for editing, never move
+          renderEditor();
+          const b = $('#edLock');
+          if (b) { b.classList.remove('nudge'); void b.offsetWidth; b.classList.add('nudge'); }
+        } else {
+          pushUndo();
+          state.drag = { id: hit.id, off: TF.xi(px) - e.x };
+          tdrCv.setPointerCapture(ev.pointerId);
+          renderEditor();
+        }
       } else { state.selId = null; renderEditor(); }
       schedule(true);
       return;
@@ -850,7 +875,12 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     }
     const sp = SPEC[e.type];
     const L = state.P.lenIn;
-    let html = `<div class="ed-head"><span class="glyph">${sp.glyph}</span><strong>${sp.name}</strong><span class="ed-hint" id="edHint"></span><button id="edDel" class="ghost">Remove</button></div><div class="ed-grid">`;
+    const lockBtn = e.locked
+      ? `<button id="edLock" aria-pressed="true" title="Position is locked. Unlock to move this element.">${ICON.locked}Unlock</button>`
+      : `<button id="edLock" aria-pressed="false" title="Lock the position so it can't be dragged by accident">${ICON.unlocked}Lock</button>`;
+    let html = `<div class="ed-head"><span class="glyph">${sp.glyph}</span><strong>${sp.name}</strong><span class="ed-hint" id="edHint"></span>` +
+      `<div class="ed-actions">${lockBtn}<button id="edClone" title="Duplicate this element next to it, then drag the copy into place">${ICON.clone}Clone</button>` +
+      `<button id="edDel" class="ghost">Remove</button></div></div><div class="ed-grid">`;
     if (e.type === 'stub') {
       html += pairHTML('edLen', 'Stub length', 'mil', 2, 250, 1) + pairHTML('edZ', 'Stub impedance', 'Ω', 20, 90, 1);
     } else html += pairHTML('edVal', sp.v.label, sp.v.unit, sp.v.min, sp.v.max, sp.v.step);
@@ -865,13 +895,48 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     editorShows.push(bindPair('edCnt', () => e.count, (v) => e.count = Math.round(v)));
     editorShows.push(bindPair('edPitch', () => e.pitch, (v) => e.pitch = v));
     $('#edDel').addEventListener('click', () => { pushUndo(); state.elems = state.elems.filter(x => x.id !== e.id); state.selId = null; renderEditor(); schedule(); });
+    $('#edLock').addEventListener('click', () => {
+      pushUndo(); e.locked = !e.locked; renderEditor(); schedule(true);
+      $('#edLock').focus();
+    });
+    $('#edClone').addEventListener('click', () => {
+      pushUndo();
+      const c = { ...e, id: state.nextId++, locked: false, x: freeSpotNear(e.x) };
+      state.elems.push(c); state.selId = c.id;
+      renderEditor(); schedule();
+      $('#edClone').focus();
+    });
     syncEditor();
+  }
+  const ICON = {
+    locked: '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.5" fill="currentColor"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+    unlocked: '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.5" fill="currentColor"/><path d="M5.5 7V4.5a2.5 2.5 0 0 1 5 0v0.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+    clone: '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 10.5v-7a1 1 0 0 1 1-1h7" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>',
+  };
+  // Nearest open spot beside x (right first, then left), spaced by the on-screen chip width
+  // so the clone's chip sits next to its source instead of on top of it.
+  function freeSpotNear(x0) {
+    const L = state.P.lenIn;
+    let step = Math.max(0.05, L * 0.05);
+    if (TF && state.chips && state.chips.length) {
+      const pxPerIn = (TF.x1 - TF.x0) / (TF.xmax - TF.xmin);
+      const widest = Math.max(...state.chips.map(c => c.x1 - c.x0));
+      step = Math.max(step, (widest + 8) / pxPerIn);
+    }
+    const taken = (x) => state.elems.some(e => Math.abs(e.x - x) < step * 0.95);
+    for (let k = 1; k <= 40; k++) {
+      const x = x0 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * step;
+      if (x >= 0 && x <= L && !taken(x)) return Math.round(x * 200) / 200;
+    }
+    return x0;
   }
   function syncEditor() {
     const e = state.elems.find(e => e.id === state.selId); if (!e) return;
     editorShows.forEach(f => f());
     const pitch = $('#edPitch'), pitchN = $('#edPitchN');
     if (pitch) { pitch.disabled = pitchN.disabled = e.count <= 1; }
+    const xr = $('#edX'), xn = $('#edXN');
+    if (xr) { xr.disabled = xn.disabled = !!e.locked; xr.title = xn.title = e.locked ? 'Unlock to move' : ''; }
     const v = (C0 / Math.sqrt(state.P.Dk)) / IN; // in/s
     const z0 = state.P.z0;
     let hint = '';
@@ -1004,7 +1069,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     const P = state.P, s = R.s;
     const v2 = Math.abs(P.zTx - P.zRx) > 1e-9;
     const lines = [];
-    lines.push('! TDR Painter export, ' + new Date().toISOString().slice(0, 10));
+    lines.push('! TDR Painter v__VERSION__ export, ' + new Date().toISOString().slice(0, 10));
     lines.push(`! ${P.lenIn} in line, Z0 ${P.z0} ohm, Dk ${P.Dk} Df ${P.Df} @ ${P.frefGHz} GHz (Djordjevic-Sarkar), cond ${P.lossless ? 0 : P.condLoss} dB/in @10 GHz, Rdc ${P.lossless ? 0 : P.rdc} ohm/in`);
     for (const e of state.elems) lines.push(`! element ${chipLabel(e)} at ${e.x} in${e.count > 1 ? ', pitch ' + e.pitch + ' in' : ''}`);
     if (v2) lines.push('[Version] 2.0');

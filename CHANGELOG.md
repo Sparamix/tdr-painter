@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0 (2026-10-31)
+
+- Lock / Unlock for placed elements. A locked element can still be selected and edited, but its chip won't drag and its position field is disabled; the chip shows a padlock.
+- Clone duplicates the selected element (values, copies and pitch) to the nearest open spot beside it, unlocked and selected, ready to drag into place.
+- Version shown in the page footer and in Touchstone export headers.
+- Repository layout: `src/`, `build.js`, `dist/` standalone and artifact builds, engine tests, scikit-rf cross-check, browser smoke test.
+
 ## 0.1.0 (2026-10-31)
 
 First version.

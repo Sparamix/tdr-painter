@@ -54,6 +54,34 @@ async def main():
         x1 = await st("__tdrState.elems[0].x")
         check("unlocked chip drags", x1 > x0 + 0.05, (x0, x1))
 
+        # lock: chip and position field stop moving the element
+        await pg.click("#edLock")
+        check("lock sets the flag", await st("__tdrState.elems[0].locked") is True)
+        check("lock disables the position field", await pg.locator("#edXN").is_disabled())
+        x, y = await chip_center(first)
+        await drag(x, y, 120)
+        check("locked chip does not drag", abs(await st("__tdrState.elems[0].x") - x1) < 1e-9)
+        check("locked chip still selects", await st("__tdrState.selId") == first)
+        # clone: new unlocked copy beside the source, selected, same values
+        n_before = await st("__tdrState.elems.length")
+        await pg.click("#edClone")
+        clone = await st("__tdrState.elems[__tdrState.elems.length - 1]")
+        src = await st(f"__tdrState.elems.find(e => e.id === {first})")
+        check("clone adds one element", await st("__tdrState.elems.length") == n_before + 1)
+        check("clone is selected and unlocked", await st("__tdrState.selId") == clone["id"] and clone["locked"] is False)
+        same = all(clone.get(k) == src.get(k) for k in ("type", "value", "stubZ", "stubLen", "count", "pitch"))
+        check("clone copies values", same)
+        check("clone sits beside the source", 0 < abs(clone["x"] - src["x"]) <= 0.25, (src["x"], clone["x"]))
+        cx, cy = await chip_center(clone["id"])
+        await drag(cx, cy, 60)
+        check("clone drags while source stays", await st(f"__tdrState.elems.find(e => e.id === {clone['id']}).x") > clone["x"] + 0.02
+              and abs(await st(f"__tdrState.elems.find(e => e.id === {first}).x") - x1) < 1e-9)
+        await pg.click("#undo")
+        await pg.click("#undo")
+        check("undo removes the clone", await st("__tdrState.elems.length") == n_before)
+        await pg.click("#undo")
+        check("undo unlocks", await st(f"__tdrState.elems.find(e => e.id === {first}).locked") is False)
+
         # paint with Push / pull
         await pg.click("[data-tool=push]")
         before = await st("Math.max(...__tdrState.prof)")
