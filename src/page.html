@@ -1,8 +1,6 @@
 <title>TDR Painter</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>/*FONTS*/</style>
 <style>
 /* Layout: instrument bench. Main column = TDR canvas you paint on, then four frequency views; side rail = setup. */
 :root {
@@ -22,6 +20,7 @@
   --port2: #1baf7a;        /* S22 */
   --dissip: #c3c8d2;
   --refline: #8a90a0;
+  --danger: #b4322a;
   --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
   --font-body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
   --font-data: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -32,7 +31,7 @@
     --bg: #0e1116; --panel: #161a21; --panel-2: #1c212a; --line: #2b313c; --grid: #232933;
     --fg: #e8ecf2; --fg-2: #b2b9c5; --fg-3: #858d9b;
     --ink: #b4bdff; --ink-soft: rgba(180, 189, 255, 0.10); --ink-on: #121640;
-    --refl: #e6763f; --trans: #3987e5; --port2: #199e70; --dissip: #3f4550; --refline: #7b8291;
+    --refl: #e6763f; --trans: #3987e5; --port2: #199e70; --dissip: #3f4550; --refline: #7b8291; --danger: #ff7b6f;
     color-scheme: dark;
   }
 }
@@ -40,7 +39,7 @@
   --bg: #0e1116; --panel: #161a21; --panel-2: #1c212a; --line: #2b313c; --grid: #232933;
   --fg: #e8ecf2; --fg-2: #b2b9c5; --fg-3: #858d9b;
   --ink: #b4bdff; --ink-soft: rgba(180, 189, 255, 0.10); --ink-on: #121640;
-  --refl: #e6763f; --trans: #3987e5; --port2: #199e70; --dissip: #3f4550; --refline: #7b8291;
+  --refl: #e6763f; --trans: #3987e5; --port2: #199e70; --dissip: #3f4550; --refline: #7b8291; --danger: #ff7b6f;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -62,7 +61,7 @@ h1 {
 h1 span { color: var(--ink); }
 .dek { color: var(--fg-2); margin: 0; max-width: 62ch; }
 .top-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-select, input[type=number] {
+select, input[type=number], input[type=text] {
   font: inherit; color: var(--fg); background: var(--panel); border: 1px solid var(--line);
   border-radius: 8px; padding: 6px 8px; min-height: 34px;
 }
@@ -122,6 +121,14 @@ input[type=range] { accent-color: var(--ink); width: 120px; }
 @keyframes nudge { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
 button.nudge { animation: nudge 0.22s ease-in-out 2; }
 @media (prefers-reduced-motion: reduce) { button.nudge { animation: none; outline: 2px solid var(--refl); outline-offset: 2px; } }
+.projbar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding-right: 10px; border-right: 1px solid var(--line); }
+.projbar input[type=text] { width: 200px; max-width: 100%; }
+@media (max-width: 640px) { .projbar { border-right: 0; padding-right: 0; width: 100%; } .projbar input[type=text] { flex: 1 1 140px; width: auto; } }
+.pstatus { font-size: 12.5px; color: var(--fg-2); overflow-wrap: anywhere; }
+.pstatus:empty { display: none; }
+.pstatus.err { color: var(--danger); }
+.pfallback { display: flex; flex-direction: column; gap: 6px; }
+.pfallback textarea { width: 100%; min-height: 90px; resize: vertical; font-family: var(--font-data); font-size: 11.5px; background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
 .foot { color: var(--fg-3); font-size: 12px; font-family: var(--font-data); }
 .ed-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px 18px; }
 .pair { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; }
@@ -162,12 +169,24 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       <p class="dek">Paint an impedance profile, drop in parasitics, and watch return loss, insertion loss and ILD respond. Every cell of the profile is a short lossy line; the frequency views are the exact cascade.</p>
     </div>
     <div class="top-actions">
+      <div class="projbar" role="group" aria-label="Project file">
+        <input type="text" id="projName" maxlength="80" placeholder="Untitled project" autocomplete="off" aria-label="Project name, used as the file name">
+        <button id="projOpen" title="Open a project .json from your computer (Ctrl/⌘ O). You can also drop the file on the page.">Open…</button>
+        <button id="projSave" class="primary" title="Save this project as a .json file on your computer (Ctrl/⌘ S)">Save</button>
+        <input type="file" id="projFile" accept=".json,application/json" hidden>
+      </div>
       <label class="label-sm" for="preset">Example</label>
       <select id="preset" aria-label="Load an example"></select>
       <button id="pin" title="Keep the current curves as a dashed reference">Pin reference</button>
       <button id="unpin" class="ghost" disabled>Clear reference</button>
     </div>
   </header>
+
+  <div class="pstatus" id="projStatus" role="status" aria-live="polite"></div>
+  <div class="pfallback" id="projFallback" hidden>
+    <textarea id="projFallbackText" readonly aria-label="Project JSON to copy"></textarea>
+    <div><button id="projCopy">Copy project text</button></div>
+  </div>
 
   <div class="app">
     <section class="stage">
@@ -238,7 +257,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
 
     <aside class="rail" id="rail"></aside>
   </div>
-  <footer class="foot">TDR Painter v__VERSION__</footer>
+  <footer class="foot">TDR Painter v__VERSION__ · Runs entirely in your browser. Projects are files you save and open yourself; nothing is uploaded or stored.</footer>
 </div>
 
 <script>
@@ -265,7 +284,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     zMin: 30, zMax: 70,
     ref: null, undo: [],
     cursorF: null, hover: null,
-    drag: null, plateau: null,
+    drag: null, plateau: null, projectName: '',
   };
   let prep = null, prepKey = '', riseT = NaN, R = null;
 
@@ -315,18 +334,24 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     state.prof.fill(state.P.z0);
     state.elems = []; state.selId = null;
     PRESETS[k].run();
+    state.projectName = ''; $('#projName').value = '';
     autoRange(true);
     renderEditor(); schedule();
   }
 
   /* ---------- undo ---------- */
-  function pushUndo() {
-    state.undo.push({ prof: state.prof.slice(), elems: JSON.stringify(state.elems), selId: state.selId });
+  function pushUndo(withParams) {
+    state.undo.push({
+      prof: state.prof.slice(), elems: JSON.stringify(state.elems), selId: state.selId,
+      P: withParams ? { ...state.P } : null, zr: [state.zMin, state.zMax], name: state.projectName,
+    });
     if (state.undo.length > 60) state.undo.shift();
   }
   function undo() {
     const u = state.undo.pop(); if (!u) return;
     state.prof = u.prof; state.elems = JSON.parse(u.elems); state.selId = u.selId;
+    state.nextId = Math.max(state.nextId, ...state.elems.map(e => e.id + 1));
+    if (u.P) { state.P = u.P; state.zMin = u.zr[0]; state.zMax = u.zr[1]; state.projectName = u.name; refreshControls(); return; }
     renderEditor(); schedule();
   }
 
@@ -968,6 +993,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   $('#resetProf').addEventListener('click', () => { pushUndo(); state.prof.fill(state.P.z0); schedule(); });
   document.addEventListener('keydown', (ev) => { if ((ev.ctrlKey || ev.metaKey) && ev.key === 'z' && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) { ev.preventDefault(); undo(); } });
   const sel = $('#preset');
+  { const o = document.createElement('option'); o.value = ''; o.textContent = 'Choose an example…'; o.disabled = true; sel.appendChild(o); }
   PRESETS.forEach((p, i) => { const o = document.createElement('option'); o.value = i; o.textContent = p.name; sel.appendChild(o); });
   sel.addEventListener('change', () => loadPreset(+sel.value));
   $('#pin').addEventListener('click', () => {
@@ -1030,6 +1056,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       <li>With loss on, the orange trace sits a little above the painted line and creeps upward along it. Skin-effect resistance and internal inductance raise the low-frequency impedance. Tick Lossless to see it vanish.</li>
       <li>Labels on short painted bumps use the TDR area method: <code>L = 2Z₀∫ρ dt</code>, <code>C = −(2/Z₀)∫ρ dt</code> over round-trip time. Long excursions show average impedance and length instead.</li>
       <li>ILD is dB(S21) minus a least-squares fit of a0 + a1√f + a2·f + a4·f² over the whole sweep.</li>
+      <li>Privacy: the page makes no network requests and keeps nothing, not even in browser storage. Save writes a .json file to your computer and Open reads one back. The standalone build adds a Content-Security-Policy that blocks every outgoing connection, so the browser itself enforces this.</li>
       <li>Nothing radiates and nothing couples. Power that is neither reflected nor transmitted is absorbed in the line or in series R.</li>
     </ul></details>`;
     rail.innerHTML = html;
@@ -1070,6 +1097,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     const v2 = Math.abs(P.zTx - P.zRx) > 1e-9;
     const lines = [];
     lines.push('! TDR Painter v__VERSION__ export, ' + new Date().toISOString().slice(0, 10));
+    if (state.projectName) lines.push('! project: ' + state.projectName.replace(/[\r\n]/g, ' '));
     lines.push(`! ${P.lenIn} in line, Z0 ${P.z0} ohm, Dk ${P.Dk} Df ${P.Df} @ ${P.frefGHz} GHz (Djordjevic-Sarkar), cond ${P.lossless ? 0 : P.condLoss} dB/in @10 GHz, Rdc ${P.lossless ? 0 : P.rdc} ohm/in`);
     for (const e of state.elems) lines.push(`! element ${chipLabel(e)} at ${e.x} in${e.count > 1 ? ', pitch ' + e.pitch + ' in' : ''}`);
     if (v2) lines.push('[Version] 2.0');
@@ -1087,6 +1115,165 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       navigator.clipboard.writeText(txt).then(() => { msg.textContent = `Copied ${R.f.length} points.`; box.hidden = true; }, fallback);
     } catch (err) { fallback(); }
   }
+
+
+  /* ---------- projects: plain .json files on the viewer's own computer ----------
+     Nothing is sent anywhere or kept in browser storage. Save hands a file to the browser's
+     download (or, inside claude.ai, to its save dialog); Open reads a file the viewer picks. */
+  const APP_VERSION = '__VERSION__';
+  const PROJ_FORMAT = 'tdr-painter-project';
+  const LIMITS = { nf: [1001, 1001], condRefGHz: [10, 10] };
+  GROUPS.forEach(g => g.items.forEach(it => { const sc = it.scale || 1; LIMITS[it.k] = [it.min * sc, it.max * sc]; }));
+  const num = (v, lo, hi, dflt) => (typeof v === 'number' && isFinite(v)) ? Math.max(lo, Math.min(hi, v)) : dflt;
+
+  function projectData(name) {
+    const runs = [];
+    for (let i = 0; i < NS;) {
+      const z = Math.round(state.prof[i] * 1000) / 1000;
+      let j = i + 1;
+      while (j < NS && Math.round(state.prof[j] * 1000) / 1000 === z) j++;
+      runs.push([z, j - i]); i = j;
+    }
+    return {
+      format: PROJ_FORMAT, formatVersion: 1, app: APP_VERSION, name, savedAt: new Date().toISOString(),
+      params: { ...state.P },
+      profile: { cells: NS, runs },
+      elements: state.elems.map(e => e.type === 'stub'
+        ? { type: e.type, x: e.x, stubZ: e.stubZ, stubLen: e.stubLen, count: e.count, pitch: e.pitch, locked: !!e.locked }
+        : { type: e.type, x: e.x, value: e.value, count: e.count, pitch: e.pitch, locked: !!e.locked }),
+      view: { zMin: state.zMin, zMax: state.zMax },
+    };
+  }
+
+  // Validate and clamp everything; a project file is untrusted input.
+  function parseProject(obj) {
+    if (!obj || typeof obj !== 'object' || obj.format !== PROJ_FORMAT) throw new Error('That file isn’t a TDR Painter project.');
+    if ((obj.formatVersion | 0) > 1) throw new Error(`That project was saved by a newer TDR Painter (format ${obj.formatVersion | 0}). Update the page to open it.`);
+    const P = { ...DEFAULTS };
+    const src = obj.params && typeof obj.params === 'object' ? obj.params : {};
+    for (const k of Object.keys(DEFAULTS)) {
+      if (k === 'lossless') { P.lossless = src.lossless === true; continue; }
+      const lim = LIMITS[k];
+      if (lim) P[k] = num(src[k], lim[0], lim[1], DEFAULTS[k]);
+    }
+    const runs = obj.profile && Array.isArray(obj.profile.runs) ? obj.profile.runs : null;
+    const cells = [];
+    if (runs) for (const r of runs) {
+      if (!Array.isArray(r)) continue;
+      const z = num(r[0], 5, 200, P.z0);
+      const n = Math.max(0, Math.min(100000 - cells.length, Math.round(r[1]) || 0));
+      for (let k = 0; k < n; k++) cells.push(z);
+      if (cells.length >= 100000) break;
+    }
+    if (!cells.length) throw new Error('That project has no impedance profile.');
+    const prof = new Float64Array(NS);   // resample if a future version uses a different cell count
+    for (let i = 0; i < NS; i++) prof[i] = cells[Math.min(cells.length - 1, Math.floor((i + 0.5) / NS * cells.length))];
+    const elements = [];
+    for (const e of Array.isArray(obj.elements) ? obj.elements.slice(0, 200) : []) {
+      if (!e || typeof e !== 'object' || !Object.prototype.hasOwnProperty.call(SPEC, e.type)) continue;
+      const o = { type: e.type, x: num(e.x, 0, P.lenIn, 0), count: Math.round(num(e.count, 1, 30, 1)), pitch: num(e.pitch, 0.02, 1, 0.15), locked: e.locked === true };
+      if (e.type === 'stub') { o.value = 0; o.stubZ = num(e.stubZ, 20, 90, 45); o.stubLen = Math.round(num(e.stubLen, 2, 250, 60)); }
+      else { const v = SPEC[e.type].v; o.value = num(e.value, v.min, v.max, v.min); }
+      elements.push(o);
+    }
+    const v = obj.view || {};
+    const view = (typeof v.zMin === 'number' && typeof v.zMax === 'number' && v.zMax > v.zMin + 1 && v.zMax - v.zMin < 1000) ? { zMin: v.zMin, zMax: v.zMax } : null;
+    const name = typeof obj.name === 'string' ? obj.name.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 80) : '';
+    return { name, P, prof, elements, view };
+  }
+
+  function refreshControls() {
+    railShows.forEach(f => f());
+    $('#p_lossless').checked = !!state.P.lossless;
+    $('#projName').value = state.projectName || '';
+    sel.value = '';
+    syncRange(); renderEditor(); schedule();
+  }
+  function applyProject(p, fallbackName) {
+    pushUndo(true);
+    state.P = p.P;
+    state.prof = p.prof;
+    state.nextId = 1;
+    state.elems = p.elements.map(e => ({ id: state.nextId++, ...e }));
+    state.selId = null;
+    if (p.view) { state.zMin = p.view.zMin; state.zMax = p.view.zMax; } else autoRange(true);
+    state.projectName = p.name || fallbackName || '';
+    refreshControls();
+  }
+
+  function projStatus(msg, err) { const el = $('#projStatus'); el.textContent = msg; el.classList.toggle('err', !!err); }
+  const fileBase = (name) => (name || '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80) || 'tdr-painter-project';
+  const inClaude = typeof (window.claude && window.claude.use) === 'function';
+  function showFallback(json, msg) {
+    projStatus(msg, true);
+    $('#projFallback').hidden = false;
+    const t = $('#projFallbackText'); t.value = json; t.focus(); t.select();
+  }
+  async function saveProjectFile() {
+    const name = $('#projName').value.trim();
+    state.projectName = name;
+    const json = JSON.stringify(projectData(name || 'Untitled project'), null, 1) + '\n';
+    const filename = fileBase(name) + '.json';
+    $('#projFallback').hidden = true;
+    if (!inClaude) {   // standalone page: an ordinary browser download, generated locally
+      const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+      const a = document.createElement('a'); a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      projStatus(`Saved ${filename} to your downloads.`);
+      return;
+    }
+    let dl = null;
+    try { dl = await window.claude.use('downloads'); } catch (e) { dl = null; }
+    if (!dl) { showFallback(json, 'Saving files isn’t available in this view. Copy the project text below into a .json file.'); return; }
+    try { await dl.save({ filename, data: json }); projStatus(`Saved ${filename}.`); }
+    catch (e) {
+      const c = e && e.code;
+      if (c === 'declined') projStatus('Save cancelled.');
+      else if (c === 'rate_limited') projStatus('A save is already waiting for your confirmation.', true);
+      else showFallback(json, 'The file couldn’t be saved here. Copy the project text below into a .json file.');
+    }
+  }
+  function openProjectText(text, label) {
+    let obj;
+    try { obj = JSON.parse(text); } catch (e) { projStatus(`${label} isn’t valid JSON, so it can’t be opened.`, true); return; }
+    let p;
+    try { p = parseProject(obj); } catch (e) { projStatus(e.message, true); return; }
+    applyProject(p, label.replace(/\.json$/i, ''));
+    $('#projFallback').hidden = true;
+    projStatus(`Opened ${label}. Undo brings back what you had before.`);
+  }
+  async function openProjectFile(f) {
+    if (!f) return;
+    if (f.size > 5e6) { projStatus(`${f.name} is too large to be a TDR Painter project.`, true); return; }
+    let text;
+    try { text = await f.text(); } catch (e) { projStatus(`Couldn’t read ${f.name}.`, true); return; }
+    openProjectText(text, f.name);
+  }
+  $('#projSave').addEventListener('click', saveProjectFile);
+  $('#projOpen').addEventListener('click', () => $('#projFile').click());
+  $('#projFile').addEventListener('change', (ev) => { const f = ev.target.files && ev.target.files[0]; ev.target.value = ''; openProjectFile(f); });
+  $('#projName').addEventListener('input', (ev) => { state.projectName = ev.target.value.trim(); });
+  $('#projName').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); saveProjectFile(); } });
+  $('#projCopy').addEventListener('click', () => {
+    const t = $('#projFallbackText');
+    try { navigator.clipboard.writeText(t.value).then(() => projStatus('Copied. Paste it into a text file ending in .json.'), () => { t.focus(); t.select(); }); }
+    catch (e) { t.focus(); t.select(); }
+  });
+  // Drop a project file anywhere on the page.
+  const hasFiles = (ev) => ev.dataTransfer && Array.from(ev.dataTransfer.types || []).includes('Files');
+  document.addEventListener('dragover', (ev) => { if (hasFiles(ev)) { ev.preventDefault(); ev.dataTransfer.dropEffect = 'copy'; } });
+  document.addEventListener('drop', (ev) => {
+    if (!hasFiles(ev)) return;
+    ev.preventDefault();
+    openProjectFile(ev.dataTransfer.files && ev.dataTransfer.files[0]);
+  });
+  document.addEventListener('keydown', (ev) => {
+    if (!(ev.ctrlKey || ev.metaKey) || ev.altKey) return;
+    const k = ev.key.toLowerCase();
+    if (k === 's') { ev.preventDefault(); saveProjectFile(); }
+    else if (k === 'o') { ev.preventDefault(); $('#projFile').click(); }
+  });
 
   /* ---------- boot ---------- */
   buildRail();

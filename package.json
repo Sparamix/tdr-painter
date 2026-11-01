@@ -1,11 +1,11 @@
 {
   "name": "tdr-painter",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Paint a TDR impedance profile, drop in parasitics, and see S11, S21, ILD and the power balance update live.",
   "private": true,
   "scripts": {
     "build": "node build.js",
-    "test": "node test/engine.test.js"
+    "test": "node build.js && node test/engine.test.js && node test/privacy.test.js"
   },
   "author": "Giorgi Maghlakelidze <giorgi.snp@pm.me>"
 }
