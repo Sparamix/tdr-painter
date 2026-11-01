@@ -1,0 +1,1441 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>TDR Painter</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: instrument bench. Main column = TDR canvas you paint on, then four frequency views; side rail = setup. */
+:root {
+  --bg: #f2f4f7;
+  --panel: #ffffff;
+  --panel-2: #eef1f5;
+  --line: #d6dce5;
+  --grid: #e5e9ef;
+  --fg: #121826;
+  --fg-2: #4a5263;
+  --fg-3: #788092;
+  --ink: #26318a;          /* the painted profile and the UI accent */
+  --ink-soft: rgba(38, 49, 138, 0.09);
+  --ink-on: #ffffff;
+  --refl: #eb6834;         /* reflection: TDR, S11, reflected power */
+  --trans: #2a78d6;        /* transmission: S21, transmitted power */
+  --port2: #1baf7a;        /* S22 */
+  --dissip: #c3c8d2;
+  --refline: #8a90a0;
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --font-data: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1116; --panel: #161a21; --panel-2: #1c212a; --line: #2b313c; --grid: #232933;
+    --fg: #e8ecf2; --fg-2: #b2b9c5; --fg-3: #858d9b;
+    --ink: #b4bdff; --ink-soft: rgba(180, 189, 255, 0.10); --ink-on: #121640;
+    --refl: #e6763f; --trans: #3987e5; --port2: #199e70; --dissip: #3f4550; --refline: #7b8291;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1116; --panel: #161a21; --panel-2: #1c212a; --line: #2b313c; --grid: #232933;
+  --fg: #e8ecf2; --fg-2: #b2b9c5; --fg-3: #858d9b;
+  --ink: #b4bdff; --ink-soft: rgba(180, 189, 255, 0.10); --ink-on: #121640;
+  --refl: #e6763f; --trans: #3987e5; --port2: #199e70; --dissip: #3f4550; --refline: #7b8291;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-body); font-size: 14px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+.wrap { max-width: 1380px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 14px 24px; }
+.brand { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+h1 {
+  font-family: var(--font-display); font-weight: 800; font-stretch: 118%;
+  font-size: clamp(26px, 4vw, 38px); line-height: 1; letter-spacing: -0.01em; margin: 0;
+  text-wrap: balance;
+}
+h1 span { color: var(--ink); }
+.dek { color: var(--fg-2); margin: 0; max-width: 62ch; }
+.top-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+select, input[type=number] {
+  font: inherit; color: var(--fg); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 8px; padding: 6px 8px; min-height: 34px;
+}
+input[type=number] { font-family: var(--font-data); font-size: 12.5px; width: 82px; font-variant-numeric: tabular-nums; }
+button {
+  font: inherit; font-weight: 500; color: var(--fg); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 8px; padding: 6px 11px; min-height: 34px; cursor: pointer;
+}
+button:hover { border-color: var(--fg-3); }
+button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible, canvas:focus-visible {
+  outline: 2px solid var(--ink); outline-offset: 2px;
+}
+button.primary { background: var(--ink); color: var(--ink-on); border-color: var(--ink); }
+button[aria-pressed="true"] { background: var(--ink); color: var(--ink-on); border-color: var(--ink); }
+button.ghost { background: transparent; }
+button:disabled { opacity: 0.45; cursor: default; }
+
+.app { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 20px; align-items: start; }
+@media (max-width: 1020px) { .app { grid-template-columns: minmax(0, 1fr); } }
+.stage { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+.bench { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.toolrow { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.seg { display: flex; flex-wrap: wrap; gap: 4px; }
+.seg button { padding: 6px 10px; }
+.label-sm { font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-3); font-weight: 600; }
+.brush { display: flex; align-items: center; gap: 8px; }
+.brush output { font-family: var(--font-data); font-size: 12px; color: var(--fg-2); min-width: 52px; font-variant-numeric: tabular-nums; }
+input[type=range] { accent-color: var(--ink); width: 120px; }
+.spacer { flex: 1 1 auto; }
+.addrow button { font-family: var(--font-body); }
+.addrow b { font-family: var(--font-data); font-weight: 500; color: var(--ink); margin-right: 2px; }
+
+.canvas-box { position: relative; width: 100%; }
+#tdr { display: block; width: 100%; height: 340px; touch-action: none; cursor: crosshair; border-radius: 8px; }
+@media (max-width: 640px) { #tdr { height: 280px; } }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--fg-2); }
+.legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+.legend i.dash { background: repeating-linear-gradient(90deg, var(--dc, var(--refline)) 0 4px, transparent 4px 7px) !important; }
+.readout {
+  font-family: var(--font-data); font-size: 12px; color: var(--fg-2); font-variant-numeric: tabular-nums;
+  display: flex; flex-wrap: wrap; gap: 4px 16px; min-height: 18px;
+}
+.readout b { color: var(--fg); font-weight: 500; }
+
+.editor { border-top: 1px dashed var(--line); padding-top: 10px; display: flex; flex-direction: column; gap: 10px; }
+.ed-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.glyph {
+  font-family: var(--font-data); font-weight: 500; font-size: 13px; width: 26px; height: 26px; border-radius: 7px;
+  display: inline-grid; place-items: center; background: var(--ink); color: var(--ink-on);
+}
+.ed-head strong { font-family: var(--font-display); font-stretch: 105%; font-size: 16px; }
+.ed-hint { color: var(--fg-2); font-size: 13px; flex: 1 1 220px; min-width: 0; }
+.ed-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px 18px; }
+.pair { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; }
+.pair label { font-size: 12.5px; color: var(--fg-2); grid-column: 1 / -1; }
+.pair input[type=range] { width: 100%; }
+.pair .num { display: flex; align-items: center; gap: 4px; }
+.pair .unit { font-size: 12px; color: var(--fg-3); min-width: 22px; }
+.empty-ed { color: var(--fg-3); font-size: 13px; }
+
+.freq-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 680px) { .freq-grid { grid-template-columns: minmax(0, 1fr); } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 12px 8px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.card h3 { margin: 0; font-family: var(--font-display); font-stretch: 105%; font-weight: 700; font-size: 15px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.card h3 small { font-family: var(--font-body); font-stretch: 100%; font-weight: 400; font-size: 12px; color: var(--fg-3); }
+.card canvas { display: block; width: 100%; height: 190px; touch-action: pan-y; cursor: crosshair; }
+#fread { padding: 8px 2px 0; }
+
+aside.rail { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.group { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.group h2 { margin: 0; font-family: var(--font-display); font-stretch: 105%; font-weight: 700; font-size: 14px; letter-spacing: 0.01em; }
+.group .note { font-size: 12px; color: var(--fg-3); margin: 0; }
+.check { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--fg-2); }
+.check input { accent-color: var(--ink); width: 16px; height: 16px; }
+.inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+details.notes { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; }
+details.notes summary { cursor: pointer; font-family: var(--font-display); font-stretch: 105%; font-weight: 700; font-size: 14px; }
+details.notes ul { margin: 10px 0 2px; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--fg-2); font-size: 13px; }
+details.notes code { font-family: var(--font-data); font-size: 12px; }
+.toast { font-size: 12.5px; color: var(--fg-2); min-height: 18px; }
+#s2pbox { width: 100%; height: 120px; font-family: var(--font-data); font-size: 11px; background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>TDR <span>Painter</span></h1>
+      <p class="dek">Paint an impedance profile, drop in parasitics, and watch return loss, insertion loss and ILD respond. Every cell of the profile is a short lossy line; the frequency views are the exact cascade.</p>
+    </div>
+    <div class="top-actions">
+      <label class="label-sm" for="preset">Example</label>
+      <select id="preset" aria-label="Load an example"></select>
+      <button id="pin" title="Keep the current curves as a dashed reference">Pin reference</button>
+      <button id="unpin" class="ghost" disabled>Clear reference</button>
+    </div>
+  </header>
+
+  <div class="app">
+    <section class="stage">
+      <div class="bench">
+        <div class="toolrow">
+          <span class="label-sm">Paint</span>
+          <div class="seg" id="tools" role="group" aria-label="Paint tool">
+            <button data-tool="draw" aria-pressed="true" title="Draw the profile freehand">Draw</button>
+            <button data-tool="push" title="Drag up or down to raise or sink a smooth bump">Push / pull</button>
+            <button data-tool="plateau" title="Drag across a span; release sets it to that impedance">Plateau</button>
+            <button data-tool="smooth" title="Soften sharp edges">Smooth</button>
+            <button data-tool="erase" title="Pull back toward the line impedance">Erase</button>
+          </div>
+          <div class="brush">
+            <label class="label-sm" for="brush">Width</label>
+            <input type="range" id="brush" min="5" max="400" step="5" value="60">
+            <output id="brushOut">60 mil</output>
+          </div>
+          <span class="spacer"></span>
+          <div class="seg"><button id="undo" class="ghost">Undo</button><button id="resetProf" class="ghost">Flatten</button></div>
+        </div>
+        <div class="toolrow addrow">
+          <span class="label-sm">Drop in</span>
+          <div class="seg">
+            <button data-add="C"><b>C</b> Shunt C</button>
+            <button data-add="L"><b>L</b> Series L</button>
+            <button data-add="R"><b>R</b> Series R</button>
+            <button data-add="stub"><b>S</b> Open stub</button>
+          </div>
+          <span class="note label-sm" style="text-transform:none;letter-spacing:0;font-weight:400">Drag chips along the strip under the plot</span>
+        </div>
+        <div class="canvas-box">
+          <canvas id="tdr" tabindex="0" aria-label="Impedance profile and simulated TDR. Paint on the plot; drag element chips in the strip below it."></canvas>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--ink)"></i>Painted profile Z(x)</span>
+          <span><i style="background:var(--refl)"></i>TDR a scope would show (from S11)</span>
+          <span id="lgRefT" hidden><i class="dash"></i>Pinned reference</span>
+        </div>
+        <div class="readout" id="tread"></div>
+        <div class="editor" id="editor"></div>
+      </div>
+
+      <div class="freq-grid">
+        <div class="card">
+          <h3>Return loss <small>dB(S11), dB(S22)</small></h3>
+          <canvas id="cRL" aria-label="Return loss versus frequency"></canvas>
+          <div class="legend"><span><i style="background:var(--refl)"></i>S11 (Tx side)</span><span><i class="dash" style="--dc:var(--port2)"></i>S22 (Rx side, dashed)</span><span class="lgRef" hidden><i class="dash"></i>Reference S11</span></div>
+        </div>
+        <div class="card">
+          <h3>Insertion loss <small>dB(S21) and its fit</small></h3>
+          <canvas id="cIL" aria-label="Insertion loss versus frequency"></canvas>
+          <div class="legend"><span><i style="background:var(--trans)"></i>S21</span><span><i class="dash" style="--dc:var(--fg-3)"></i>Fit a0 + a1√f + a2·f + a4·f²</span><span class="lgRef" hidden><i class="dash"></i>Reference S21</span></div>
+        </div>
+        <div class="card">
+          <h3>Insertion loss deviation <small>dB(S21) minus fit</small></h3>
+          <canvas id="cILD" aria-label="Insertion loss deviation versus frequency"></canvas>
+          <div class="legend"><span><i style="background:var(--trans)"></i>ILD (extra loss points down)</span><span class="lgRef" hidden><i class="dash"></i>Reference ILD</span></div>
+        </div>
+        <div class="card">
+          <h3>Where the power goes <small>|S21|² + |S11|² + absorbed = 1</small></h3>
+          <canvas id="cPW" aria-label="Transmitted, reflected and absorbed power fractions versus frequency"></canvas>
+          <div class="legend"><span><i style="background:var(--trans)"></i>Transmitted</span><span><i style="background:var(--refl)"></i>Reflected</span><span><i style="background:var(--dissip)"></i>Absorbed in line and R</span></div>
+        </div>
+      </div>
+      <div class="readout" id="fread"></div>
+    </section>
+
+    <aside class="rail" id="rail"></aside>
+  </div>
+</div>
+
+<script>
+/* TDR Painter engine: impedance profile + lumped elements -> S-parameters -> band-limited TDR.
+ * Model: 1-D TEM cascade. Each profile cell is a uniform lossy line of impedance Z_i.
+ * Dielectric: Djordjevic-Sarkar (causal). Conductor: (1+j)*K*sqrt(f) surface impedance + Rdc.
+ * Per-unit-length R and L scale with Z_i and C scales with 1/Z_i, so gamma is the same in every
+ * cell and only reflections change with the painted impedance.
+ */
+(function (root) {
+  'use strict';
+  const C0 = 299792458;
+  const IN = 0.0254;
+  const TWO_PI = 2 * Math.PI;
+
+  // Djordjevic-Sarkar: eps(f) = eps_inf + d_eps/ln(f2/f1) * ln((f2 + jf)/(f1 + jf)), anchored at (Dk, Df) @ f_ref.
+  // f1/f2 in Hz (scikit-rf convention, defaults 1 kHz / 1 THz).
+  function makeDS(Dk, Df, frefHz, f1, f2) {
+    const s = 1 / Math.log(f2 / f1);
+    function F(f) {
+      const re = 0.5 * Math.log((f2 * f2 + f * f) / (f1 * f1 + f * f));
+      const im = Math.atan2(f, f2) - Math.atan2(f, f1);
+      return [re * s, im * s];
+    }
+    if (Df <= 0) return { epsInf: Dk, dEps: 0, eps: () => [Dk, 0] };
+    const Fr = F(frefHz);
+    const dEps = -Dk * Df / Fr[1];
+    const epsInf = Dk - dEps * Fr[0];
+    return {
+      epsInf, dEps,
+      eps(f) { const Ff = F(f); return [epsInf + dEps * Ff[0], dEps * Ff[1]]; } // im <= 0 (loss)
+    };
+  }
+
+  function csqrt(re, im) {
+    const r = Math.hypot(re, im);
+    const sr = Math.sqrt(Math.max(0, (r + re) / 2));
+    let si = Math.sqrt(Math.max(0, (r - re) / 2));
+    if (im < 0) si = -si;
+    return [sr, si];
+  }
+
+  function besselI0(x) {
+    let sum = 1, term = 1;
+    const q = x * x / 4;
+    for (let k = 1; k < 60; k++) {
+      term *= q / (k * k);
+      sum += term;
+      if (term < 1e-17 * sum) break;
+    }
+    return sum;
+  }
+
+  function nextPow2(n) { let p = 1; while (p < n) p <<= 1; return p; }
+
+  // In-place iterative radix-2 FFT. inverse=true computes the unnormalized inverse.
+  function fft(re, im, inverse) {
+    const n = re.length;
+    for (let i = 1, j = 0; i < n; i++) {
+      let bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) {
+        let t = re[i]; re[i] = re[j]; re[j] = t;
+        t = im[i]; im[i] = im[j]; im[j] = t;
+      }
+    }
+    const sgn = inverse ? 1 : -1;
+    for (let len = 2; len <= n; len <<= 1) {
+      const ang = sgn * TWO_PI / len;
+      const wr = Math.cos(ang), wi = Math.sin(ang);
+      const half = len >> 1;
+      for (let i = 0; i < n; i += len) {
+        let cr = 1, ci = 0;
+        for (let k = 0; k < half; k++) {
+          const a = i + k, b = a + half;
+          const xr = re[b] * cr - im[b] * ci;
+          const xi = re[b] * ci + im[b] * cr;
+          re[b] = re[a] - xr; im[b] = im[a] - xi;
+          re[a] += xr; im[a] += xi;
+          const t = cr * wr - ci * wi;
+          ci = cr * wi + ci * wr; cr = t;
+        }
+      }
+    }
+  }
+
+  /* Derived, frequency-only quantities. Recomputed when line/material/sweep params change. */
+  function prepare(P) {
+    const nf = P.nf;
+    const fmax = P.fmaxGHz * 1e9;
+    const df = fmax / (nf - 1);
+    const f = new Float64Array(nf);
+    for (let k = 0; k < nf; k++) f[k] = k * df;
+    const Dk = P.Dk;
+    const lossless = !!P.lossless;
+    const ds = makeDS(Dk, lossless ? 0 : P.Df, P.frefGHz * 1e9, P.dsLowHz, P.dsHighHz);
+    const sqDk = Math.sqrt(Dk);
+    const Lu = sqDk / C0;                     // H/m per ohm
+    // conductor: alpha_c [Np/m] at fc for the nominal line -> normalized surface impedance coefficient
+    const alphaC = lossless ? 0 : (P.condLoss / 8.685889638) / IN;      // Np/m at condRef
+    const kc = 2 * alphaC / Math.sqrt(P.condRefGHz * 1e9);              // per ohm, * sqrt(f)
+    const rdcN = lossless ? 0 : (P.rdc / IN) / P.z0;                     // per ohm
+    const gRe = new Float64Array(nf), gIm = new Float64Array(nf);        // gamma (1/m)
+    const zRe = new Float64Array(nf), zIm = new Float64Array(nf);        // zeta: Zc / Z_nominal
+    const epsRe = new Float64Array(nf), epsIm = new Float64Array(nf);
+    for (let k = 0; k < nf; k++) {
+      const fk = f[k];
+      const e = ds.eps(fk);
+      epsRe[k] = e[0]; epsIm[k] = e[1];
+      if (k === 0) { gRe[k] = 0; gIm[k] = 0; zRe[k] = 1; zIm[k] = 0; continue; }
+      const w = TWO_PI * fk;
+      const sq = Math.sqrt(fk);
+      // series z per ohm: jwLu + rdcN + (1+j) kc sqrt(f)
+      const sr = rdcN + kc * sq, si = w * Lu + kc * sq;
+      // shunt y per ohm: jw eps / (c sqrt(Dk))
+      const yr = -w * e[1] / (C0 * sqDk), yi = w * e[0] / (C0 * sqDk);
+      const pr = sr * yr - si * yi, pi = sr * yi + si * yr;
+      const g = csqrt(pr, pi);
+      gRe[k] = g[0]; gIm[k] = g[1];
+      const yy = yr * yr + yi * yi;
+      const qr = (sr * yr + si * yi) / yy, qi = (si * yr - sr * yi) / yy;
+      const z = csqrt(qr, qi);
+      zRe[k] = z[0]; zIm[k] = z[1];
+    }
+    // Kaiser half-window over [0, fmax], centered on DC (as a symmetric 2N-1 Kaiser window)
+    const win = new Float64Array(nf);
+    const beta = P.beta, i0b = besselI0(beta);
+    for (let k = 0; k < nf; k++) {
+      const x = f[k] / fmax;
+      win[k] = besselI0(beta * Math.sqrt(Math.max(0, 1 - x * x))) / i0b;
+    }
+    const M = nextPow2(nf * 8);
+    const dt = 1 / (M * df);
+    const t0 = 8 / fmax; // shift so the zero-phase window kernel does not wrap
+    const vRef = C0 / sqDk;
+    return {
+      P, nf, f, df, fmax, ds, gRe, gIm, zRe, zIm, epsRe, epsIm, win, M, dt, t0,
+      vRef, rdcN, kc, Lu,
+      lenM: P.lenIn * IN,
+      buf: { re: new Float64Array(M), im: new Float64Array(M) },
+    };
+  }
+
+  /* Build the ordered cascade: runs of equal-Z cells and lumped elements (expanded by count/pitch). */
+  function buildCascade(prof, elems, P) {
+    const ns = prof.length;
+    const dx = P.lenIn / ns;
+    const ins = [];
+    for (const e of elems) {
+      const n = Math.max(1, e.count | 0);
+      for (let i = 0; i < n; i++) {
+        const x = e.x + i * (e.pitch || 0);
+        if (x < -1e-9 || x > P.lenIn + 1e-9) continue;
+        const b = Math.min(ns, Math.max(0, Math.round(x / dx)));
+        ins.push({ b, e, ord: e.id * 1000 + i });
+      }
+    }
+    ins.sort((a, b) => a.b - b.b || a.ord - b.ord);
+    const items = [];
+    let ii = 0;
+    let i = 0;
+    const q = (z) => Math.round(z * 1000) / 1000;
+    while (i <= ns) {
+      while (ii < ins.length && ins[ii].b === i) { items.push({ kind: 'el', e: ins[ii].e }); ii++; }
+      if (i === ns) break;
+      // extend run until Z changes or the next insertion boundary
+      const nextB = ii < ins.length ? ins[ii].b : ns;
+      const z = q(prof[i]);
+      let j = i + 1;
+      while (j < nextB && q(prof[j]) === z) j++;
+      items.push({ kind: 'line', Z: z, m: j - i });
+      i = j;
+    }
+    const ms = [...new Set(items.filter(t => t.kind === 'line').map(t => t.m))];
+    const mIndex = new Map(ms.map((m, k) => [m, k]));
+    for (const t of items) if (t.kind === 'line') t.mi = mIndex.get(t.m);
+    const stubs = [];
+    const stubKey = new Map();
+    for (const t of items) if (t.kind === 'el' && t.e.type === 'stub') {
+      const key = t.e.stubZ + '|' + t.e.stubLen;
+      if (!stubKey.has(key)) { stubKey.set(key, stubs.length); stubs.push({ Z: t.e.stubZ, lenM: t.e.stubLen * 1e-3 * IN }); }
+      t.si = stubKey.get(key);
+    }
+    return { items, ms, stubs, dxM: dx * IN };
+  }
+
+  /* S-parameters for the cascade at every frequency. */
+  function solve(prep, casc) {
+    const { nf, f, gRe, gIm, zRe, zIm, rdcN } = prep;
+    const P = prep.P;
+    const Z1 = P.zTx, Z2 = P.zRx;
+    const out = {
+      s11r: new Float64Array(nf), s11i: new Float64Array(nf),
+      s21r: new Float64Array(nf), s21i: new Float64Array(nf),
+      s22r: new Float64Array(nf), s22i: new Float64Array(nf),
+    };
+    const nm = casc.ms.length;
+    const chR = new Float64Array(nm), chI = new Float64Array(nm), shR = new Float64Array(nm), shI = new Float64Array(nm);
+    const nst = casc.stubs.length;
+    const syR = new Float64Array(nst), syI = new Float64Array(nst);
+    const items = casc.items;
+    const dxM = casc.dxM;
+    const sq12 = Math.sqrt(Z1 * Z2);
+    for (let k = 0; k < nf; k++) {
+      const w = TWO_PI * f[k];
+      const dc = k === 0;
+      if (!dc) {
+        for (let q = 0; q < nm; q++) {
+          const len = casc.ms[q] * dxM;
+          const a = gRe[k] * len, b = gIm[k] * len;
+          const ea = Math.exp(a), eb = 1 / ea;
+          const cha = 0.5 * (ea + eb), sha = 0.5 * (ea - eb);
+          const cb = Math.cos(b), sb = Math.sin(b);
+          chR[q] = cha * cb; chI[q] = sha * sb;
+          shR[q] = sha * cb; shI[q] = cha * sb;
+        }
+        for (let q = 0; q < nst; q++) {
+          // open stub: Y = tanh(gamma l) / (Zs * zeta)
+          const len = casc.stubs[q].lenM;
+          const a = gRe[k] * len, b = gIm[k] * len;
+          const ea = Math.exp(a), eb = 1 / ea;
+          const cha = 0.5 * (ea + eb), sha = 0.5 * (ea - eb);
+          const cb = Math.cos(b), sb = Math.sin(b);
+          const cr = cha * cb, ci = sha * sb, sr = sha * cb, si = cha * sb;
+          const den = cr * cr + ci * ci;
+          const tr = (sr * cr + si * ci) / den, ti = (si * cr - sr * ci) / den;
+          const Zr = casc.stubs[q].Z * zRe[k], Zi = casc.stubs[q].Z * zIm[k];
+          const d2 = Zr * Zr + Zi * Zi;
+          syR[q] = (tr * Zr + ti * Zi) / d2; syI[q] = (ti * Zr - tr * Zi) / d2;
+        }
+      }
+      // accumulated ABCD
+      let ar = 1, ai = 0, br = 0, bi = 0, cr = 0, ci = 0, dr = 1, di = 0;
+      for (let t = 0; t < items.length; t++) {
+        const it = items[t];
+        if (it.kind === 'line') {
+          if (dc) {
+            const R = it.Z * rdcN * it.m * dxM; // series Rdc
+            br += ar * R; bi += ai * R; dr += cr * R; di += ci * R;
+            continue;
+          }
+          const q = it.mi;
+          const Ar = chR[q], Ai = chI[q];
+          const Zcr = it.Z * zRe[k], Zci = it.Z * zIm[k];
+          const Br = Zcr * shR[q] - Zci * shI[q], Bi = Zcr * shI[q] + Zci * shR[q];
+          const zz = Zcr * Zcr + Zci * Zci;
+          const Cr = (shR[q] * Zcr + shI[q] * Zci) / zz, Ci = (shI[q] * Zcr - shR[q] * Zci) / zz;
+          // [a b; c d] * [A B; C A]
+          const nar = ar * Ar - ai * Ai + br * Cr - bi * Ci;
+          const nai = ar * Ai + ai * Ar + br * Ci + bi * Cr;
+          const nbr = ar * Br - ai * Bi + br * Ar - bi * Ai;
+          const nbi = ar * Bi + ai * Br + br * Ai + bi * Ar;
+          const ncr = cr * Ar - ci * Ai + dr * Cr - di * Ci;
+          const nci = cr * Ai + ci * Ar + dr * Ci + di * Cr;
+          const ndr = cr * Br - ci * Bi + dr * Ar - di * Ai;
+          const ndi = cr * Bi + ci * Br + dr * Ai + di * Ar;
+          ar = nar; ai = nai; br = nbr; bi = nbi; cr = ncr; ci = nci; dr = ndr; di = ndi;
+        } else {
+          const e = it.e;
+          let sZr = 0, sZi = 0, sYr = 0, sYi = 0, series = false;
+          if (e.type === 'R') { series = true; sZr = e.value; }
+          else if (e.type === 'L') { series = true; sZi = w * e.value * 1e-9; }
+          else if (e.type === 'C') { sYi = w * e.value * 1e-12; }
+          else if (e.type === 'stub') { if (!dc) { sYr = syR[it.si]; sYi = syI[it.si]; } }
+          if (series) {
+            // [a b; c d] * [1 Z; 0 1] -> b += a Z, d += c Z
+            br += ar * sZr - ai * sZi; bi += ar * sZi + ai * sZr;
+            dr += cr * sZr - ci * sZi; di += cr * sZi + ci * sZr;
+          } else {
+            // [a b; c d] * [1 0; Y 1] -> a += b Y, c += d Y
+            ar += br * sYr - bi * sYi; ai += br * sYi + bi * sYr;
+            cr += dr * sYr - di * sYi; ci += dr * sYi + di * sYr;
+          }
+        }
+      }
+      // ABCD -> S with real reference impedances Z1 (port 1) and Z2 (port 2)
+      const Dr = ar * Z2 + br + cr * Z1 * Z2 + dr * Z1;
+      const Di = ai * Z2 + bi + ci * Z1 * Z2 + di * Z1;
+      const den = Dr * Dr + Di * Di;
+      const n11r = ar * Z2 + br - cr * Z1 * Z2 - dr * Z1;
+      const n11i = ai * Z2 + bi - ci * Z1 * Z2 - di * Z1;
+      out.s11r[k] = (n11r * Dr + n11i * Di) / den; out.s11i[k] = (n11i * Dr - n11r * Di) / den;
+      const n22r = -ar * Z2 + br - cr * Z1 * Z2 + dr * Z1;
+      const n22i = -ai * Z2 + bi - ci * Z1 * Z2 + di * Z1;
+      out.s22r[k] = (n22r * Dr + n22i * Di) / den; out.s22i[k] = (n22i * Dr - n22r * Di) / den;
+      out.s21r[k] = 2 * sq12 * Dr / den; out.s21i[k] = -2 * sq12 * Di / den;
+    }
+    return out;
+  }
+
+  /* Band-limited TDR step response (rho) from S11 via Kaiser-windowed inverse FFT. */
+  function tdr(prep, sr, si, tMaxRT) {
+    const { nf, f, win, M, dt, t0 } = prep;
+    const re = prep.buf.re, im = prep.buf.im;
+    re.fill(0); im.fill(0);
+    for (let k = 0; k < nf; k++) {
+      const ph = -TWO_PI * f[k] * t0;
+      const c = Math.cos(ph), s = Math.sin(ph);
+      const xr = (sr[k] * c - si[k] * s) * win[k];
+      const xi = (sr[k] * s + si[k] * c) * win[k];
+      re[k] = xr; im[k] = k === 0 ? 0 : xi;
+      if (k > 0) { re[M - k] = xr; im[M - k] = -xi; }
+    }
+    fft(re, im, true);
+    const n0 = Math.round(t0 / dt);
+    const nOut = Math.min(M - 1, n0 + Math.ceil(tMaxRT / dt) + 1);
+    const t = new Float64Array(nOut), rho = new Float64Array(nOut);
+    let acc = 0;
+    for (let n = 0; n < nOut; n++) {
+      acc += re[n] / M;
+      t[n] = n * dt - t0;
+      rho[n] = acc;
+    }
+    return { t, rho };
+  }
+
+  /* 10-90 % rise time of the windowed step (S11 = 1). */
+  function riseTime(prep) {
+    const one = new Float64Array(prep.nf).fill(1), zero = new Float64Array(prep.nf);
+    const r = tdr(prep, one, zero, 20 / prep.fmax);
+    let t10 = NaN, t90 = NaN;
+    for (let n = 1; n < r.rho.length; n++) {
+      if (isNaN(t10) && r.rho[n] >= 0.1) t10 = r.t[n - 1] + (0.1 - r.rho[n - 1]) / (r.rho[n] - r.rho[n - 1]) * (r.t[n] - r.t[n - 1]);
+      if (isNaN(t90) && r.rho[n] >= 0.9) { t90 = r.t[n - 1] + (0.9 - r.rho[n - 1]) / (r.rho[n] - r.rho[n - 1]) * (r.t[n] - r.t[n - 1]); break; }
+    }
+    return t90 - t10;
+  }
+
+  /* Least-squares fit IL(f) = a0 + a1 sqrt(f) + a2 f + a4 f^2 (f in GHz) over (0, fmax]; returns fit and ILD. */
+  function ildFit(f, ilDb) {
+    const n = f.length;
+    const A = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], b = [0, 0, 0, 0];
+    const basis = (x) => [1, Math.sqrt(x), x, x * x];
+    for (let k = 1; k < n; k++) {
+      const x = f[k] / 1e9, v = basis(x);
+      for (let i = 0; i < 4; i++) { b[i] += v[i] * ilDb[k]; for (let j = 0; j < 4; j++) A[i][j] += v[i] * v[j]; }
+    }
+    // Gaussian elimination with partial pivoting
+    for (let c = 0; c < 4; c++) {
+      let p = c;
+      for (let r = c + 1; r < 4; r++) if (Math.abs(A[r][c]) > Math.abs(A[p][c])) p = r;
+      [A[c], A[p]] = [A[p], A[c]]; [b[c], b[p]] = [b[p], b[c]];
+      for (let r = c + 1; r < 4; r++) {
+        const m = A[r][c] / A[c][c];
+        for (let j = c; j < 4; j++) A[r][j] -= m * A[c][j];
+        b[r] -= m * b[c];
+      }
+    }
+    const a = [0, 0, 0, 0];
+    for (let c = 3; c >= 0; c--) { let s = b[c]; for (let j = c + 1; j < 4; j++) s -= A[c][j] * a[j]; a[c] = s / A[c][c]; }
+    const fit = new Float64Array(n), ild = new Float64Array(n);
+    for (let k = 0; k < n; k++) {
+      const v = basis(f[k] / 1e9);
+      fit[k] = a[0] * v[0] + a[1] * v[1] + a[2] * v[2] + a[3] * v[3];
+      ild[k] = k === 0 ? NaN : ilDb[k] - fit[k];
+    }
+    return { a, fit, ild };
+  }
+
+  /* Equivalent lumped L or C of painted excursions (HP Journal / Dascher TDR area method). */
+  function excursions(prof, P, thresh) {
+    const ns = prof.length, z0 = P.z0;
+    const tauSeg = (P.lenIn * IN / ns) * Math.sqrt(P.Dk) / C0; // one-way delay per cell
+    const out = [];
+    let i = 0;
+    while (i < ns) {
+      if (Math.abs(prof[i] - z0) <= thresh) { i++; continue; }
+      const sign = Math.sign(prof[i] - z0);
+      let j = i, area = 0, peak = 0, sumZ = 0;
+      while (j < ns && Math.abs(prof[j] - z0) > thresh && Math.sign(prof[j] - z0) === sign) {
+        const rho = (prof[j] - z0) / (prof[j] + z0);
+        area += rho * 2 * tauSeg; // integral of rho over round-trip time
+        if (Math.abs(prof[j] - z0) > Math.abs(peak - z0) || peak === 0) peak = prof[j];
+        sumZ += prof[j];
+        j++;
+      }
+      out.push({
+        i0: i, i1: j, sign, peak, avgZ: sumZ / (j - i),
+        delay: (j - i) * tauSeg,
+        L: area > 0 ? 2 * z0 * area : 0,          // H
+        C: area < 0 ? -2 * area / z0 : 0,         // F
+      });
+      i = j;
+    }
+    return out;
+  }
+
+  const api = { C0, IN, makeDS, prepare, buildCascade, solve, tdr, riseTime, ildFit, excursions, fft, besselI0 };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.TDREngine = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+(function () {
+  'use strict';
+  const E = window.TDREngine;
+  const IN = E.IN, C0 = E.C0;
+  const NS = 500;
+  const $ = (s) => document.querySelector(s);
+
+  const DEFAULTS = {
+    lenIn: 2, z0: 50, Dk: 3.35, Df: 0.004, frefGHz: 12, dsLowHz: 1e3, dsHighHz: 1e12,
+    condLoss: 0.4, condRefGHz: 10, rdc: 0.2, fmaxGHz: 50, nf: 1001,
+    zTx: 50, zRx: 50, beta: 4.2, lossless: false,
+  };
+  const state = {
+    P: { ...DEFAULTS },
+    prof: new Float64Array(NS).fill(50),
+    elems: [], nextId: 1, selId: null,
+    tool: 'draw', brushMil: 60,
+    zMin: 30, zMax: 70,
+    ref: null, undo: [],
+    cursorF: null, hover: null,
+    drag: null, plateau: null,
+  };
+  let prep = null, prepKey = '', riseT = NaN, R = null;
+
+  /* ---------- profile helpers ---------- */
+  const cellX = (i) => (i + 0.5) / NS * state.P.lenIn;
+  const idxOf = (x) => Math.max(0, Math.min(NS - 1, Math.floor(x / state.P.lenIn * NS)));
+  const clampZ = (z) => Math.max(5, Math.min(200, z));
+  function bump(xc, wIn, dz) {
+    const s = wIn / 2;
+    for (let i = 0; i < NS; i++) { const u = (cellX(i) - xc) / s; if (Math.abs(u) < 4) state.prof[i] = clampZ(state.prof[i] + dz * Math.exp(-0.5 * u * u)); }
+  }
+  function plateau(xa, xb, level, ramp) {
+    if (xb < xa) [xa, xb] = [xb, xa];
+    const span = xb - xa;
+    const r = Math.max(1e-6, Math.min(ramp, span / 3));
+    for (let i = 0; i < NS; i++) {
+      const x = cellX(i);
+      if (x < xa || x > xb) continue;
+      let sh = 1;
+      if (x < xa + r) sh = (x - xa) / r; else if (x > xb - r) sh = (xb - x) / r;
+      state.prof[i] = clampZ(state.prof[i] + (level - state.prof[i]) * sh);
+    }
+  }
+  function el(type, x, extra) {
+    const base = { C: { value: 0.15 }, L: { value: 0.3 }, R: { value: 2 }, stub: { value: 0, stubZ: 45, stubLen: 60 } }[type];
+    return { id: state.nextId++, type, x, count: 1, pitch: 0.15, ...base, ...extra };
+  }
+
+  /* ---------- examples ---------- */
+  const PRESETS = [
+    { name: 'Board launch + via stub', run() {
+      bump(0.07, 0.06, -8); bump(0.16, 0.05, 7);
+      bump(state.P.lenIn - 0.07, 0.06, -8); bump(state.P.lenIn - 0.16, 0.05, 7);
+      const x = state.P.lenIn / 2;
+      state.elems.push(el('C', x, { value: 0.08 }), el('stub', x, { stubZ: 45, stubLen: 60 }));
+    } },
+    { name: 'Clean 50 Ω line', run() {} },
+    { name: '45 Ω trace (impedance tolerance)', run() { state.prof.fill(45); } },
+    { name: 'Via with 60 mil stub', run() { const x = state.P.lenIn / 2; state.elems.push(el('C', x, { value: 0.08 }), el('stub', x, { stubLen: 60 })); } },
+    { name: 'Periodic loading, 12 × 0.06 pF', run() { state.elems.push(el('C', 0.15, { value: 0.06, count: 12, pitch: 0.15 })); } },
+    { name: 'Bad probe contact, 4 Ω', run() { state.elems.push(el('R', 0.02, { value: 4 })); } },
+    { name: 'Rx pad capacitance, 0.25 pF', run() { state.elems.push(el('C', state.P.lenIn, { value: 0.25 })); } },
+    { name: 'Painted taper 50 → 40 → 50 Ω', run() { plateau(0.4, 1.6, 40, 0.4); } },
+  ];
+  function loadPreset(k) {
+    pushUndo();
+    state.prof.fill(state.P.z0);
+    state.elems = []; state.selId = null;
+    PRESETS[k].run();
+    autoRange(true);
+    renderEditor(); schedule();
+  }
+
+  /* ---------- undo ---------- */
+  function pushUndo() {
+    state.undo.push({ prof: state.prof.slice(), elems: JSON.stringify(state.elems), selId: state.selId });
+    if (state.undo.length > 60) state.undo.shift();
+  }
+  function undo() {
+    const u = state.undo.pop(); if (!u) return;
+    state.prof = u.prof; state.elems = JSON.parse(u.elems); state.selId = u.selId;
+    renderEditor(); schedule();
+  }
+
+  /* ---------- compute ---------- */
+  function compute() {
+    const P = state.P;
+    const key = JSON.stringify([P.lenIn, P.z0, P.Dk, P.Df, P.frefGHz, P.dsLowHz, P.dsHighHz, P.condLoss, P.condRefGHz, P.rdc, P.fmaxGHz, P.nf, P.beta, P.lossless]);
+    if (key !== prepKey) { prep = E.prepare(P); prepKey = key; riseT = E.riseTime(prep); }
+    prep.P = P;
+    const t0 = performance.now();
+    const casc = E.buildCascade(state.prof, state.elems, P);
+    const s = E.solve(prep, casc);
+    const xr = xRange();
+    const tMax = 2 * xr[1] * IN / prep.vRef + 20e-12;
+    const td = E.tdr(prep, s.s11r, s.s11i, tMax);
+    const nf = prep.nf;
+    const s11db = new Float64Array(nf), s22db = new Float64Array(nf), s21db = new Float64Array(nf);
+    const pT = new Float64Array(nf), pR = new Float64Array(nf);
+    for (let k = 0; k < nf; k++) {
+      const a = s.s11r[k] ** 2 + s.s11i[k] ** 2, b = s.s21r[k] ** 2 + s.s21i[k] ** 2, c = s.s22r[k] ** 2 + s.s22i[k] ** 2;
+      s11db[k] = 10 * Math.log10(Math.max(a, 1e-14)); s21db[k] = 10 * Math.log10(Math.max(b, 1e-14)); s22db[k] = 10 * Math.log10(Math.max(c, 1e-14));
+      pT[k] = b; pR[k] = a;
+    }
+    const fit = E.ildFit(prep.f, s21db);
+    const tx = new Float64Array(td.t.length), tz = new Float64Array(td.t.length);
+    for (let n = 0; n < td.t.length; n++) {
+      tx[n] = td.t[n] / 2 * prep.vRef / IN;
+      const r = Math.max(-0.999, Math.min(0.999, td.rho[n]));
+      tz[n] = P.zTx * (1 + r) / (1 - r);
+    }
+    R = { s, f: prep.f, s11db, s22db, s21db, fit: fit.fit, ild: fit.ild, pT, pR, tx, tz, ms: performance.now() - t0, ex: E.excursions(state.prof, P, 0.25) };
+  }
+
+  let raf = 0, dirty = true;
+  function schedule(onlyDraw) { if (!onlyDraw) dirty = true; if (!raf) raf = requestAnimationFrame(frame); }
+  function frame() {
+    raf = 0;
+    if (dirty) { compute(); dirty = false; }
+    drawAll();
+  }
+
+  /* ---------- drawing utils ---------- */
+  let TK = {};
+  function readTokens() {
+    const cs = getComputedStyle(document.documentElement);
+    for (const k of ['bg', 'panel', 'panel-2', 'line', 'grid', 'fg', 'fg-2', 'fg-3', 'ink', 'ink-soft', 'refl', 'trans', 'port2', 'dissip', 'refline'])
+      TK[k] = cs.getPropertyValue('--' + k).trim();
+  }
+  const FONT_DATA = '10.5px "JetBrains Mono", ui-monospace, Menlo, monospace';
+  const FONT_DATA_B = '500 11px "JetBrains Mono", ui-monospace, Menlo, monospace';
+  function setup(cv) {
+    const r = cv.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(50, Math.round(r.width)), h = Math.max(50, Math.round(r.height));
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    return { ctx, w, h };
+  }
+  function ticks(min, max, n) {
+    const span = max - min; if (!(span > 0)) return [min];
+    const raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const st = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => span / s <= n) || 10 * mag;
+    const out = []; for (let v = Math.ceil(min / st - 1e-9) * st; v <= max + 1e-9; v += st) out.push(Math.abs(v) < st * 1e-9 ? 0 : v);
+    return out;
+  }
+  const fmt = (v, d) => (Math.abs(v) < 1e-12 ? 0 : v).toFixed(d);
+  function frameXY(w, h, m, xmin, xmax, ymin, ymax) {
+    const x0 = m.l, x1 = w - m.r, y0 = m.t, y1 = h - m.b;
+    return {
+      x0, x1, y0, y1,
+      X: (v) => x0 + (v - xmin) / (xmax - xmin) * (x1 - x0),
+      Y: (v) => y1 - (v - ymin) / (ymax - ymin) * (y1 - y0),
+      xi: (px) => xmin + (px - x0) / (x1 - x0) * (xmax - xmin),
+      yi: (py) => ymin + (y1 - py) / (y1 - y0) * (ymax - ymin),
+      xmin, xmax, ymin, ymax,
+    };
+  }
+  function grid(ctx, F, xt, yt, xfmt, yfmt, xUnit) {
+    ctx.save();
+    ctx.lineWidth = 1; ctx.strokeStyle = TK.grid;
+    ctx.beginPath();
+    for (const v of xt) { const x = Math.round(F.X(v)) + 0.5; ctx.moveTo(x, F.y0); ctx.lineTo(x, F.y1); }
+    for (const v of yt) { const y = Math.round(F.Y(v)) + 0.5; ctx.moveTo(F.x0, y); ctx.lineTo(F.x1, y); }
+    ctx.stroke();
+    ctx.fillStyle = TK['fg-3']; ctx.font = FONT_DATA; ctx.textBaseline = 'top';
+    const W = ctx.canvas.width / (window.devicePixelRatio || 1);
+    xt.forEach((v, i) => {
+      const txt = xfmt(v) + (xUnit && i === xt.length - 1 ? ' ' + xUnit : '');
+      const tw = ctx.measureText(txt).width, x = F.X(v);
+      if (x + tw / 2 > W - 2) { ctx.textAlign = 'right'; ctx.fillText(txt, W - 2, F.y1 + 5); }
+      else { ctx.textAlign = 'center'; ctx.fillText(txt, x, F.y1 + 5); }
+    });
+    const ystep = yt.length > 1 ? Math.abs(yt[1] - yt[0]) : 1;
+    const yd = yfmt === 'auto' ? (ystep >= 1 ? 0 : ystep >= 0.1 ? 1 : 2) : null;
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (const v of yt) ctx.fillText(yd != null ? fmt(v, yd) : yfmt(v), F.x0 - 6, F.Y(v));
+    ctx.restore();
+  }
+  function polyline(ctx, F, xs, ys, color, width, dash, from) {
+    ctx.save();
+    ctx.beginPath(); ctx.rect(F.x0, F.y0 - 1, F.x1 - F.x0, F.y1 - F.y0 + 2); ctx.clip();
+    ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    if (dash) ctx.setLineDash(dash);
+    ctx.beginPath();
+    let pen = false;
+    for (let i = from || 0; i < xs.length; i++) {
+      const y = ys[i]; if (!isFinite(y)) { pen = false; continue; }
+      const px = F.X(xs[i]), py = Math.max(F.y0 - 20, Math.min(F.y1 + 20, F.Y(y)));
+      if (!pen) { ctx.moveTo(px, py); pen = true; } else ctx.lineTo(px, py);
+    }
+    ctx.stroke(); ctx.restore();
+  }
+
+  /* ---------- TDR canvas ---------- */
+  const tdrCv = $('#tdr');
+  const LANE = 50, XLAB = 20;
+  function xRange() { const L = state.P.lenIn; return [-0.07 * L, 1.14 * L]; }
+  let TF = null;
+  function drawTDR() {
+    const { ctx, w, h } = setup(tdrCv);
+    const P = state.P, L = P.lenIn;
+    const [xmin, xmax] = xRange();
+    const m = { l: 42, r: 12, t: 22, b: LANE + XLAB };
+    const F = frameXY(w, h, m, xmin, xmax, state.zMin, state.zMax);
+    TF = F;
+    // line region shade
+    ctx.fillStyle = TK['panel-2'];
+    ctx.fillRect(F.X(0), F.y0, F.X(L) - F.X(0), F.y1 - F.y0);
+    const xt = ticks(0, L, Math.max(3, Math.floor((F.x1 - F.x0) / 70)));
+    const yt = ticks(state.zMin, state.zMax, Math.max(3, Math.floor((F.y1 - F.y0) / 40)));
+    const xd = L >= 2 ? 1 : 2;
+    grid(ctx, F, xt, yt, (v) => fmt(v, xd), 'auto');
+    // axis titles
+    ctx.fillStyle = TK['fg-3']; ctx.font = FONT_DATA;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('Ω', 6, F.y0 - 16);
+    ctx.textAlign = 'right';
+    ctx.fillText('in', F.x1, F.y1 + 5);
+    // top axis: round-trip time
+    const tps = (x) => 2 * x * IN / (C0 / Math.sqrt(P.Dk)) * 1e12;
+    const tt = ticks(0, tps(xmax), Math.max(3, Math.floor((F.x1 - F.x0) / 80)));
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    const capW = ctx.measureText('ps round trip').width + 26;
+    for (const v of tt) { const x = F.X(v / tps(1)); if (x > F.x0 + 10 && x < F.x1 - capW) ctx.fillText(v.toFixed(0), x, F.y0 - 4); }
+    ctx.textAlign = 'right'; ctx.fillText('ps round trip', F.x1, F.y0 - 4);
+    // ports
+    ctx.save();
+    ctx.setLineDash([3, 4]); ctx.strokeStyle = TK['fg-3']; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(F.x0, F.Y(P.zTx)); ctx.lineTo(F.X(0), F.Y(P.zTx));
+    ctx.moveTo(F.X(L), F.Y(P.zRx)); ctx.lineTo(F.x1, F.Y(P.zRx)); ctx.stroke();
+    ctx.restore();
+    ctx.font = FONT_DATA; ctx.fillStyle = TK['fg-3']; ctx.textBaseline = 'bottom'; ctx.textAlign = 'left';
+    const lblY = (z) => Math.max(F.y0 + 12, Math.min(F.y1 - 2, F.Y(z) - 4));
+    ctx.fillText('Tx', F.x0 + 3, lblY(P.zTx));
+    ctx.textAlign = 'right'; ctx.fillText('Rx ' + fmt(P.zRx, 0), F.x1 - 2, lblY(P.zRx));
+    // element guide lines
+    ctx.save();
+    for (const e of state.elems) {
+      const n = Math.max(1, e.count | 0);
+      for (let i = 0; i < n; i++) {
+        const x = e.x + i * (e.pitch || 0); if (x > L + 1e-9) break;
+        const px = Math.round(F.X(x)) + 0.5;
+        ctx.strokeStyle = e.id === state.selId ? TK.ink : TK['fg-3'];
+        ctx.globalAlpha = e.id === state.selId ? 0.55 : 0.28;
+        ctx.setLineDash([2, 3]); ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(px, F.y0); ctx.lineTo(px, h - LANE + 4); ctx.stroke();
+      }
+    }
+    ctx.restore();
+    // reference TDR
+    if (state.ref) polyline(ctx, F, state.ref.tx, state.ref.tz, TK.refline, 1.5, [5, 4]);
+    // painted fill + line
+    ctx.save();
+    ctx.beginPath(); ctx.rect(F.x0, F.y0, F.x1 - F.x0, F.y1 - F.y0); ctx.clip();
+    const yz0 = F.Y(P.z0);
+    ctx.beginPath(); ctx.moveTo(F.X(0), yz0);
+    for (let i = 0; i < NS; i++) { ctx.lineTo(F.X(i / NS * L), F.Y(state.prof[i])); ctx.lineTo(F.X((i + 1) / NS * L), F.Y(state.prof[i])); }
+    ctx.lineTo(F.X(L), yz0); ctx.closePath();
+    ctx.fillStyle = TK['ink-soft']; ctx.fill();
+    ctx.restore();
+    const px = [], pz = [];
+    for (let i = 0; i < NS; i++) { px.push(i / NS * L, (i + 1) / NS * L); pz.push(state.prof[i], state.prof[i]); }
+    polyline(ctx, F, px, pz, TK.ink, 2.5);
+    // simulated TDR
+    if (R) polyline(ctx, F, R.tx, R.tz, TK.refl, 2);
+    // plateau preview
+    if (state.plateau && state.plateau.x1 != null) {
+      const p = state.plateau;
+      ctx.save(); ctx.setLineDash([4, 3]); ctx.strokeStyle = TK.ink; ctx.lineWidth = 1.5;
+      const a = F.X(Math.max(0, Math.min(p.x0, p.x1))), b = F.X(Math.min(L, Math.max(p.x0, p.x1)));
+      ctx.strokeRect(a, Math.min(F.Y(p.z), yz0), b - a, Math.abs(F.Y(p.z) - yz0));
+      ctx.fillStyle = TK.ink; ctx.font = FONT_DATA_B; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillText(fmt(p.z, 1) + ' Ω', (a + b) / 2, F.Y(p.z) - 4);
+      ctx.restore();
+    }
+    // excursion labels
+    if (R && !state.plateau) {
+      ctx.save(); ctx.font = FONT_DATA_B; ctx.textAlign = 'center';
+      const lastPx = { '1': -1e9, '-1': -1e9 }; let shown = 0;
+      for (const ex of R.ex) {
+        if (shown >= 10) break;
+        const xc = cellX(Math.round((ex.i0 + ex.i1 - 1) / 2));
+        const cx = F.X(xc); if (cx - lastPx[ex.sign] < 70) continue;
+        let txt;
+        if (ex.delay < 30e-12) txt = ex.sign > 0 ? '≈' + (ex.L * 1e9).toFixed(2) + ' nH' : '≈' + (ex.C * 1e12).toFixed(3) + ' pF';
+        else txt = fmt(ex.avgZ, 1) + ' Ω · ' + fmt((ex.i1 - ex.i0) / NS * L * 1000, 0) + ' mil';
+        const yp = F.Y(ex.peak);
+        const y = ex.sign > 0 ? Math.max(F.y0 + 12, yp - 8) : Math.min(F.y1 - 4, yp + 18);
+        ctx.fillStyle = TK.ink; ctx.textBaseline = 'alphabetic';
+        ctx.fillText(txt, Math.max(F.x0 + 30, Math.min(F.x1 - 30, cx)), y);
+        lastPx[ex.sign] = cx; shown++;
+      }
+      ctx.restore();
+    }
+    // hover crosshair
+    if (state.hover && !state.drag && !state.painting) {
+      const hx = F.X(state.hover.x);
+      ctx.save(); ctx.strokeStyle = TK['fg-3']; ctx.globalAlpha = 0.6; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(Math.round(hx) + 0.5, F.y0); ctx.lineTo(Math.round(hx) + 0.5, F.y1); ctx.stroke(); ctx.restore();
+    }
+    // lane
+    const ly0 = h - LANE + 4, ly1 = h - 4;
+    ctx.fillStyle = TK['panel-2'];
+    roundRect(ctx, F.x0, ly0, F.x1 - F.x0, ly1 - ly0, 6); ctx.fill();
+    ctx.fillStyle = TK['fg-3']; ctx.font = FONT_DATA; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText('elem', F.x0 - 6, (ly0 + ly1) / 2);
+    state.chips = [];
+    ctx.font = FONT_DATA_B; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+    // copies (ticks) first
+    for (const e of state.elems) {
+      const n = Math.max(1, e.count | 0);
+      for (let i = 1; i < n; i++) {
+        const x = e.x + i * (e.pitch || 0); if (x > L + 1e-9) break;
+        ctx.fillStyle = e.id === state.selId ? TK.ink : TK['fg-3'];
+        ctx.globalAlpha = 0.55; ctx.fillRect(F.X(x) - 1, ly0 + 6, 2, ly1 - ly0 - 12); ctx.globalAlpha = 1;
+      }
+    }
+    // lay chips out in up to two rows so co-located elements stay visible
+    const lay = state.elems.map(e => { const label = chipLabel(e); const cw = ctx.measureText(label).width + 14; return { e, label, cw, cx: F.X(e.x) }; })
+      .sort((a, b) => a.cx - b.cx);
+    const ends = [-1e9, -1e9];
+    for (const c of lay) {
+      if (c.cx - c.cw / 2 > ends[0] + 3) c.row = 0; else if (c.cx - c.cw / 2 > ends[1] + 3) c.row = 1; else c.row = ends[0] <= ends[1] ? 0 : 1;
+      ends[c.row] = Math.max(ends[c.row], c.cx + c.cw / 2);
+    }
+    const twoRows = lay.some(c => c.row === 1);
+    const mid = (ly0 + ly1) / 2;
+    lay.sort((a, b) => (a.e.id === state.selId) - (b.e.id === state.selId));
+    for (const c of lay) {
+      const e = c.e, sel = e.id === state.selId;
+      const cy = twoRows ? (c.row ? mid + 10 : mid - 10) : mid;
+      const hh = twoRows ? 18 : 22;
+      ctx.fillStyle = sel ? TK.ink : TK.panel;
+      ctx.strokeStyle = sel ? TK.ink : TK['fg-3']; ctx.lineWidth = 1;
+      roundRect(ctx, c.cx - c.cw / 2, cy - hh / 2, c.cw, hh, 5); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = sel ? TK.panel : TK.fg;
+      ctx.fillText(c.label, c.cx, cy + 0.5);
+      state.chips.push({ id: e.id, x0: c.cx - c.cw / 2, x1: c.cx + c.cw / 2, y0: cy - hh / 2 - 2, y1: cy + hh / 2 + 2 });
+    }
+    if (!state.elems.length) {
+      ctx.fillStyle = TK['fg-3']; ctx.font = FONT_DATA; ctx.textAlign = 'left';
+      ctx.fillText('Use “Drop in” to add a shunt C, series L, series R or open stub', F.x0 + 10, (ly0 + ly1) / 2);
+    }
+  }
+  function chipLabel(e) {
+    const tag = e.count > 1 ? ' ×' + e.count : '';
+    if (e.type === 'C') return 'C ' + trimNum(e.value) + 'p' + tag;
+    if (e.type === 'L') return 'L ' + trimNum(e.value) + 'n' + tag;
+    if (e.type === 'R') return 'R ' + trimNum(e.value) + 'Ω' + tag;
+    return 'S ' + trimNum(e.stubLen) + 'mil' + tag;
+  }
+  function trimNum(v) { return (+v.toFixed(3)).toString().replace(/^0\./, '.'); }
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+
+  /* ---------- frequency plots ---------- */
+  const FM = { l: 42, r: 10, t: 8, b: 22 };
+  const FREQ = {};
+  function fPlot(id, ymin, ymax, ydec, drawFn) {
+    const cv = $(id);
+    const { ctx, w, h } = setup(cv);
+    const fmax = state.P.fmaxGHz;
+    const F = frameXY(w, h, FM, 0, fmax, ymin, ymax);
+    FREQ[id] = F;
+    const xt = ticks(0, fmax, Math.max(3, Math.floor((F.x1 - F.x0) / 60)));
+    const yt = ticks(ymin, ymax, Math.max(3, Math.floor((F.y1 - F.y0) / 34)));
+    grid(ctx, F, xt, yt, (v) => fmt(v, 0), 'auto', 'GHz');
+    drawFn(ctx, F);
+    if (state.cursorF != null) {
+      const x = Math.round(F.X(state.cursorF)) + 0.5;
+      ctx.save(); ctx.strokeStyle = TK.fg; ctx.globalAlpha = 0.35; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x, F.y0); ctx.lineTo(x, F.y1); ctx.stroke(); ctx.restore();
+    }
+  }
+  function minmax(arr, from) { let a = Infinity, b = -Infinity; for (let i = from || 0; i < arr.length; i++) { const v = arr[i]; if (isFinite(v)) { if (v < a) a = v; if (v > b) b = v; } } return [a, b]; }
+  function drawFreq() {
+    if (!R) return;
+    const fG = Array.from(R.f, v => v / 1e9);
+    const ref = state.ref;
+    // return loss
+    let [lo] = minmax(R.s11db, 1); const [lo2] = minmax(R.s22db, 1); lo = Math.min(lo, lo2);
+    if (ref) lo = Math.min(lo, minmax(ref.s11db, 1)[0]);
+    const rlMin = Math.max(-80, Math.min(-30, Math.floor((lo - 3) / 10) * 10));
+    fPlot('#cRL', rlMin, 0, 0, (ctx, F) => {
+      if (ref) polyline(ctx, F, ref.f, ref.s11db, TK.refline, 1.5, [5, 4]);
+      polyline(ctx, F, fG, R.s11db, TK.refl, 2);
+      polyline(ctx, F, fG, R.s22db, TK.port2, 1.5, [5, 4]);
+    });
+    // insertion loss
+    let [il] = minmax(R.s21db); if (ref) il = Math.min(il, minmax(ref.s21db)[0]);
+    const span = Math.max(1, -il);
+    const st = span > 20 ? 10 : span > 8 ? 2 : span > 3 ? 1 : 0.5;
+    fPlot('#cIL', Math.floor((il - span * 0.05) / st) * st, Math.max(0.25, st / 2), st < 1 ? 1 : 0, (ctx, F) => {
+      if (ref) polyline(ctx, F, ref.f, ref.s21db, TK.refline, 1.5, [5, 4]);
+      polyline(ctx, F, fG, R.fit, TK['fg-3'], 1.5, [6, 4]);
+      polyline(ctx, F, fG, R.s21db, TK.trans, 2);
+    });
+    // ILD
+    let [a, b] = minmax(R.ild, 1);
+    if (ref) { const r2 = minmax(ref.ild, 1); a = Math.min(a, r2[0]); b = Math.max(b, r2[1]); }
+    const lim = Math.max(0.1, Math.max(Math.abs(a), Math.abs(b)) * 1.15);
+    fPlot('#cILD', -lim, lim, lim < 1 ? 2 : 1, (ctx, F) => {
+      ctx.save(); ctx.strokeStyle = TK['fg-3']; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(F.x0, Math.round(F.Y(0)) + 0.5); ctx.lineTo(F.x1, Math.round(F.Y(0)) + 0.5); ctx.stroke(); ctx.restore();
+      if (ref) polyline(ctx, F, ref.f, ref.ild, TK.refline, 1.5, [5, 4], 1);
+      polyline(ctx, F, fG, R.ild, TK.trans, 2, null, 1);
+    });
+    // power balance
+    fPlot('#cPW', 0, 100, 0, (ctx, F) => {
+      const n = fG.length;
+      const band = (lowerFn, upperFn, color) => {
+        ctx.beginPath();
+        for (let k = 0; k < n; k++) { const x = F.X(fG[k]), y = F.Y(upperFn(k)); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+        for (let k = n - 1; k >= 0; k--) ctx.lineTo(F.X(fG[k]), F.Y(lowerFn(k)));
+        ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+      };
+      ctx.save();
+      band(() => 0, (k) => 100 * R.pT[k], TK.trans);
+      band((k) => 100 * R.pT[k], (k) => 100 * Math.min(1, R.pT[k] + R.pR[k]), TK.refl);
+      band((k) => 100 * Math.min(1, R.pT[k] + R.pR[k]), () => 100, TK.dissip);
+      // surface-colored seams between bands
+      ctx.strokeStyle = TK.panel; ctx.lineWidth = 1.5;
+      for (const fn of [(k) => R.pT[k], (k) => Math.min(1, R.pT[k] + R.pR[k])]) {
+        ctx.beginPath(); for (let k = 0; k < n; k++) { const x = F.X(fG[k]), y = F.Y(100 * fn(k)); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke();
+      }
+      ctx.restore();
+    });
+  }
+
+  /* ---------- readouts ---------- */
+  function updateReadouts() {
+    if (!R) return;
+    const P = state.P;
+    const v = prep.vRef;
+    const delay = P.lenIn * IN / v;
+    const res = riseT * v / 2 / IN * 1000;
+    const zEnd = R.tz[R.tz.length - 1];
+    let html = `<span>Rise <b>${(riseT * 1e12).toFixed(1)} ps</b> (Kaiser β ${P.beta})</span>` +
+      `<span>Resolution ≈ <b>${res.toFixed(0)} mil</b></span>` +
+      `<span>Line delay <b>${(delay * 1e12).toFixed(0)} ps</b></span>` +
+      `<span>Late level <b>${zEnd.toFixed(1)} Ω</b></span>`;
+    if (state.hover && TF) {
+      const x = state.hover.x;
+      const i = x >= 0 && x <= P.lenIn ? idxOf(x) : -1;
+      let n = 0; while (n < R.tx.length - 1 && R.tx[n] < x) n++;
+      html += `<span>@ <b>${x.toFixed(3)} in</b>: painted ${i >= 0 ? '<b>' + state.prof[i].toFixed(1) + ' Ω</b>' : '—'}, TDR <b>${R.tz[n].toFixed(1)} Ω</b></span>`;
+    }
+    $('#tread').innerHTML = html;
+    // frequency cursor readout
+    const nf = R.f.length;
+    let k = state.cursorF == null ? -1 : Math.round(state.cursorF * 1e9 / prep.df);
+    if (k < 0 || k >= nf) {
+      const kq = Math.round((nf - 1) / 2);
+      $('#fread').innerHTML = `<span>Tap or hover a frequency plot for values.</span><span>At ${(R.f[kq] / 1e9).toFixed(0)} GHz: S21 <b>${R.s21db[kq].toFixed(2)} dB</b>, S11 <b>${R.s11db[kq].toFixed(1)} dB</b></span><span>solve ${R.ms.toFixed(1)} ms</span>`;
+      return;
+    }
+    const pt = R.pT[k], pr = R.pR[k];
+    $('#fread').innerHTML = `<span><b>${(R.f[k] / 1e9).toFixed(2)} GHz</b></span>` +
+      `<span>S11 <b>${R.s11db[k].toFixed(2)} dB</b></span><span>S22 <b>${R.s22db[k].toFixed(2)} dB</b></span>` +
+      `<span>S21 <b>${R.s21db[k].toFixed(3)} dB</b></span><span>ILD <b>${isFinite(R.ild[k]) ? R.ild[k].toFixed(3) : '—'} dB</b></span>` +
+      `<span>power: transmitted <b>${(100 * pt).toFixed(1)}%</b>, reflected <b>${(100 * pr).toFixed(1)}%</b>, absorbed <b>${(100 * Math.max(0, 1 - pt - pr)).toFixed(1)}%</b></span>`;
+  }
+  function drawAll() { readTokens(); drawTDR(); drawFreq(); updateReadouts(); }
+
+  /* ---------- TDR pointer interaction ---------- */
+  function pos(ev) { const r = tdrCv.getBoundingClientRect(); return { px: ev.clientX - r.left, py: ev.clientY - r.top }; }
+  let last = null;
+  tdrCv.addEventListener('pointerdown', (ev) => {
+    if (!TF) return;
+    const { px, py } = pos(ev);
+    const h = tdrCv.getBoundingClientRect().height;
+    if (py > h - LANE) {
+      const hit = (state.chips || []).filter(c => px >= c.x0 - 4 && px <= c.x1 + 4 && py >= c.y0 - 3 && py <= c.y1 + 3).reverse()[0];
+      if (hit) {
+        pushUndo();
+        state.selId = hit.id;
+        const e = state.elems.find(e => e.id === hit.id);
+        state.drag = { id: hit.id, off: TF.xi(px) - e.x };
+        tdrCv.setPointerCapture(ev.pointerId);
+        renderEditor();
+      } else { state.selId = null; renderEditor(); }
+      schedule(true);
+      return;
+    }
+    if (py < TF.y0 - 6 || py > TF.y1 + 6) return;
+    pushUndo();
+    tdrCv.setPointerCapture(ev.pointerId);
+    state.painting = true;
+    const x = TF.xi(px), z = clampZ(TF.yi(py));
+    last = { x, z, i: idxOf(x) };
+    if (state.tool === 'plateau') { state.plateau = { x0: Math.max(0, Math.min(state.P.lenIn, x)), x1: null, z }; schedule(true); return; }
+    applyTool(x, z, true);
+  });
+  tdrCv.addEventListener('pointermove', (ev) => {
+    if (!TF) return;
+    const { px, py } = pos(ev);
+    const x = TF.xi(px), z = clampZ(TF.yi(py));
+    if (state.drag) {
+      const e = state.elems.find(e => e.id === state.drag.id);
+      if (e) { e.x = Math.round(Math.max(0, Math.min(state.P.lenIn, x - state.drag.off)) * 200) / 200; syncEditor(); schedule(); }
+      return;
+    }
+    if (state.painting) {
+      if (state.tool === 'plateau') { state.plateau.x1 = Math.max(0, Math.min(state.P.lenIn, x)); state.plateau.z = z; schedule(true); return; }
+      applyTool(x, z, false);
+      return;
+    }
+    if (ev.pointerType === 'mouse') { state.hover = (py >= TF.y0 && py <= TF.y1) ? { x: Math.max(TF.xmin, Math.min(TF.xmax, x)) } : null; schedule(true); }
+  });
+  function endPointer() {
+    if (state.painting && state.tool === 'plateau' && state.plateau) {
+      const p = state.plateau;
+      if (p.x1 != null && Math.abs(p.x1 - p.x0) > 0.002) plateau(p.x0, p.x1, p.z, state.brushMil / 1000 / 2);
+      state.plateau = null; schedule();
+    }
+    state.painting = false; state.drag = null; last = null;
+  }
+  tdrCv.addEventListener('pointerup', endPointer);
+  tdrCv.addEventListener('pointercancel', endPointer);
+  tdrCv.addEventListener('pointerleave', () => { if (state.hover) { state.hover = null; schedule(true); } });
+
+  function applyTool(x, z, first) {
+    const L = state.P.lenIn, prof = state.prof;
+    const w = state.brushMil / 1000, s = w / 2;
+    const xc = Math.max(0, Math.min(L, x));
+    if (state.tool === 'draw') {
+      const i = idxOf(xc);
+      if (!first && last) {
+        const a = last.i, b = i, za = last.z;
+        const n = Math.abs(b - a);
+        for (let k = 0; k <= n; k++) { const j = a + Math.sign(b - a) * k; prof[j] = clampZ(za + (z - za) * (n ? k / n : 1)); }
+      } else prof[i] = z;
+      last = { x: xc, z, i };
+    } else if (state.tool === 'push') {
+      const dz = first ? 0 : z - last.z;
+      if (dz) bump(xc, w, dz);
+      last = { x: xc, z, i: idxOf(xc) };
+    } else if (state.tool === 'smooth') {
+      const cellIn = L / NS, rc = Math.max(1, Math.round(s / 2 / cellIn));
+      const src = prof.slice();
+      for (let i = 0; i < NS; i++) {
+        const u = (cellX(i) - xc) / s; if (Math.abs(u) > 3) continue;
+        let sum = 0, cnt = 0; for (let j = Math.max(0, i - rc); j <= Math.min(NS - 1, i + rc); j++) { sum += src[j]; cnt++; }
+        prof[i] = src[i] + (sum / cnt - src[i]) * 0.6 * Math.exp(-0.5 * u * u);
+      }
+    } else if (state.tool === 'erase') {
+      for (let i = 0; i < NS; i++) {
+        const u = (cellX(i) - xc) / s; if (Math.abs(u) > 3) continue;
+        prof[i] += (state.P.z0 - prof[i]) * 0.5 * Math.exp(-0.5 * u * u);
+        if (Math.abs(prof[i] - state.P.z0) < 0.02) prof[i] = state.P.z0;
+      }
+    }
+    schedule();
+  }
+
+  /* ---------- frequency plot hover ---------- */
+  for (const id of ['#cRL', '#cIL', '#cILD', '#cPW']) {
+    const cv = $(id);
+    const set = (ev) => {
+      const F = FREQ[id]; if (!F) return;
+      const r = cv.getBoundingClientRect();
+      const px = ev.clientX - r.left;
+      if (px < F.x0 || px > F.x1) return;
+      state.cursorF = Math.max(0, Math.min(state.P.fmaxGHz, F.xi(px)));
+      schedule(true);
+    };
+    cv.addEventListener('pointermove', set);
+    cv.addEventListener('pointerdown', set);
+  }
+
+  /* ---------- element editor ---------- */
+  const SPEC = {
+    C: { name: 'Shunt capacitance', glyph: 'C', v: { label: 'Capacitance', unit: 'pF', min: 0.005, max: 1, step: 0.005 } },
+    L: { name: 'Series inductance', glyph: 'L', v: { label: 'Inductance', unit: 'nH', min: 0.01, max: 2, step: 0.01 } },
+    R: { name: 'Series resistance', glyph: 'R', v: { label: 'Resistance', unit: 'Ω', min: 0.1, max: 25, step: 0.1 } },
+    stub: { name: 'Open stub (via stub)', glyph: 'S' },
+  };
+  function pairHTML(id, label, unit, min, max, step) {
+    return `<div class="pair"><label for="${id}">${label}</label><input type="range" id="${id}" min="${min}" max="${max}" step="${step}">` +
+      `<span class="num"><input type="number" id="${id}N" min="${min}" max="${max}" step="${step}" aria-label="${label}"><span class="unit">${unit}</span></span></div>`;
+  }
+  function bindPair(id, get, set, opts) {
+    const r = $('#' + id), n = $('#' + id + 'N');
+    const show = () => { const v = get(); r.value = v; n.value = +(+v).toFixed(opts && opts.dec != null ? opts.dec : 4); };
+    let undoArmed = true;
+    const apply = (v) => {
+      v = parseFloat(v); if (!isFinite(v)) return;
+      v = Math.max(+r.min, Math.min(+r.max, v));
+      if (undoArmed && !(opts && opts.noUndo)) { pushUndo(); undoArmed = false; }
+      set(v); show(); if (opts && opts.after) opts.after(); else { syncEditor(); schedule(); }
+    };
+    r.addEventListener('input', () => apply(r.value));
+    r.addEventListener('change', () => { undoArmed = true; });
+    n.addEventListener('change', () => { apply(n.value); undoArmed = true; });
+    show();
+    return show;
+  }
+  let editorShows = [];
+  function renderEditor() {
+    const box = $('#editor');
+    const e = state.elems.find(e => e.id === state.selId);
+    editorShows = [];
+    if (!e) {
+      box.innerHTML = `<div class="empty-ed">${state.elems.length ? 'Tap a chip in the strip under the plot to edit it, or drag it to move it.' : 'Paint on the plot, or drop in a lumped element to see its TDR signature.'}</div>`;
+      return;
+    }
+    const sp = SPEC[e.type];
+    const L = state.P.lenIn;
+    let html = `<div class="ed-head"><span class="glyph">${sp.glyph}</span><strong>${sp.name}</strong><span class="ed-hint" id="edHint"></span><button id="edDel" class="ghost">Remove</button></div><div class="ed-grid">`;
+    if (e.type === 'stub') {
+      html += pairHTML('edLen', 'Stub length', 'mil', 2, 250, 1) + pairHTML('edZ', 'Stub impedance', 'Ω', 20, 90, 1);
+    } else html += pairHTML('edVal', sp.v.label, sp.v.unit, sp.v.min, sp.v.max, sp.v.step);
+    html += pairHTML('edX', 'Position', 'in', 0, L, 0.005) + pairHTML('edCnt', 'Copies', '', 1, 30, 1) + pairHTML('edPitch', 'Pitch', 'in', 0.02, 1, 0.005);
+    html += '</div>';
+    box.innerHTML = html;
+    if (e.type === 'stub') {
+      editorShows.push(bindPair('edLen', () => e.stubLen, (v) => e.stubLen = Math.round(v)));
+      editorShows.push(bindPair('edZ', () => e.stubZ, (v) => e.stubZ = v));
+    } else editorShows.push(bindPair('edVal', () => e.value, (v) => e.value = v));
+    editorShows.push(bindPair('edX', () => e.x, (v) => e.x = v));
+    editorShows.push(bindPair('edCnt', () => e.count, (v) => e.count = Math.round(v)));
+    editorShows.push(bindPair('edPitch', () => e.pitch, (v) => e.pitch = v));
+    $('#edDel').addEventListener('click', () => { pushUndo(); state.elems = state.elems.filter(x => x.id !== e.id); state.selId = null; renderEditor(); schedule(); });
+    syncEditor();
+  }
+  function syncEditor() {
+    const e = state.elems.find(e => e.id === state.selId); if (!e) return;
+    editorShows.forEach(f => f());
+    const pitch = $('#edPitch'), pitchN = $('#edPitchN');
+    if (pitch) { pitch.disabled = pitchN.disabled = e.count <= 1; }
+    const v = (C0 / Math.sqrt(state.P.Dk)) / IN; // in/s
+    const z0 = state.P.z0;
+    let hint = '';
+    if (e.type === 'C') hint = `TDR dip with time constant Z₀C/2 = ${(z0 * e.value / 2).toFixed(2)} ps; area method gives C = −(2/Z₀)∫ρ dt.`;
+    if (e.type === 'L') hint = `TDR peak with time constant L/(2Z₀) = ${(e.value * 1000 / (2 * z0)).toFixed(2)} ps; area method gives L = 2Z₀∫ρ dt.`;
+    if (e.type === 'R') hint = `The line beyond it looks ${e.value.toFixed(1)} Ω higher all the way to DC, like a poor probe contact.`;
+    if (e.type === 'stub') hint = `Quarter-wave notch in S21 near v/(4ℓ) = ${(v / (4 * e.stubLen / 1000) / 1e9).toFixed(1)} GHz; the TDR only shows a modest dip.`;
+    if (e.count > 1) hint += ` Periodic: first stopband near v/(2p) = ${(v / (2 * e.pitch) / 1e9).toFixed(1)} GHz.`;
+    $('#edHint').textContent = hint;
+  }
+  document.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => {
+    pushUndo();
+    const L = state.P.lenIn;
+    let x = L / 2;
+    const taken = (x) => state.elems.some(e => Math.abs(e.x - x) < L * 0.04);
+    for (let k = 1; k < 12 && taken(x); k++) x = L / 2 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * L * 0.08;
+    const e = el(b.dataset.add, Math.round(x * 200) / 200);
+    state.elems.push(e); state.selId = e.id;
+    renderEditor(); schedule();
+  }));
+
+  /* ---------- tools & top controls ---------- */
+  document.querySelectorAll('#tools button').forEach(b => b.addEventListener('click', () => {
+    state.tool = b.dataset.tool;
+    document.querySelectorAll('#tools button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+  }));
+  $('#brush').addEventListener('input', (ev) => { state.brushMil = +ev.target.value; $('#brushOut').textContent = state.brushMil + ' mil'; });
+  $('#undo').addEventListener('click', undo);
+  $('#resetProf').addEventListener('click', () => { pushUndo(); state.prof.fill(state.P.z0); schedule(); });
+  document.addEventListener('keydown', (ev) => { if ((ev.ctrlKey || ev.metaKey) && ev.key === 'z' && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) { ev.preventDefault(); undo(); } });
+  const sel = $('#preset');
+  PRESETS.forEach((p, i) => { const o = document.createElement('option'); o.value = i; o.textContent = p.name; sel.appendChild(o); });
+  sel.addEventListener('change', () => loadPreset(+sel.value));
+  $('#pin').addEventListener('click', () => {
+    if (!R) return;
+    state.ref = { f: Array.from(R.f, v => v / 1e9), s11db: R.s11db.slice(), s21db: R.s21db.slice(), ild: R.ild.slice(), tx: R.tx.slice(), tz: R.tz.slice() };
+    $('#unpin').disabled = false; $('#lgRefT').hidden = false; document.querySelectorAll('.lgRef').forEach(x => x.hidden = false);
+    schedule(true);
+  });
+  $('#unpin').addEventListener('click', () => {
+    state.ref = null; $('#unpin').disabled = true; $('#lgRefT').hidden = true; document.querySelectorAll('.lgRef').forEach(x => x.hidden = true);
+    schedule(true);
+  });
+
+  /* ---------- setup rail ---------- */
+  const GROUPS = [
+    { title: 'Line', items: [
+      { k: 'lenIn', label: 'Length', unit: 'in', min: 0.25, max: 10, step: 0.05 },
+      { k: 'z0', label: 'Line impedance (Flatten and Erase level)', unit: 'Ω', min: 20, max: 120, step: 0.5 },
+    ] },
+    { title: 'Dielectric, Djordjevic-Sarkar', note: 'Defaults: Megtron 6 R-5775(N) datasheet point, Dk 3.35 and Df 0.004 at 12 GHz.', items: [
+      { k: 'Dk', label: 'Dk at f_ref', unit: '', min: 1, max: 6, step: 0.01 },
+      { k: 'Df', label: 'Df at f_ref', unit: '', min: 0, max: 0.03, step: 0.0005 },
+      { k: 'frefGHz', label: 'f_ref', unit: 'GHz', min: 0.1, max: 60, step: 0.1 },
+      { k: 'dsLowHz', label: 'Lower corner f₁', unit: 'kHz', min: 0.01, max: 1000, step: 0.01, scale: 1e3 },
+      { k: 'dsHighHz', label: 'Upper corner f₂', unit: 'GHz', min: 100, max: 10000, step: 10, scale: 1e9 },
+    ] },
+    { title: 'Conductor', note: 'Skin-effect loss scales with √f and carries its internal inductance, so the line stays causal.', items: [
+      { k: 'condLoss', label: 'Conductor loss at 10 GHz', unit: 'dB/in', min: 0, max: 2, step: 0.01 },
+      { k: 'rdc', label: 'DC resistance', unit: 'Ω/in', min: 0, max: 2, step: 0.01 },
+    ], lossless: true },
+    { title: 'Ports', note: 'Tx is also the TDR source impedance. Both set the S-parameter reference.', items: [
+      { k: 'zTx', label: 'Tx (port 1)', unit: 'Ω', min: 10, max: 150, step: 0.5 },
+      { k: 'zRx', label: 'Rx (port 2)', unit: 'Ω', min: 10, max: 150, step: 0.5 },
+    ] },
+    { title: 'Sweep and TDR window', note: '1001 points from DC. Kaiser window centered on DC; β 4.2 by default, scikit-rf uses 6.', items: [
+      { k: 'fmaxGHz', label: 'f_max', unit: 'GHz', min: 5, max: 110, step: 1 },
+      { k: 'beta', label: 'Kaiser β', unit: '', min: 0, max: 14, step: 0.1 },
+    ] },
+  ];
+  const railShows = [];
+  function buildRail() {
+    const rail = $('#rail');
+    let html = '';
+    GROUPS.forEach((g, gi) => {
+      html += `<div class="group"><h2>${g.title}</h2>`;
+      if (g.note) html += `<p class="note">${g.note}</p>`;
+      g.items.forEach(it => { html += pairHTML('p_' + it.k, it.label, it.unit, it.min, it.max, it.step); });
+      if (g.lossless) html += `<label class="check"><input type="checkbox" id="p_lossless"> Lossless (no conductor or dielectric loss)</label>`;
+      html += '</div>';
+    });
+    html += `<div class="group"><h2>TDR plot range</h2><div class="inline">` +
+      `<input type="number" id="zMin" step="1" aria-label="Lowest impedance shown"><span class="note">to</span><input type="number" id="zMax" step="1" aria-label="Highest impedance shown"><span class="note">Ω</span><button id="zFit" class="ghost">Fit</button></div></div>`;
+    html += `<div class="group"><h2>Export</h2><p class="note">Touchstone of the current S-parameters (RI). Unequal port impedances write version 2.0 with a [Reference] line.</p>` +
+      `<div class="inline"><button id="copyS2p">Copy .s2p text</button><span class="toast" id="s2pMsg"></span></div><textarea id="s2pbox" hidden readonly aria-label="Touchstone text"></textarea></div>`;
+    html += `<details class="notes"><summary>How the model works</summary><ul>
+      <li>The painted profile is 500 equal cells. Each cell is a uniform line of its painted impedance; lumped elements sit on cell boundaries. S-parameters come from the ABCD cascade, so they are exact for this structure.</li>
+      <li>R′ and L′ scale with Z and C′ with 1/Z, as if width alone changed the impedance. Loss per inch is the same everywhere, and only the reflections change with what you paint.</li>
+      <li>Dielectric: <code>ε(f) = ε∞ + Δε·ln((f₂+jf)/(f₁+jf)) / ln(f₂/f₁)</code>, anchored to Dk and Df at f_ref. Conductor: <code>R_dc + (1+j)·K·√f</code>.</li>
+      <li>TDR: S11 times a Kaiser half-window, inverse FFT, running sum, then <code>Z = Z_Tx(1+ρ)/(1−ρ)</code>. The window sets rise time and ringing; the orange trace is what a TDR would show, the indigo line is the truth.</li>
+      <li>With loss on, the orange trace sits a little above the painted line and creeps upward along it. Skin-effect resistance and internal inductance raise the low-frequency impedance. Tick Lossless to see it vanish.</li>
+      <li>Labels on short painted bumps use the TDR area method: <code>L = 2Z₀∫ρ dt</code>, <code>C = −(2/Z₀)∫ρ dt</code> over round-trip time. Long excursions show average impedance and length instead.</li>
+      <li>ILD is dB(S21) minus a least-squares fit of a0 + a1√f + a2·f + a4·f² over the whole sweep.</li>
+      <li>Nothing radiates and nothing couples. Power that is neither reflected nor transmitted is absorbed in the line or in series R.</li>
+    </ul></details>`;
+    rail.innerHTML = html;
+    GROUPS.forEach(g => g.items.forEach(it => {
+      const sc = it.scale || 1;
+      railShows.push(bindPair('p_' + it.k, () => state.P[it.k] / sc, (v) => {
+        const old = state.P[it.k];
+        state.P[it.k] = v * sc;
+        if (it.k === 'z0') { const d = v - old; for (let i = 0; i < NS; i++) state.prof[i] = clampZ(state.prof[i] + d); state.zMin += d; state.zMax += d; syncRange(); }
+        if (it.k === 'lenIn') { for (const e of state.elems) e.x = Math.min(e.x, v); renderEditor(); }
+      }, { noUndo: true, after: () => { syncEditor(); schedule(); } }));
+    }));
+    const ll = $('#p_lossless');
+    ll.checked = state.P.lossless;
+    ll.addEventListener('change', () => { state.P.lossless = ll.checked; schedule(); });
+    $('#zMin').addEventListener('change', (ev) => { const v = +ev.target.value; if (v < state.zMax - 1) state.zMin = v; syncRange(); schedule(true); });
+    $('#zMax').addEventListener('change', (ev) => { const v = +ev.target.value; if (v > state.zMin + 1) state.zMax = v; syncRange(); schedule(true); });
+    $('#zFit').addEventListener('click', () => { autoRange(false); schedule(true); });
+    $('#copyS2p').addEventListener('click', copyS2p);
+    syncRange();
+  }
+  function syncRange() { $('#zMin').value = +state.zMin.toFixed(1); $('#zMax').value = +state.zMax.toFixed(1); }
+  function autoRange(defaultBand) {
+    const P = state.P;
+    let lo = Math.min(P.z0, P.zTx, P.zRx), hi = Math.max(P.z0, P.zTx, P.zRx);
+    for (let i = 0; i < NS; i++) { lo = Math.min(lo, state.prof[i]); hi = Math.max(hi, state.prof[i]); }
+    if (!defaultBand && R) for (let n = 0; n < R.tz.length; n++) { lo = Math.min(lo, R.tz[n]); hi = Math.max(hi, R.tz[n]); }
+    const pad = Math.max(defaultBand ? 20 : 4, (hi - lo) * 0.12);
+    state.zMin = Math.floor((lo - pad) / 5) * 5; state.zMax = Math.ceil((hi + pad) / 5) * 5;
+    if (defaultBand) { state.zMin = Math.min(state.zMin, P.z0 - 20); state.zMax = Math.max(state.zMax, P.z0 + 20); }
+    syncRange();
+  }
+
+  /* ---------- Touchstone ---------- */
+  function copyS2p() {
+    if (!R) return;
+    const P = state.P, s = R.s;
+    const v2 = Math.abs(P.zTx - P.zRx) > 1e-9;
+    const lines = [];
+    lines.push('! TDR Painter export, ' + new Date().toISOString().slice(0, 10));
+    lines.push(`! ${P.lenIn} in line, Z0 ${P.z0} ohm, Dk ${P.Dk} Df ${P.Df} @ ${P.frefGHz} GHz (Djordjevic-Sarkar), cond ${P.lossless ? 0 : P.condLoss} dB/in @10 GHz, Rdc ${P.lossless ? 0 : P.rdc} ohm/in`);
+    for (const e of state.elems) lines.push(`! element ${chipLabel(e)} at ${e.x} in${e.count > 1 ? ', pitch ' + e.pitch + ' in' : ''}`);
+    if (v2) lines.push('[Version] 2.0');
+    lines.push(`# GHz S RI R ${v2 ? P.zTx : P.zTx}`);
+    if (v2) lines.push('[Number of Ports] 2', '[Two-Port Data Order] 21_12', `[Reference] ${P.zTx} ${P.zRx}`, `[Number of Frequencies] ${R.f.length}`, '[Network Data]');
+    const g = (x) => x.toExponential(9);
+    for (let k = 0; k < R.f.length; k++)
+      lines.push([(R.f[k] / 1e9).toFixed(6), g(s.s11r[k]), g(s.s11i[k]), g(s.s21r[k]), g(s.s21i[k]), g(s.s21r[k]), g(s.s21i[k]), g(s.s22r[k]), g(s.s22i[k])].join(' '));
+    if (v2) lines.push('[End]');
+    const txt = lines.join('\n') + '\n';
+    const box = $('#s2pbox');
+    const msg = $('#s2pMsg');
+    const fallback = () => { box.hidden = false; box.value = txt; box.focus(); box.select(); msg.textContent = 'Copy from the box below.'; };
+    try {
+      navigator.clipboard.writeText(txt).then(() => { msg.textContent = `Copied ${R.f.length} points.`; box.hidden = true; }, fallback);
+    } catch (err) { fallback(); }
+  }
+
+  /* ---------- boot ---------- */
+  buildRail();
+  sel.value = 0;
+  PRESETS[0].run();
+  autoRange(true);
+  renderEditor();
+  schedule();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => schedule(true));
+  const ro = new ResizeObserver(() => schedule(true));
+  ro.observe(document.body);
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  if (mq.addEventListener) mq.addEventListener('change', () => schedule(true));
+  new MutationObserver(() => schedule(true)).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  window.__tdrState = state;
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,202 @@
+const path = require('path');
+const E = require(path.join(__dirname, '..', 'src', 'engine.js'));
+const IN = E.IN, C0 = E.C0;
+let fails = 0;
+function check(name, got, want, tol) {
+  const ok = Math.abs(got - want) <= tol;
+  if (!ok) fails++;
+  console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}: got ${got.toPrecision(6)} want ${want.toPrecision(6)} (tol ${tol})`);
+}
+const base = {
+  lenIn: 2, z0: 50, Dk: 3.35, Df: 0.004, frefGHz: 12, dsLowHz: 1e3, dsHighHz: 1e12,
+  condLoss: 0.4, condRefGHz: 10, rdc: 0.2, fmaxGHz: 50, nf: 1001,
+  zTx: 50, zRx: 50, beta: 4.2, lossless: false,
+};
+const NS = 500;
+const flat = (z) => new Float64Array(NS).fill(z);
+const mag = (r, i) => Math.hypot(r, i);
+const db = (r, i) => 20 * Math.log10(mag(r, i));
+
+// 1) DS model reproduces Dk/Df at f_ref
+{
+  const ds = E.makeDS(3.35, 0.004, 12e9, 1e3, 1e12);
+  const e = ds.eps(12e9);
+  check('DS Re eps @fref', e[0], 3.35, 1e-12);
+  check('DS tan d @fref', -e[1] / e[0], 0.004, 1e-12);
+  const e1 = ds.eps(1e9);
+  console.log(`      DS @1 GHz: Dk ${e1[0].toFixed(4)}, Df ${(-e1[1]/e1[0]).toFixed(5)}; @50 GHz Dk ${ds.eps(50e9)[0].toFixed(4)}`);
+}
+
+// 2) Lossless matched line: S11 = 0, |S21| = 1, phase = -beta*l
+{
+  const P = { ...base, lossless: true };
+  const prep = E.prepare(P);
+  const s = E.solve(prep, E.buildCascade(flat(50), [], P));
+  let m11 = 0, e21 = 0;
+  for (let k = 0; k < P.nf; k++) { m11 = Math.max(m11, mag(s.s11r[k], s.s11i[k])); e21 = Math.max(e21, Math.abs(mag(s.s21r[k], s.s21i[k]) - 1)); }
+  check('lossless matched max|S11|', m11, 0, 1e-12);
+  check('lossless matched max||S21|-1|', e21, 0, 1e-12);
+  const k = 200, fk = prep.f[k];
+  const ph = Math.atan2(s.s21i[k], s.s21r[k]);
+  const want = -2 * Math.PI * fk * Math.sqrt(3.35) / C0 * 2 * IN;
+  const wrap = (x) => Math.atan2(Math.sin(x), Math.cos(x));
+  check('lossless S21 phase @10 GHz', wrap(ph - want), 0, 1e-9);
+}
+
+// 3) Lossless 45-ohm line between 50-ohm ports vs analytic
+{
+  const P = { ...base, lossless: true };
+  const prep = E.prepare(P);
+  const s = E.solve(prep, E.buildCascade(flat(45), [], P));
+  const G = (45 - 50) / (45 + 50);
+  let err = 0, pmax = 0;
+  for (let k = 1; k < P.nf; k++) {
+    const th = 2 * Math.PI * prep.f[k] * Math.sqrt(3.35) / C0 * 2 * IN;
+    // S11 = G (1 - e^{-2j th}) / (1 - G^2 e^{-2j th})
+    const er = Math.cos(-2 * th), ei = Math.sin(-2 * th);
+    const nr = G * (1 - er), ni = -G * ei;
+    const dr = 1 - G * G * er, di = -G * G * ei;
+    const dd = dr * dr + di * di;
+    const wr = (nr * dr + ni * di) / dd, wi = (ni * dr - nr * di) / dd;
+    err = Math.max(err, Math.hypot(s.s11r[k] - wr, s.s11i[k] - wi));
+    const p = s.s11r[k] ** 2 + s.s11i[k] ** 2 + s.s21r[k] ** 2 + s.s21i[k] ** 2;
+    pmax = Math.max(pmax, Math.abs(p - 1));
+  }
+  check('45-ohm line S11 vs analytic (max err)', err, 0, 1e-10);
+  check('lossless power balance |S11|^2+|S21|^2-1', pmax, 0, 1e-12);
+  const ripple = 1 / (2 * 2 * IN * Math.sqrt(3.35) / C0) / 1e9;
+  console.log(`      S11 null spacing (1/(2 tau)) = ${ripple.toFixed(3)} GHz`);
+}
+
+// 4) Shunt C at port (zero-length position) vs analytic S11 = -jwCZ0/(2 + jwCZ0)
+{
+  const P = { ...base, lossless: true };
+  const prep = E.prepare(P);
+  const C = 0.2e-12;
+  const s = E.solve(prep, E.buildCascade(flat(50), [{ id: 1, type: 'C', x: 0, value: 0.2, count: 1, pitch: 0 }], P));
+  const k = 400, w = 2 * Math.PI * prep.f[k];
+  const x = w * C * 50;
+  // -jx/(2+jx) = (-jx)(2-jx)/(4+x^2) = (-x^2 - 2jx)/(4+x^2)
+  check('shunt C |S11| @20 GHz', mag(s.s11r[k], s.s11i[k]), Math.hypot(x * x, 2 * x) / (4 + x * x), 1e-12);
+}
+
+// 5) Series L and series R at port
+{
+  const P = { ...base, lossless: true };
+  const prep = E.prepare(P);
+  const sL = E.solve(prep, E.buildCascade(flat(50), [{ id: 1, type: 'L', x: 0, value: 0.5, count: 1, pitch: 0 }], P));
+  const k = 400, w = 2 * Math.PI * prep.f[k], x = w * 0.5e-9 / 50;
+  check('series L |S11| @20 GHz', mag(sL.s11r[k], sL.s11i[k]), x / Math.hypot(2, x), 1e-12);
+  const sR = E.solve(prep, E.buildCascade(flat(50), [{ id: 1, type: 'R', x: 1, value: 5, count: 1, pitch: 0 }], P));
+  check('series R S11 at DC', sR.s11r[0], 5 / 105, 1e-12);
+}
+
+// 6) Mismatched ports: Rx = 100 ohm at DC
+{
+  const P = { ...base, lossless: true, zRx: 100 };
+  const prep = E.prepare(P);
+  const s = E.solve(prep, E.buildCascade(flat(50), [], P));
+  check('Rx 100 ohm S11 at DC', s.s11r[0], 50 / 150, 1e-12);
+  let pmax = 0;
+  for (let k = 0; k < P.nf; k++) pmax = Math.max(pmax, Math.abs(s.s11r[k] ** 2 + s.s11i[k] ** 2 + s.s21r[k] ** 2 + s.s21i[k] ** 2 - 1));
+  check('Rx 100 ohm lossless power balance', pmax, 0, 1e-12);
+}
+
+// 7) Loss: matched lossy line IL vs alpha*l estimate
+{
+  const P = { ...base, rdc: 0 };
+  const prep = E.prepare(P);
+  const s = E.solve(prep, E.buildCascade(flat(50), [], P));
+  const k = 200; // 10 GHz
+  const il = -db(s.s21r[k], s.s21i[k]);
+  const ds = E.makeDS(3.35, 0.004, 12e9, 1e3, 1e12);
+  const e = ds.eps(10e9);
+  const ad = 8.686 * Math.PI * 10e9 * Math.sqrt(e[0]) * (-e[1] / e[0]) / C0 * IN; // dB/in
+  const want = (0.4 + ad) * 2;
+  console.log(`      dielectric loss @10 GHz: ${ad.toFixed(4)} dB/in (Bogatin rule 2.3*f*Df*sqrt(Dk) = ${(2.3*10*(-e[1]/e[0])*Math.sqrt(e[0])).toFixed(4)})`);
+  check('2-in IL @10 GHz vs (alpha_c+alpha_d)*l', il, want, 0.01);
+  console.log(`      IL @50 GHz: ${(-db(s.s21r[1000], s.s21i[1000])).toFixed(3)} dB`);
+}
+
+// 8) Open stub resonance near v/(4 l)
+{
+  const P = { ...base, lossless: true };
+  const prep = E.prepare(P);
+  const s = E.solve(prep, E.buildCascade(flat(50), [{ id: 1, type: 'stub', x: 1, stubZ: 45, stubLen: 60, count: 1, pitch: 0 }], P));
+  let kmin = 1, vmin = 0;
+  for (let k = 1; k < P.nf; k++) { const v = db(s.s21r[k], s.s21i[k]); if (v < vmin) { vmin = v; kmin = k; } }
+  const want = C0 / Math.sqrt(3.35) / (4 * 60e-3 * IN) / 1e9;
+  check('stub notch freq (GHz)', prep.f[kmin] / 1e9, want, 0.06);
+  console.log(`      notch depth ${vmin.toFixed(1)} dB`);
+}
+
+// 9) Periodic shunt C: stopband near v/(2p)
+{
+  const P = { ...base, lossless: true };
+  const prep = E.prepare(P);
+  const s = E.solve(prep, E.buildCascade(flat(50), [{ id: 1, type: 'C', x: 0.15, value: 0.06, count: 12, pitch: 0.15 }], P));
+  let kmin = 1, vmin = 0;
+  for (let k = 100; k < 600; k++) { const v = db(s.s21r[k], s.s21i[k]); if (v < vmin) { vmin = v; kmin = k; } }
+  const bragg = C0 / Math.sqrt(3.35) / (2 * 0.15 * IN) / 1e9;
+  console.log(`      periodic C: min S21 ${vmin.toFixed(2)} dB at ${(prep.f[kmin]/1e9).toFixed(2)} GHz; Bragg v/(2p) = ${bragg.toFixed(2)} GHz`);
+  check('Bragg stopband near v/(2p) (GHz)', prep.f[kmin] / 1e9, bragg, 1.5);
+}
+
+// 10) TDR: shunt C area method recovers C (beta 10, so the window edge at fmax is negligible); series R level
+{
+  const P = { ...base, lossless: true, beta: 10 };
+  const prep = E.prepare(P);
+  const tr = E.riseTime(prep);
+  console.log(`      Kaiser beta 10, 50 GHz: 10-90 rise ${(tr*1e12).toFixed(2)} ps; spatial res ~ ${(tr*prep.vRef/2/IN*1000).toFixed(1)} mil`);
+  const s = E.solve(prep, E.buildCascade(flat(50), [{ id: 1, type: 'C', x: 1, value: 0.2, count: 1, pitch: 0 }], P));
+  const r = E.tdr(prep, s.s11r, s.s11i, 2e-9);
+  let area = 0;
+  for (let n = 0; n < r.t.length; n++) area += r.rho[n] * prep.dt;
+  check('TDR area -> shunt C (pF)', -2 * area / 50 * 1e12, 0.2, 0.005);
+  const sR = E.solve(prep, E.buildCascade(flat(50), [{ id: 1, type: 'R', x: 1, value: 5, count: 1, pitch: 0 }], P));
+  const rR = E.tdr(prep, sR.s11r, sR.s11i, 2e-9);
+  const rho = rR.rho[rR.rho.length - 1];
+  check('TDR series R final Z', 50 * (1 + rho) / (1 - rho), 55, 0.05);
+  const sL = E.solve(prep, E.buildCascade(flat(50), [{ id: 1, type: 'L', x: 1, value: 0.4, count: 1, pitch: 0 }], P));
+  const rL = E.tdr(prep, sL.s11r, sL.s11i, 2e-9);
+  let aL = 0; for (let n = 0; n < rL.t.length; n++) aL += rL.rho[n] * prep.dt;
+  check('TDR area -> series L (nH)', 2 * 50 * aL * 1e9, 0.4, 0.01);
+  // location of C dip: round-trip time 2*tau(1 in)
+  let nmin = 0; for (let n = 0; n < r.t.length; n++) if (r.rho[n] < r.rho[nmin]) nmin = n;
+  check('C dip round-trip time (ps), 0.2 pF lags by RC', r.t[nmin] * 1e12, 2 * IN * Math.sqrt(3.35) / C0 * 1e12, 6);
+}
+
+// 11) Painted 45-ohm short section: excursion readout vs TDR integral
+{
+  const P = { ...base, lossless: true };
+  const prep = E.prepare(P);
+  const prof = flat(50);
+  for (let i = 200; i < 215; i++) prof[i] = 35;
+  const ex = E.excursions(prof, P, 0.25);
+  const s = E.solve(prep, E.buildCascade(prof, [], P));
+  const r = E.tdr(prep, s.s11r, s.s11i, 2e-9);
+  let area = 0; for (let n = 0; n < r.t.length; n++) area += r.rho[n] * prep.dt;
+  console.log(`      painted dip: readout C ${(ex[0].C*1e12).toFixed(4)} pF, TDR-integral C ${(-2*area/50*1e12).toFixed(4)} pF, delay ${(ex[0].delay*1e12).toFixed(2)} ps`);
+  check('painted dip readout vs TDR integral (pF)', ex[0].C * 1e12, -2 * area / 50 * 1e12, 0.01);
+}
+
+// 12) Timing
+{
+  const P = { ...base };
+  const prep = E.prepare(P);
+  const prof = flat(50);
+  for (let i = 0; i < 500; i++) prof[i] = 50 + 5 * Math.sin(i / 7);
+  const els = [{ id: 1, type: 'C', x: 0.3, value: 0.1, count: 10, pitch: 0.15 }, { id: 2, type: 'stub', x: 1, stubZ: 45, stubLen: 60, count: 1, pitch: 0 }];
+  let t = performance.now();
+  const N = 20;
+  for (let i = 0; i < N; i++) { const c = E.buildCascade(prof, els, P); const s = E.solve(prep, c); E.tdr(prep, s.s11r, s.s11i, 2e-9); }
+  console.log(`      worst-case (500 distinct cells) solve+tdr: ${((performance.now() - t) / N).toFixed(1)} ms`);
+  t = performance.now();
+  for (let i = 0; i < N; i++) { const c = E.buildCascade(flat(50), els, P); const s = E.solve(prep, c); E.tdr(prep, s.s11r, s.s11i, 2e-9); }
+  console.log(`      flat + elements solve+tdr: ${((performance.now() - t) / N).toFixed(1)} ms`);
+  t = performance.now();
+  for (let i = 0; i < 5; i++) E.prepare(P);
+  console.log(`      prepare: ${((performance.now() - t) / 5).toFixed(1)} ms`);
+}
+console.log(fails ? `\n${fails} FAILED` : '\nALL PASS');
+process.exit(fails ? 1 : 0);
