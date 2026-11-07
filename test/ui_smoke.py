@@ -38,6 +38,8 @@ async def main():
         cv = await pg.locator("#tdr").bounding_box()
 
         async def chip_center(eid):
+            # chips are laid out on the next animation frame, so wait for this one to be drawn
+            await pg.wait_for_function("id => (__tdrState.chips || []).some(c => c.id === id)", arg=eid, timeout=2000)
             chips = await st("__tdrState.chips")
             c = next(c for c in chips if c["id"] == eid)
             return cv["x"] + (c["x0"] + c["x1"]) / 2, cv["y"] + (c["y0"] + c["y1"]) / 2

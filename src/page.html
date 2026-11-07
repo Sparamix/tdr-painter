@@ -1078,7 +1078,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       <li>The painted profile is 500 equal cells. Each cell is a uniform line of its painted impedance; lumped elements sit on cell boundaries. S-parameters come from the ABCD cascade, so they are exact for this structure.</li>
       <li>R′ and L′ scale with Z and C′ with 1/Z, as if width alone changed the impedance. Loss per inch is the same everywhere, and only the reflections change with what you paint.</li>
       <li>Dielectric: <code>ε(f) = ε∞ + Δε·ln((f₂+jf)/(f₁+jf)) / ln(f₂/f₁)</code>, anchored to Dk and Df at f_ref. Conductor: <code>R_dc + (1+j)·K·√f</code>.</li>
-      <li>TDR: S11 times a Kaiser half-window, inverse FFT, running sum, then <code>Z = Z_Tx(1+ρ)/(1−ρ)</code>. The window sets rise time and ringing; the orange trace is what a TDR would show, the indigo line is the truth.</li>
+      <li>TDR: S11 times a Kaiser half-window, inverse FFT, trapezoid-rule integration, then <code>Z = Z_Tx(1+ρ)/(1−ρ)</code>. The window sets rise time and ringing; the orange trace is what a TDR would show, the indigo line is the truth.</li>
       <li>With loss on, the orange trace sits a little above the painted line and creeps upward along it. Skin-effect resistance and internal inductance raise the low-frequency impedance. Tick Lossless to see it vanish.</li>
       <li>Labels on short painted bumps use the TDR area method: <code>L = 2Z₀∫ρ dt</code>, <code>C = −(2/Z₀)∫ρ dt</code> over round-trip time. Long excursions show average impedance and length instead.</li>
       <li>ILD is dB(S21) minus a least-squares fit of a0 + a1√f + a2·f + a4·f² over the whole sweep.</li>

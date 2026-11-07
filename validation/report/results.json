@@ -1,0 +1,1087 @@
+{
+ "generated": "2026-11-07",
+ "versions": {
+  "tdr-painter": "0.6.0",
+  "scikit-rf": "2.2.0",
+  "numpy": "2.5.3",
+  "scipy": "1.18.1",
+  "python": "3.13.18",
+  "node": "v22.23.4"
+ },
+ "limits": {
+  "sparam": 1e-09,
+  "fine_s21_db": 0.02,
+  "fine_s11": 0.005,
+  "tdr_rho": 0.001,
+  "tdr_truth": 0.003,
+  "passive": 1e-12,
+  "energy": 1e-12,
+  "dc": 1e-12,
+  "causal": 0.0003
+ },
+ "cases": [
+  {
+   "slug": "beatty",
+   "title": "Beatty standard: 25 \u03a9 section in a 50 \u03a9 line",
+   "variants": [
+    {
+     "variant": "lossy",
+     "checks": [
+      {
+       "name": "S11: max |engine \u2212 scikit-rf|",
+       "value": 4.165665456860423e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S21: max |engine \u2212 scikit-rf|",
+       "value": 8.124459186778546e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S22: max |engine \u2212 scikit-rf|",
+       "value": 4.1695561986323326e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "scikit-rf reference is reciprocal: max |S12 \u2212 S21|",
+       "value": 3.4844027277880974e-15,
+       "limit": 1e-10,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "DC: |S11(0) \u2212 closed form|, |S21(0) \u2212 closed form|",
+       "value": 1.1102230246251565e-16,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "passivity: max singular value of S \u2212 1",
+       "value": -2.220446049250313e-16,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "causality: S21 impulse before the light-speed front / peak",
+       "value": 2.399862690986542e-05,
+       "limit": 0.0003,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 scikit-rf| (exact DC, same integration start)",
+       "value": 6.855462666555123e-05,
+       "limit": 0.001,
+       "ok": true,
+       "tier": "B"
+      },
+      {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 on a 10\u00d7 finer frequency grid|",
+       "value": 0.0003377508119278838,
+       "limit": 0.003,
+       "ok": true,
+       "tier": "B"
+      },
+      {
+       "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
+       "text": "max |\u0394\u03c1| vs engine 4.1e-03; on the 10\u00d7 finer grid, scikit-rf\u2019s step_response is off by 4.4e-03",
+       "ok": null,
+       "tier": "B"
+      }
+     ]
+    },
+    {
+     "variant": "lossless",
+     "checks": [
+      {
+       "name": "S11: max |engine \u2212 scikit-rf|",
+       "value": 2.365267050062104e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S21: max |engine \u2212 scikit-rf|",
+       "value": 2.4398256743420036e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S22: max |engine \u2212 scikit-rf|",
+       "value": 1.8063783450059937e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "scikit-rf reference is reciprocal: max |S12 \u2212 S21|",
+       "value": 3.648788972275242e-13,
+       "limit": 1e-10,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "DC: |S11(0) \u2212 closed form|, |S21(0) \u2212 closed form|",
+       "value": 0.0,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "passivity: max singular value of S \u2212 1",
+       "value": 8.881784197001252e-16,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "lossless energy: max | |S11|\u00b2 + |S21|\u00b2 \u2212 1 | (both ports)",
+       "value": 9.992007221626409e-16,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "causality: S21 impulse before the light-speed front / peak",
+       "value": 2.6713959186785025e-05,
+       "limit": 0.0003,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "closed-form S11, S21 (max |error|)",
+       "value": 2.9576349711020686e-14,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "X"
+      },
+      {
+       "name": "peak |S11| = 2|\u0393|/(1+\u0393\u00b2) = 0.6 (first peak 1.61 GHz)",
+       "value": 9.292158246188009e-07,
+       "limit": 0.001,
+       "ok": true,
+       "tier": "X"
+      },
+      {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 scikit-rf| (exact DC, same integration start)",
+       "value": 0.0001066464663734834,
+       "limit": 0.001,
+       "ok": true,
+       "tier": "B"
+      },
+      {
+       "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
+       "text": "max |\u0394\u03c1| vs engine 8.4e-05",
+       "ok": null,
+       "tier": "B"
+      }
+     ]
+    }
+   ],
+   "paint_round_trip": [
+    {
+     "source": "50 GHz TDR",
+     "agree_to": 1400000000.0,
+     "max_ds21_db_10g": 0.6381732619776002,
+     "max_ds21_db": 1.6613864980457649,
+     "dc_s21_db": [
+      -0.03430840814722571,
+      -0.0346742561800125
+     ]
+    },
+    {
+     "source": "110 GHz TDR",
+     "agree_to": 1400000000.0,
+     "max_ds21_db_10g": 0.5480233575930011,
+     "max_ds21_db": 1.4172352302477034,
+     "dc_s21_db": [
+      -0.03425997262098754,
+      -0.0346742561800125
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "via-stub",
+   "title": "Via transition with a 60 mil open stub",
+   "variants": [
+    {
+     "variant": "lossy",
+     "checks": [
+      {
+       "name": "S11: max |engine \u2212 scikit-rf|",
+       "value": 5.190503934417734e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S21: max |engine \u2212 scikit-rf|",
+       "value": 5.857942817977034e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S22: max |engine \u2212 scikit-rf|",
+       "value": 5.254781467467357e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "scikit-rf reference is reciprocal: max |S12 \u2212 S21|",
+       "value": 7.65617429419924e-14,
+       "limit": 1e-10,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "DC: |S11(0) \u2212 closed form|, |S21(0) \u2212 closed form|",
+       "value": 8.673617379884035e-19,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "passivity: max singular value of S \u2212 1",
+       "value": 4.440892098500626e-16,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "causality: S21 impulse before the light-speed front / peak",
+       "value": 2.83056236920755e-05,
+       "limit": 0.0003,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 scikit-rf| (exact DC, same integration start)",
+       "value": 4.635053124954491e-05,
+       "limit": 0.001,
+       "ok": true,
+       "tier": "B"
+      },
+      {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 on a 10\u00d7 finer frequency grid|",
+       "value": 0.0007768603637144378,
+       "limit": 0.003,
+       "ok": true,
+       "tier": "B"
+      },
+      {
+       "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
+       "text": "max |\u0394\u03c1| vs engine 3.1e-04; on the 10\u00d7 finer grid, scikit-rf\u2019s step_response is off by 1.0e-03",
+       "ok": null,
+       "tier": "B"
+      }
+     ]
+    },
+    {
+     "variant": "lossless, grid point on the quarter-wave",
+     "checks": [
+      {
+       "name": "S11: max |engine \u2212 scikit-rf|",
+       "value": 1.547156234421405e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S21: max |engine \u2212 scikit-rf|",
+       "value": 2.517295813237942e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S22: max |engine \u2212 scikit-rf|",
+       "value": 1.4309747643530798e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "scikit-rf reference is reciprocal: max |S12 \u2212 S21|",
+       "value": 9.425991264074312e-14,
+       "limit": 1e-10,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "DC: |S11(0) \u2212 closed form|, |S21(0) \u2212 closed form|",
+       "value": 0.0,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "passivity: max singular value of S \u2212 1",
+       "value": 6.661338147750939e-16,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "lossless energy: max | |S11|\u00b2 + |S21|\u00b2 \u2212 1 | (both ports)",
+       "value": 1.1102230246251565e-15,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "causality: S21 impulse before the light-speed front / peak",
+       "value": 3.075639024026136e-05,
+       "limit": 0.0003,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "|S21| at the stub quarter-wave v/(4\u2113) = 26.869 GHz (grid point 537)",
+       "value": 7.510107325425821e-16,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "X"
+      },
+      {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 scikit-rf| (exact DC, same integration start)",
+       "value": 6.472459276662956e-05,
+       "limit": 0.001,
+       "ok": true,
+       "tier": "B"
+      },
+      {
+       "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
+       "text": "max |\u0394\u03c1| vs engine 7.7e-05",
+       "ok": null,
+       "tier": "B"
+      }
+     ]
+    }
+   ],
+   "paint_round_trip": [
+    {
+     "source": "50 GHz TDR",
+     "agree_to": 6850000000.0,
+     "max_ds21_db_10g": 0.453757064936291,
+     "max_ds21_db": 33.06647807819211,
+     "dc_s21_db": [
+      -0.03492205034917875,
+      -0.03450814992933713
+     ]
+    },
+    {
+     "source": "110 GHz TDR",
+     "agree_to": 7200000000.0,
+     "max_ds21_db_10g": 0.3552881175812095,
+     "max_ds21_db": 31.948955570834727,
+     "dc_s21_db": [
+      -0.03496235717049199,
+      -0.03450814992933713
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "periodic-c",
+   "title": "Periodic shunt capacitance: 10 \u00d7 0.1 pF at 0.32 in",
+   "variants": [
+    {
+     "variant": "lossy",
+     "checks": [
+      {
+       "name": "S11: max |engine \u2212 scikit-rf|",
+       "value": 6.175926728471676e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S21: max |engine \u2212 scikit-rf|",
+       "value": 9.455625462797585e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S22: max |engine \u2212 scikit-rf|",
+       "value": 6.902940198326405e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "scikit-rf reference is reciprocal: max |S12 \u2212 S21|",
+       "value": 1.3205705030339385e-14,
+       "limit": 1e-10,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "DC: |S11(0) \u2212 closed form|, |S21(0) \u2212 closed form|",
+       "value": 0.0,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "passivity: max singular value of S \u2212 1",
+       "value": 2.220446049250313e-16,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "causality: S21 impulse before the light-speed front / peak",
+       "value": 1.2532522398656623e-05,
+       "limit": 0.0003,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 scikit-rf| (exact DC, same integration start)",
+       "value": 0.00012728636426597665,
+       "limit": 0.001,
+       "ok": true,
+       "tier": "B"
+      },
+      {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 on a 10\u00d7 finer frequency grid|",
+       "value": 0.0004439681935908251,
+       "limit": 0.003,
+       "ok": true,
+       "tier": "B"
+      },
+      {
+       "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
+       "text": "max |\u0394\u03c1| vs engine 8.7e-04; on the 10\u00d7 finer grid, scikit-rf\u2019s step_response is off by 7.5e-04",
+       "ok": null,
+       "tier": "B"
+      }
+     ]
+    },
+    {
+     "variant": "lossless",
+     "checks": [
+      {
+       "name": "S11: max |engine \u2212 scikit-rf|",
+       "value": 1.5613752157892664e-12,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S21: max |engine \u2212 scikit-rf|",
+       "value": 6.729581239093301e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S22: max |engine \u2212 scikit-rf|",
+       "value": 4.4529772244484725e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "scikit-rf reference is reciprocal: max |S12 \u2212 S21|",
+       "value": 3.615404377010385e-13,
+       "limit": 1e-10,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "DC: |S11(0) \u2212 closed form|, |S21(0) \u2212 closed form|",
+       "value": 0.0,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "passivity: max singular value of S \u2212 1",
+       "value": 1.3322676295501878e-15,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "lossless energy: max | |S11|\u00b2 + |S21|\u00b2 \u2212 1 | (both ports)",
+       "value": 3.219646771412954e-15,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "causality: S21 impulse before the light-speed front / peak",
+       "value": 2.2854686912513896e-06,
+       "limit": 0.0003,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "S21 minimum (9.65 GHz) lies in the Bloch stopband 9.16 to 10.08 GHz (0 = yes)",
+       "value": 0.0,
+       "limit": 0.0,
+       "ok": true,
+       "tier": "X"
+      },
+      {
+       "name": "largest |S21| inside the stopband, below the smallest |S21| in the passband under 0.8 \u00d7 its edge (0.99)",
+       "value": 0.545045524831731,
+       "limit": 0.9873304622432187,
+       "ok": true,
+       "tier": "X"
+      },
+      {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 scikit-rf| (exact DC, same integration start)",
+       "value": 0.00017646772471400108,
+       "limit": 0.001,
+       "ok": true,
+       "tier": "B"
+      },
+      {
+       "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
+       "text": "max |\u0394\u03c1| vs engine 2.2e-04",
+       "ok": null,
+       "tier": "B"
+      }
+     ]
+    }
+   ],
+   "paint_round_trip": [
+    {
+     "source": "50 GHz TDR",
+     "agree_to": 7300000000.0,
+     "max_ds21_db_10g": 4.842298949398624,
+     "max_ds21_db": 50.691454843108154,
+     "dc_s21_db": [
+      -0.0696401060752888,
+      -0.06921064219012948
+     ]
+    },
+    {
+     "source": "110 GHz TDR",
+     "agree_to": 7350000000.0,
+     "max_ds21_db_10g": 4.596540502043606,
+     "max_ds21_db": 49.55825701616217,
+     "dc_s21_db": [
+      -0.06960082564812252,
+      -0.06921064219012948
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "probe-launch",
+   "title": "Probe launch: series R and L, pad C, 42 \u03a9 stripline",
+   "variants": [
+    {
+     "variant": "good contact",
+     "checks": [
+      {
+       "name": "S11: max |engine \u2212 scikit-rf|",
+       "value": 5.259118176711968e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S21: max |engine \u2212 scikit-rf|",
+       "value": 7.428699548506887e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S22: max |engine \u2212 scikit-rf|",
+       "value": 5.242775474173098e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "scikit-rf reference is reciprocal: max |S12 \u2212 S21|",
+       "value": 4.173807380798054e-14,
+       "limit": 1e-10,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "DC: |S11(0) \u2212 closed form|, |S21(0) \u2212 closed form|",
+       "value": 1.1102230246251565e-16,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "passivity: max singular value of S \u2212 1",
+       "value": 2.220446049250313e-16,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "causality: S21 impulse before the light-speed front / peak",
+       "value": 1.4784065508387915e-05,
+       "limit": 0.0003,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 scikit-rf| (exact DC, same integration start)",
+       "value": 7.272842896005605e-05,
+       "limit": 0.001,
+       "ok": true,
+       "tier": "B"
+      },
+      {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 on a 10\u00d7 finer frequency grid|",
+       "value": 0.0004725098653751772,
+       "limit": 0.003,
+       "ok": true,
+       "tier": "B"
+      },
+      {
+       "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
+       "text": "max |\u0394\u03c1| vs engine 4.2e-04; on the 10\u00d7 finer grid, scikit-rf\u2019s step_response is off by 8.3e-04",
+       "ok": null,
+       "tier": "B"
+      }
+     ]
+    },
+    {
+     "variant": "bad contact, 3 \u03a9",
+     "checks": [
+      {
+       "name": "S11: max |engine \u2212 scikit-rf|",
+       "value": 4.816383250286162e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S21: max |engine \u2212 scikit-rf|",
+       "value": 7.230046254715655e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S22: max |engine \u2212 scikit-rf|",
+       "value": 5.278774719425648e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "scikit-rf reference is reciprocal: max |S12 \u2212 S21|",
+       "value": 4.054233662700508e-14,
+       "limit": 1e-10,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "DC: |S11(0) \u2212 closed form|, |S21(0) \u2212 closed form|",
+       "value": 1.1102230246251565e-16,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "passivity: max singular value of S \u2212 1",
+       "value": 0.0,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "causality: S21 impulse before the light-speed front / peak",
+       "value": 1.4815160973720412e-05,
+       "limit": 0.0003,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 scikit-rf| (exact DC, same integration start)",
+       "value": 6.92680147420105e-05,
+       "limit": 0.001,
+       "ok": true,
+       "tier": "B"
+      },
+      {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 on a 10\u00d7 finer frequency grid|",
+       "value": 0.00042216959868172227,
+       "limit": 0.003,
+       "ok": true,
+       "tier": "B"
+      },
+      {
+       "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
+       "text": "max |\u0394\u03c1| vs engine 2.8e-04; on the 10\u00d7 finer grid, scikit-rf\u2019s step_response is off by 4.1e-04",
+       "ok": null,
+       "tier": "B"
+      }
+     ]
+    },
+    {
+     "variant": "bad contact, 75 \u03a9 receiver",
+     "checks": [
+      {
+       "name": "S11: max |engine \u2212 scikit-rf|",
+       "value": 5.534063998502305e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S21: max |engine \u2212 scikit-rf|",
+       "value": 7.059069085697618e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S22: max |engine \u2212 scikit-rf|",
+       "value": 5.918944147760831e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "scikit-rf reference is reciprocal: max |S12 \u2212 S21|",
+       "value": 3.979015157963356e-14,
+       "limit": 1e-10,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "DC: |S11(0) \u2212 closed form|, |S21(0) \u2212 closed form|",
+       "value": 0.0,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "passivity: max singular value of S \u2212 1",
+       "value": 2.220446049250313e-16,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "causality: S21 impulse before the light-speed front / peak",
+       "value": 1.4007549716025245e-05,
+       "limit": 0.0003,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 scikit-rf| (exact DC, same integration start)",
+       "value": 6.851587507526041e-05,
+       "limit": 0.001,
+       "ok": true,
+       "tier": "B"
+      },
+      {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 on a 10\u00d7 finer frequency grid|",
+       "value": 0.0004082366338778315,
+       "limit": 0.003,
+       "ok": true,
+       "tier": "B"
+      },
+      {
+       "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
+       "text": "max |\u0394\u03c1| vs engine 2.9e-04; on the 10\u00d7 finer grid, scikit-rf\u2019s step_response is off by 4.5e-04",
+       "ok": null,
+       "tier": "B"
+      }
+     ]
+    }
+   ],
+   "paint_round_trip": [
+    {
+     "source": "50 GHz TDR",
+     "agree_to": 5500000000.0,
+     "max_ds21_db_10g": 0.46421065181570964,
+     "max_ds21_db": 6.69914227123734,
+     "dc_s21_db": [
+      -0.034871604271670215,
+      -0.2900478754766061
+     ]
+    },
+    {
+     "source": "110 GHz TDR",
+     "agree_to": 5550000000.0,
+     "max_ds21_db_10g": 0.4480789960468039,
+     "max_ds21_db": 6.145979609656644,
+     "dc_s21_db": [
+      -0.03486550975109913,
+      -0.2900478754766061
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "lossy-taper",
+   "title": "10 in lossy line with a 50 \u2192 40 \u2192 50 \u03a9 linear taper",
+   "variants": [
+    {
+     "variant": "lossy",
+     "checks": [
+      {
+       "name": "S11: max |engine \u2212 scikit-rf|",
+       "value": 6.06553743123379e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S21: max |engine \u2212 scikit-rf|",
+       "value": 1.1988709018427664e-12,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S22: max |engine \u2212 scikit-rf|",
+       "value": 7.939522071124743e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "scikit-rf reference is reciprocal: max |S12 \u2212 S21|",
+       "value": 9.18912050485878e-13,
+       "limit": 1e-10,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "500 painted cells vs 10\u00d7 finer taper: max |\u0394S21| (dB)",
+       "value": 8.572622101521432e-06,
+       "limit": 0.02,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "500 painted cells vs 10\u00d7 finer taper: max |\u0394S11|",
+       "value": 0.0001176349539125318,
+       "limit": 0.005,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "DC: |S11(0) \u2212 closed form|, |S21(0) \u2212 closed form|",
+       "value": 1.1102230246251565e-16,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "passivity: max singular value of S \u2212 1",
+       "value": -2.220446049250313e-16,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "causality: S21 impulse before the light-speed front / peak",
+       "value": 3.669671853323627e-05,
+       "limit": 0.0003,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 scikit-rf| (exact DC, same integration start)",
+       "value": 2.4959328058238306e-06,
+       "limit": 0.001,
+       "ok": true,
+       "tier": "B"
+      },
+      {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 on a 10\u00d7 finer frequency grid|",
+       "value": 0.0020351007649492547,
+       "limit": 0.003,
+       "ok": true,
+       "tier": "B"
+      },
+      {
+       "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
+       "text": "max |\u0394\u03c1| vs engine 5.0e-03; on the 10\u00d7 finer grid, scikit-rf\u2019s step_response is off by 5.9e-03",
+       "ok": null,
+       "tier": "B"
+      }
+     ]
+    },
+    {
+     "variant": "lossless",
+     "checks": [
+      {
+       "name": "S11: max |engine \u2212 scikit-rf|",
+       "value": 4.702567782052691e-12,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S21: max |engine \u2212 scikit-rf|",
+       "value": 1.4420598252597641e-11,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S22: max |engine \u2212 scikit-rf|",
+       "value": 1.4032159970013884e-11,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "scikit-rf reference is reciprocal: max |S12 \u2212 S21|",
+       "value": 9.587546669714806e-12,
+       "limit": 1e-10,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "DC: |S11(0) \u2212 closed form|, |S21(0) \u2212 closed form|",
+       "value": 0.0,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "passivity: max singular value of S \u2212 1",
+       "value": 1.7541523789077473e-14,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "lossless energy: max | |S11|\u00b2 + |S21|\u00b2 \u2212 1 | (both ports)",
+       "value": 3.4861002973229915e-14,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "causality: S21 impulse before the light-speed front / peak",
+       "value": 2.7110547814129318e-05,
+       "limit": 0.0003,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 scikit-rf| (exact DC, same integration start)",
+       "value": 2.4961037912057168e-06,
+       "limit": 0.001,
+       "ok": true,
+       "tier": "B"
+      },
+      {
+       "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
+       "text": "max |\u0394\u03c1| vs engine 3.5e-06",
+       "ok": null,
+       "tier": "B"
+      }
+     ]
+    }
+   ],
+   "paint_round_trip": [
+    {
+     "source": "50 GHz TDR",
+     "agree_to": null,
+     "max_ds21_db_10g": 0.06603277272555297,
+     "max_ds21_db": 0.06603277272555297,
+     "dc_s21_db": [
+      -0.16846506417910506,
+      -0.1583678129119809
+     ]
+    },
+    {
+     "source": "110 GHz TDR",
+     "agree_to": null,
+     "max_ds21_db_10g": 0.04711955578569271,
+     "max_ds21_db": 0.04711955578569271,
+     "dc_s21_db": [
+      -0.16269811286317035,
+      -0.1583678129119809
+     ]
+    }
+   ]
+  }
+ ],
+ "causality_negative_controls": [
+  {
+   "model": "TDR Painter (Djordjevic-Sarkar dielectric, (1+j)\u221af conductor)",
+   "precursor": 3.932675626191325e-05,
+   "expected_to_pass": true,
+   "ok": true
+  },
+  {
+   "model": "constant Dk and Df at every frequency",
+   "precursor": 0.0029626719496411926,
+   "expected_to_pass": false,
+   "ok": true
+  },
+  {
+   "model": "skin-effect resistance without its internal inductance",
+   "precursor": 0.012788794549131507,
+   "expected_to_pass": false,
+   "ok": true
+  }
+ ],
+ "scikit_rf_examples": {
+  "stepped_microstrip": {
+   "fit": {
+    "ep_r": 4.449509399964706,
+    "tand": 0.01735469652553484,
+    "delay": 4.158794991901614e-11,
+    "z_conn": 52.86082149902945
+   },
+   "comparison": [
+    {
+     "model": "TDR Painter (painted from MLine)",
+     "tdr_max_ohm": 3.499011353517382,
+     "tdr_rms_ohm": 1.2819912109233522,
+     "s21_max_db_5g": 0.533335519017692,
+     "s21_max_db_10g": 9.184521928729282,
+     "s11_rms_db_5g": 2.0982077993933443
+    },
+    {
+     "model": "scikit-rf MLine model (from the example)",
+     "tdr_max_ohm": 2.643384388453377,
+     "tdr_rms_ohm": 1.103862272818424,
+     "s21_max_db_5g": 0.35868989370693694,
+     "s21_max_db_10g": 9.286947362004284,
+     "s11_rms_db_5g": 1.8148517847832475
+    }
+   ]
+  },
+  "taper": {
+   "linear": {
+    "tdr_painter": 0.023235816564107614,
+    "tdr_painter_to_10ghz": 0.015624868619967314,
+    "skrf": 0.033116738016902264
+   },
+   "exponential": {
+    "tdr_painter": 0.017885489634589635,
+    "tdr_painter_to_10ghz": 0.015377682791463423,
+    "skrf": 0.0374581583538772
+   }
+  }
+ }
+}

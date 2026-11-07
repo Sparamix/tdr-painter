@@ -1,0 +1,236 @@
+{
+ "format": "tdr-painter-project",
+ "formatVersion": 1,
+ "app": "validation",
+ "name": "Microstrip linear taper into 15 \u03a9 (scikit-rf taper example)",
+ "savedAt": "2026-11-07T00:00:00.000Z",
+ "params": {
+  "lenIn": 0.3391767426836601,
+  "z0": 48.2,
+  "Dk": 6.0,
+  "Df": 0.0,
+  "frefGHz": 12,
+  "dsLowHz": 1000.0,
+  "dsHighHz": 1000000000000.0,
+  "condLoss": 0.31968,
+  "condRefGHz": 10,
+  "rdc": 0.04849,
+  "fmaxGHz": 20,
+  "nf": 1001,
+  "zTx": 50,
+  "zRx": 15.0,
+  "beta": 4.2,
+  "lossless": false
+ },
+ "profile": {
+  "cells": 500,
+  "runs": [
+   [
+    48.2,
+    85
+   ],
+   [
+    46.614,
+    6
+   ],
+   [
+    45.141,
+    7
+   ],
+   [
+    43.768,
+    6
+   ],
+   [
+    42.486,
+    6
+   ],
+   [
+    41.284,
+    7
+   ],
+   [
+    40.156,
+    6
+   ],
+   [
+    39.094,
+    7
+   ],
+   [
+    38.092,
+    6
+   ],
+   [
+    37.144,
+    7
+   ],
+   [
+    36.246,
+    6
+   ],
+   [
+    35.393,
+    7
+   ],
+   [
+    34.583,
+    6
+   ],
+   [
+    33.811,
+    7
+   ],
+   [
+    33.076,
+    6
+   ],
+   [
+    32.373,
+    7
+   ],
+   [
+    31.702,
+    7
+   ],
+   [
+    31.06,
+    6
+   ],
+   [
+    30.445,
+    7
+   ],
+   [
+    29.855,
+    6
+   ],
+   [
+    29.289,
+    7
+   ],
+   [
+    28.745,
+    7
+   ],
+   [
+    28.222,
+    6
+   ],
+   [
+    27.719,
+    7
+   ],
+   [
+    27.234,
+    7
+   ],
+   [
+    26.767,
+    7
+   ],
+   [
+    26.316,
+    6
+   ],
+   [
+    25.881,
+    7
+   ],
+   [
+    25.461,
+    7
+   ],
+   [
+    25.055,
+    7
+   ],
+   [
+    24.662,
+    6
+   ],
+   [
+    24.282,
+    7
+   ],
+   [
+    23.914,
+    7
+   ],
+   [
+    23.557,
+    7
+   ],
+   [
+    23.212,
+    7
+   ],
+   [
+    22.876,
+    7
+   ],
+   [
+    22.551,
+    6
+   ],
+   [
+    22.236,
+    7
+   ],
+   [
+    21.929,
+    7
+   ],
+   [
+    21.631,
+    7
+   ],
+   [
+    21.341,
+    7
+   ],
+   [
+    21.06,
+    7
+   ],
+   [
+    20.786,
+    7
+   ],
+   [
+    20.519,
+    7
+   ],
+   [
+    20.259,
+    6
+   ],
+   [
+    20.006,
+    7
+   ],
+   [
+    19.76,
+    7
+   ],
+   [
+    19.52,
+    7
+   ],
+   [
+    19.286,
+    7
+   ],
+   [
+    19.057,
+    94
+   ]
+  ]
+ },
+ "elements": [],
+ "example": {
+  "category": "Community",
+  "note": "A 20 to 90 mil linear microstrip taper on \u03b5r = 10, from scikit-rf's \"Tapered transmission lines\" example, painted from MLine impedances and delays and terminated in 15 \u03a9 (the receiver impedance). Compare |S11| with ANSYS Circuit in validation/report/REPORT.md.",
+  "author": "TDR Painter validation"
+ }
+}

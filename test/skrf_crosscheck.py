@@ -59,7 +59,10 @@ e11 = np.max(np.abs(s11[k] - ntw.s[k, 0, 0]))  # linear: dB is ill-conditioned i
 e21 = np.max(np.abs(db(s21[k]) - db(ntw.s[k, 1, 0])))
 print(f"permittivity max |diff|: {eps_err:.2e}")
 print(f"max |S11 diff| (linear): {e11:.4f}   max |dB(S21) diff|: {e21:.4f} dB")
-# skrf keeps C real and puts loss in G, while the engine uses complex eps in C, so a small gap is expected.
+# DefinedAEpTandZ0 holds the line impedance at exactly z0 at every frequency. The engine's lines are RLGC with a fixed
+# L', so their impedance is z0*sqrt(Dk/eps(f)), which is z0 (up to the small loss term) only at f_ref. That accounts
+# for the small gap here;
+# validation/ builds RLGC lines in scikit-rf as well and agrees with the engine to about 1e-12.
 ok = eps_err < 1e-9 and e21 < 0.05 and e11 < 0.01
 print("PASS" if ok else "FAIL")
 sys.exit(0 if ok else 1)

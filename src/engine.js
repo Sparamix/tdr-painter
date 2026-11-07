@@ -129,7 +129,7 @@
     }
     const M = nextPow2(nf * 8);
     const dt = 1 / (M * df);
-    const t0 = 8 / fmax; // shift so the zero-phase window kernel does not wrap
+    const t0 = Math.round(8 / fmax / dt) * dt; // shift so the zero-phase kernel does not wrap; whole samples, so t = 0 is a sample
     const vRef = C0 / sqDk;
     return {
       P, nf, f, df, fmax, ds, gRe, gIm, zRe, zIm, epsRe, epsIm, win, M, dt, t0,
@@ -303,11 +303,15 @@
     const n0 = Math.round(t0 / dt);
     const nOut = Math.min(M - 1, n0 + Math.ceil(tMaxRT / dt) + 1);
     const t = new Float64Array(nOut), rho = new Float64Array(nOut);
+    // Step = running integral of the impulse response, by the trapezoid rule (as scikit-rf's step_response).
+    // A plain running sum would place every edge half a sample (dt/2) early.
     let acc = 0;
+    const y0 = re[0] / M;
     for (let n = 0; n < nOut; n++) {
-      acc += re[n] / M;
+      const yn = re[n] / M;
+      acc += yn;
       t[n] = n * dt - t0;
-      rho[n] = acc;
+      rho[n] = acc - 0.5 * (y0 + yn);
     }
     return { t, rho };
   }

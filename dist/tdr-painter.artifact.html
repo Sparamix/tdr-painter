@@ -288,7 +288,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
 
     <aside class="rail" id="rail"></aside>
   </div>
-  <footer class="foot">TDR Painter v0.5.0 · Runs entirely in your browser. Projects are .tdrp or .json files you save and open yourself; nothing is uploaded or stored.</footer>
+  <footer class="foot">TDR Painter v0.6.0 · Runs entirely in your browser. Projects are .tdrp or .json files you save and open yourself; nothing is uploaded or stored.</footer>
 </div>
 
 <script>
@@ -423,7 +423,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     }
     const M = nextPow2(nf * 8);
     const dt = 1 / (M * df);
-    const t0 = 8 / fmax; // shift so the zero-phase window kernel does not wrap
+    const t0 = Math.round(8 / fmax / dt) * dt; // shift so the zero-phase kernel does not wrap; whole samples, so t = 0 is a sample
     const vRef = C0 / sqDk;
     return {
       P, nf, f, df, fmax, ds, gRe, gIm, zRe, zIm, epsRe, epsIm, win, M, dt, t0,
@@ -597,11 +597,15 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     const n0 = Math.round(t0 / dt);
     const nOut = Math.min(M - 1, n0 + Math.ceil(tMaxRT / dt) + 1);
     const t = new Float64Array(nOut), rho = new Float64Array(nOut);
+    // Step = running integral of the impulse response, by the trapezoid rule (as scikit-rf's step_response).
+    // A plain running sum would place every edge half a sample (dt/2) early.
     let acc = 0;
+    const y0 = re[0] / M;
     for (let n = 0; n < nOut; n++) {
-      acc += re[n] / M;
+      const yn = re[n] / M;
+      acc += yn;
       t[n] = n * dt - t0;
-      rho[n] = acc;
+      rho[n] = acc - 0.5 * (y0 + yn);
     }
     return { t, rho };
   }
@@ -1752,7 +1756,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       <li>The painted profile is 500 equal cells. Each cell is a uniform line of its painted impedance; lumped elements sit on cell boundaries. S-parameters come from the ABCD cascade, so they are exact for this structure.</li>
       <li>R′ and L′ scale with Z and C′ with 1/Z, as if width alone changed the impedance. Loss per inch is the same everywhere, and only the reflections change with what you paint.</li>
       <li>Dielectric: <code>ε(f) = ε∞ + Δε·ln((f₂+jf)/(f₁+jf)) / ln(f₂/f₁)</code>, anchored to Dk and Df at f_ref. Conductor: <code>R_dc + (1+j)·K·√f</code>.</li>
-      <li>TDR: S11 times a Kaiser half-window, inverse FFT, running sum, then <code>Z = Z_Tx(1+ρ)/(1−ρ)</code>. The window sets rise time and ringing; the orange trace is what a TDR would show, the indigo line is the truth.</li>
+      <li>TDR: S11 times a Kaiser half-window, inverse FFT, trapezoid-rule integration, then <code>Z = Z_Tx(1+ρ)/(1−ρ)</code>. The window sets rise time and ringing; the orange trace is what a TDR would show, the indigo line is the truth.</li>
       <li>With loss on, the orange trace sits a little above the painted line and creeps upward along it. Skin-effect resistance and internal inductance raise the low-frequency impedance. Tick Lossless to see it vanish.</li>
       <li>Labels on short painted bumps use the TDR area method: <code>L = 2Z₀∫ρ dt</code>, <code>C = −(2/Z₀)∫ρ dt</code> over round-trip time. Long excursions show average impedance and length instead.</li>
       <li>ILD is dB(S21) minus a least-squares fit of a0 + a1√f + a2·f + a4·f² over the whole sweep.</li>
@@ -1796,7 +1800,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     const P = state.P, s = R.s;
     const v2 = Math.abs(P.zTx - P.zRx) > 1e-9;
     const lines = [];
-    lines.push('! TDR Painter v0.5.0 export, ' + new Date().toISOString().slice(0, 10));
+    lines.push('! TDR Painter v0.6.0 export, ' + new Date().toISOString().slice(0, 10));
     if (state.projectName) lines.push('! project: ' + state.projectName.replace(/[\r\n]/g, ' '));
     lines.push(`! ${P.lenIn} in line, Z0 ${P.z0} ohm, Dk ${P.Dk} Df ${P.Df} @ ${P.frefGHz} GHz (Djordjevic-Sarkar), cond ${P.lossless ? 0 : P.condLoss} dB/in @10 GHz, Rdc ${P.lossless ? 0 : P.rdc} ohm/in`);
     for (const e of state.elems) lines.push(`! element ${chipLabel(e)} at ${e.x} in${e.count > 1 ? ', pitch ' + e.pitch + ' in' : ''}`);
@@ -1820,7 +1824,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   /* ---------- projects: plain .json files on the viewer's own computer ----------
      Nothing is sent anywhere or kept in browser storage. Save hands a file to the browser's
      download (or, inside claude.ai, to its save dialog); Open reads a file the viewer picks. */
-  const APP_VERSION = '0.5.0';
+  const APP_VERSION = '0.6.0';
   function projectData(name) {
     return {
       format: PJ.FORMAT, formatVersion: PJ.FORMAT_VERSION, app: APP_VERSION, name, savedAt: new Date().toISOString(),

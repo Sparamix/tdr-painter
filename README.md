@@ -65,10 +65,14 @@ The profile is run-length encoded as `[impedance in Ω, number of cells]`. Eleme
 - R′ and L′ scale with Z and C′ with 1/Z, so loss per inch is the same everywhere and only reflections change with what you paint.
 - Dielectric: Djordjevic-Sarkar, `ε(f) = ε∞ + Δε·ln((f₂+jf)/(f₁+jf)) / ln(f₂/f₁)`, anchored to Dk and Df at f_ref (same form and corner defaults as scikit-rf's `djordjevicsvensson`). Defaults are the Megtron 6 R-5775(N) datasheet point, Dk 3.35 and Df 0.004 at 12 GHz.
 - Conductor: `R_dc + (1+j)·K·√f` per unit length, which keeps the line causal.
-- TDR: S11 times a Kaiser half-window centered on DC (β 4.2 by default), inverse FFT, running sum, then `Z = Z_Tx(1+ρ)/(1−ρ)`.
+- TDR: S11 times a Kaiser half-window centered on DC (β 4.2 by default), inverse FFT, trapezoid-rule integration (as scikit-rf's `step_response`), then `Z = Z_Tx(1+ρ)/(1−ρ)`. Time zero falls on a sample.
 - Equivalent L/C labels use the TDR area method, `L = 2Z₀∫ρ dt` and `C = −(2/Z₀)∫ρ dt` over round-trip time.
 - ILD is dB(S21) minus a least-squares fit of `a0 + a1√f + a2·f + a4·f²` over the sweep.
 - 1-D TEM only: no radiation, coupling or mode conversion.
+
+## Validation
+
+[`validation/`](validation/) checks TDR Painter against independent scikit-rf models of five structures with distinct TDR signatures (a Beatty standard, a via with an open stub, periodic shunt capacitance, a probe launch with good and bad contact, and a 10 in lossy taper), against textbook results, and against a VNA measurement and an ANSYS Circuit simulation published with scikit-rf. S-parameters agree with scikit-rf to about 1e-11 and the TDR to about 2e-4 in ρ. The full results, including where painting a TDR trace stops being a good model, are in [`validation/report/REPORT.md`](validation/report/REPORT.md).
 
 ## Develop
 
@@ -76,6 +80,7 @@ The profile is run-length encoded as `[impedance in Ω, number of cells]`. Eleme
 npm run build   # src/ + fonts/ -> dist/index.html and dist/tdr-painter.artifact.html
 npm test        # build, engine, .tdrp container, examples and privacy checks (Node 18+, no dependencies)
 python test/skrf_crosscheck.py   # optional, needs scikit-rf
+npm run validate                 # optional, the validation suite and report (pip install -r validation/requirements.txt)
 python test/ui_smoke.py          # optional, needs Playwright and Chrome
 ```
 
@@ -90,6 +95,7 @@ python test/ui_smoke.py          # optional, needs Playwright and Chrome
 | `build.js` | Produces the two single-file builds in `dist/` |
 | `fonts/` | Self-hosted Archivo, Instrument Sans and JetBrains Mono (latin and greek subsets) with their licenses |
 | `test/` | Engine, container, example and privacy tests, scikit-rf cross-check, browser smoke test |
+| `validation/` | Verification against scikit-rf, textbook results and published measurements, with its report |
 
 ## References
 

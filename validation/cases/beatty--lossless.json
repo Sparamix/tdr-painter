@@ -1,0 +1,48 @@
+{
+ "format": "tdr-painter-project",
+ "formatVersion": 1,
+ "app": "validation",
+ "name": "Beatty standard: 25 \u03a9 section in a 50 \u03a9 line (lossless)",
+ "savedAt": "2026-11-07T00:00:00.000Z",
+ "params": {
+  "lenIn": 2.5,
+  "z0": 50,
+  "Dk": 3.35,
+  "Df": 0.004,
+  "frefGHz": 12,
+  "dsLowHz": 1000.0,
+  "dsHighHz": 1000000000000.0,
+  "condLoss": 0.4,
+  "condRefGHz": 10,
+  "rdc": 0.2,
+  "fmaxGHz": 50,
+  "nf": 1001,
+  "zTx": 50,
+  "zRx": 50,
+  "beta": 4.2,
+  "lossless": true
+ },
+ "profile": {
+  "cells": 500,
+  "runs": [
+   [
+    50.0,
+    150
+   ],
+   [
+    25.0,
+    200
+   ],
+   [
+    50.0,
+    150
+   ]
+  ]
+ },
+ "elements": [],
+ "example": {
+  "category": "Community",
+  "note": "A 1 in, 25 \u03a9 section between 0.75 in leads of 50 \u03a9 stripline. The stepped-impedance airline used in VNA verification kits, here as a stripline.",
+  "author": "TDR Painter validation"
+ }
+}

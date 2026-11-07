@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.0 (2026-11-07)
+
+- New `validation/` suite: five synthetic structures (Beatty standard, via with a 60 mil open stub, periodic shunt C, probe launch with good and bad contact, 10 in lossy taper) built independently in scikit-rf and compared with the engine, plus physics checks (DC, passivity, energy, causality with non-causal negative controls), textbook results (Beatty closed form, quarter-wave stub null, Bloch stopband), a paint-the-TDR round trip, and two cases from scikit-rf's documentation (a measured stepped microstrip and a taper simulated in ANSYS Circuit). `npm run validate` regenerates `validation/report/REPORT.md`.
+- Fixed: the TDR was drawn half a sample (about 1.2 ps at 50 GHz) early, because the step response was a running sum of the impulse response. It is now integrated by the trapezoid rule, as in scikit-rf, and time zero falls on a sample. Sharp edges moved by up to 0.029 in ρ (about 3 Ω); S-parameters are unchanged.
+- Fixed a race in `test/ui_smoke.py` that read element chips before they were laid out.
+
 ## 0.5.0 (2026-11-01)
 
 - Examples are now data: `examples/*.json`, bundled at build time, shown in a grouped menu with a note on what to look at. 15 built-in examples, including probed 42 Ω stripline with good and bad contact, a 5 in serpentine with corner capacitance, a ghost spike after a via stub, masking, resolution, pad compensation and lossy creep.

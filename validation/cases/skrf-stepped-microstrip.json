@@ -1,0 +1,60 @@
+{
+ "format": "tdr-painter-project",
+ "formatVersion": 1,
+ "app": "validation",
+ "name": "Stepped microstrip (scikit-rf TDR example)",
+ "savedAt": "2026-11-07T00:00:00.000Z",
+ "params": {
+  "lenIn": 6.047707831657182,
+  "z0": 49.654,
+  "Dk": 3.4101,
+  "Df": 0.01615,
+  "frefGHz": 5.0,
+  "dsLowHz": 1000.0,
+  "dsHighHz": 1000000000000.0,
+  "condLoss": 0.02855,
+  "condRefGHz": 10,
+  "rdc": 0.0029,
+  "fmaxGHz": 10,
+  "nf": 1001,
+  "zTx": 50,
+  "zRx": 50,
+  "beta": 4.2,
+  "lossless": false
+ },
+ "profile": {
+  "cells": 500,
+  "runs": [
+   [
+    52.861,
+    22
+   ],
+   [
+    49.654,
+    163
+   ],
+   [
+    25.554,
+    68
+   ],
+   [
+    85.16,
+    62
+   ],
+   [
+    49.654,
+    163
+   ],
+   [
+    52.861,
+    22
+   ]
+  ]
+ },
+ "elements": [],
+ "example": {
+  "category": "Community",
+  "note": "The stepped-impedance microstrip from scikit-rf's \"Time domain reflectometry, measurement vs simulation\" example, painted from MLine impedances and delays. Compare with the measured TDR in validation/report/REPORT.md.",
+  "author": "TDR Painter validation"
+ }
+}
