@@ -90,14 +90,15 @@
     const f = new Float64Array(nf);
     for (let k = 0; k < nf; k++) f[k] = k * df;
     const Dk = P.Dk;
-    const lossless = !!P.lossless;
-    const ds = makeDS(Dk, lossless ? 0 : P.Df, P.frefGHz * 1e9, P.dsLowHz, P.dsHighHz);
+    // lossless (both) or each part on its own
+    const noDiel = !!(P.lossless || P.dielLossless), noCond = !!(P.lossless || P.condLossless);
+    const ds = makeDS(Dk, noDiel ? 0 : P.Df, P.frefGHz * 1e9, P.dsLowHz, P.dsHighHz);
     const sqDk = Math.sqrt(Dk);
     const Lu = sqDk / C0;                     // H/m per ohm
     // conductor: alpha_c [Np/m] at fc for the nominal line -> normalized surface impedance coefficient
-    const alphaC = lossless ? 0 : (P.condLoss / 8.685889638) / IN;      // Np/m at condRef
+    const alphaC = noCond ? 0 : (P.condLoss / 8.685889638) / IN;        // Np/m at condRef
     const kc = 2 * alphaC / Math.sqrt(P.condRefGHz * 1e9);              // per ohm, * sqrt(f)
-    const rdcN = lossless ? 0 : (P.rdc / IN) / P.z0;                     // per ohm
+    const rdcN = noCond ? 0 : (P.rdc / IN) / P.z0;                       // per ohm
     const gRe = new Float64Array(nf), gIm = new Float64Array(nf);        // gamma (1/m)
     const zRe = new Float64Array(nf), zIm = new Float64Array(nf);        // zeta: Zc / Z_nominal
     const epsRe = new Float64Array(nf), epsIm = new Float64Array(nf);

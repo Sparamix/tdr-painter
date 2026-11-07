@@ -11,9 +11,15 @@
   const DEFAULTS = {
     lenIn: 2, z0: 50, Dk: 3.35, Df: 0.004, frefGHz: 12, dsLowHz: 1e3, dsHighHz: 1e12,
     condLoss: 0.4, condRefGHz: 10, rdc: 0.2, fmaxGHz: 50, nf: 1001,
-    zTx: 50, zRx: 50, beta: 4.2, lossless: false, extremeZ: false,
+    zTx: 50, zRx: 50, beta: 4.2, lossless: false, condLossless: false, dielLossless: false, extremeZ: false,
   };
-  const FLAGS = ['lossless', 'extremeZ'];   // booleans; a missing flag means false
+  const FLAGS = ['lossless', 'condLossless', 'dielLossless', 'extremeZ'];   // booleans; a missing flag means false
+  /** lossless (from v0.7.0 and earlier) means both; afterwards it is kept equal to condLossless && dielLossless. */
+  function normalizeLoss(P) {
+    if (P.lossless) { P.condLossless = true; P.dielLossless = true; }
+    P.lossless = !!(P.condLossless && P.dielLossless);
+    return P;
+  }
   // Same ranges as the page's sliders (stored in base units: Hz, inches, ohms).
   const LIMITS = {
     lenIn: [0.25, 10], z0: [20, 120], Dk: [1, 6], Df: [0, 0.03], frefGHz: [0.1, 60],
@@ -63,6 +69,7 @@
     const P = { ...DEFAULTS };
     const src = obj.params && typeof obj.params === 'object' ? obj.params : {};
     for (const k of FLAGS) P[k] = src[k] === true;
+    normalizeLoss(P);
     const lim = limits(P.extremeZ);
     for (const k of Object.keys(DEFAULTS)) {
       if (FLAGS.includes(k)) continue;
@@ -115,7 +122,7 @@
     return { name: text(obj.name, 80), P, prof, elements, view, example };
   }
 
-  const api = { FORMAT, FORMAT_VERSION, DEFAULTS, FLAGS, LIMITS, Z_LIMITS, WIDE, ELEMENT, CATEGORIES, limits, quantZ, encodeProfile, parse };
+  const api = { FORMAT, FORMAT_VERSION, DEFAULTS, FLAGS, LIMITS, Z_LIMITS, WIDE, ELEMENT, CATEGORIES, limits, quantZ, normalizeLoss, encodeProfile, parse };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.TDRProject = api;
 })(typeof window !== 'undefined' ? window : globalThis);

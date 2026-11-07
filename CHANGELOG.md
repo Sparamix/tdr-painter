@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.1 (2026-11-07)
+
+- Conductor and dielectric loss switch off separately: **Lossless conductor** and **Lossless dielectric** sit at the top of their groups and dim the sliders they turn off (`params.condLossless`, `params.dielLossless`). `lossless` still means both, and older projects that set it open with both checks ticked.
+- The TDR plot range is now the first group in the side panel, next to the TDR, with the logarithmic axis switch; Fit is renamed **Autoscale**. The settings menu keeps the experimental option.
+- "How the model works" moved to the main column, under the frequency readout.
+
 ## 0.7.0 (2026-11-07)
 
 - Settings menu (the gear) with **Allow extra low and high impedances**, an experimental option: Tx and Rx, the painted profile, stub impedance and series R go from 1 mΩ (a short) to 1 MΩ (an open), with log-scale sliders, and Rx gets Short, Open and Line Z₀ buttons. The option is saved with the project (`params.extremeZ`); turning it off brings values back into the normal ranges, and Undo restores them.

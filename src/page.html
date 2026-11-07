@@ -159,6 +159,9 @@ aside.rail { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .check { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--fg-2); }
 .check input { accent-color: var(--ink); width: 16px; height: 16px; }
 .inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pair input:disabled { opacity: 0.45; cursor: default; }
+#zMin, #zMax { width: 74px; }
+#modelNotes ul { max-width: 104ch; }
 details.notes { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; }
 details.notes summary { cursor: pointer; font-family: var(--font-display); font-stretch: 105%; font-weight: 700; font-size: 14px; }
 details.notes ul { margin: 10px 0 2px; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--fg-2); font-size: 13px; }
@@ -204,16 +207,11 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       <select id="preset" aria-label="Load an example"></select>
       <button id="pin" title="Keep the current curves as a dotted reference">Pin reference</button>
       <button id="unpin" class="ghost" disabled>Clear reference</button>
-      <button id="gear" class="gear" aria-haspopup="dialog" aria-expanded="false" aria-controls="gearPanel" aria-label="Settings" title="Settings: view and experimental options"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-dasharray="2.16 2.16"/><circle cx="8" cy="8" r="4.1" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/></svg><span class="dot" id="gearDot" hidden></span></button>
+      <button id="gear" class="gear" aria-haspopup="dialog" aria-expanded="false" aria-controls="gearPanel" aria-label="Settings" title="Settings: experimental options"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-dasharray="2.16 2.16"/><circle cx="8" cy="8" r="4.1" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/></svg><span class="dot" id="gearDot" hidden></span></button>
     </div>
   </header>
 
   <div class="gearpanel" id="gearPanel" role="dialog" aria-label="Settings" hidden>
-    <section>
-      <h2>View</h2>
-      <label class="check"><input type="checkbox" id="optLog"> Logarithmic impedance axis</label>
-      <p class="note">Equal ratios get equal space, so a 20 mΩ contact and a 0.5 Ω one sit a decade apart instead of both on the floor. Paint tools work in ratios on this axis.</p>
-    </section>
     <section>
       <h2 class="exp">Experimental</h2>
       <label class="check"><input type="checkbox" id="optWide"> Allow extra low and high impedances</label>
@@ -295,6 +293,18 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
         </div>
       </div>
       <div class="readout" id="fread"></div>
+      <details class="notes" id="modelNotes"><summary>How the model works</summary><ul>
+      <li>The painted profile is 500 equal cells. Each cell is a uniform line of its painted impedance; lumped elements sit on cell boundaries. S-parameters come from the ABCD cascade, so they are exact for this structure.</li>
+      <li>R′ and L′ scale with Z and C′ with 1/Z, as if width alone changed the impedance. Loss per inch is the same everywhere, and only the reflections change with what you paint.</li>
+      <li>Dielectric: <code>ε(f) = ε∞ + Δε·ln((f₂+jf)/(f₁+jf)) / ln(f₂/f₁)</code>, anchored to Dk and Df at f_ref. Conductor: <code>R_dc + (1+j)·K·√f</code>.</li>
+      <li>TDR: S11 times a Kaiser half-window, inverse FFT, trapezoid-rule integration, then <code>Z = Z_Tx(1+ρ)/(1−ρ)</code>. The window sets rise time and ringing; the orange trace is what a TDR would show, the indigo line is the truth.</li>
+      <li>With loss on, the orange trace sits a little above the painted line and creeps upward along it. Skin-effect resistance and internal inductance raise the low-frequency impedance. Tick Lossless conductor to see it vanish.</li>
+      <li>Labels on short painted bumps use the TDR area method: <code>L = 2Z₀∫ρ dt</code>, <code>C = −(2/Z₀)∫ρ dt</code> over round-trip time. Long excursions show average impedance and length instead.</li>
+      <li>ILD is dB(S21) minus a least-squares fit of a0 + a1√f + a2·f + a4·f² over the whole sweep.</li>
+      <li>Privacy: the page makes no network requests and keeps nothing, not even in browser storage. Save writes a .tdrp file to your computer (a ZIP holding project.json, with a CRC-32 that Open verifies) and Open reads it back; Export JSON writes the same project as readable text. The standalone build adds a Content-Security-Policy that blocks every outgoing connection, so the browser itself enforces this.</li>
+      <li>Nothing radiates and nothing couples. Power that is neither reflected nor transmitted is absorbed in the line or in series R.</li>
+      <li>Experimental impedance range (gear menu): 1 mΩ is a short and 1 MΩ an open, for the ports, the profile, stubs and series R. The S-parameters stay referenced to Tx and Rx, so with Rx shorted S21 is tiny by definition; the TDR is the useful view. A painted 1 mΩ section keeps the same loss per inch as any other cell. Stubs can be open or shorted at the far end: a 1 mΩ shorted stub is a short to ground at its position, DC included, while a 1 mΩ open stub is a nanofarad capacitor that is open at DC.</li>
+      </ul></details>
     </section>
 
     <aside class="rail" id="rail"></aside>
@@ -422,7 +432,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   /* ---------- compute ---------- */
   function compute() {
     const P = state.P;
-    const key = JSON.stringify([P.lenIn, P.z0, P.Dk, P.Df, P.frefGHz, P.dsLowHz, P.dsHighHz, P.condLoss, P.condRefGHz, P.rdc, P.fmaxGHz, P.nf, P.beta, P.lossless]);
+    const key = JSON.stringify([P.lenIn, P.z0, P.Dk, P.Df, P.frefGHz, P.dsLowHz, P.dsHighHz, P.condLoss, P.condRefGHz, P.rdc, P.fmaxGHz, P.nf, P.beta, P.lossless, P.condLossless, P.dielLossless]);
     if (key !== prepKey) { prep = E.prepare(P); prepKey = key; riseT = E.riseTime(prep); }
     prep.P = P;
     const t0 = performance.now();
@@ -1148,17 +1158,17 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       { k: 'lenIn', label: 'Length', unit: 'in', min: 0.25, max: 10, step: 0.05 },
       { k: 'z0', label: 'Line impedance (Flatten and Erase level)', unit: 'Ω', min: 20, max: 120, step: 0.5 },
     ] },
-    { title: 'Dielectric, Djordjevic-Sarkar', note: 'Defaults: Megtron 6 R-5775(N) datasheet point, Dk 3.35 and Df 0.004 at 12 GHz.', items: [
+    { title: 'Dielectric, Djordjevic-Sarkar', loss: { k: 'dielLossless', label: 'Lossless dielectric (Df = 0)' }, note: 'Defaults: Megtron 6 R-5775(N) datasheet point, Dk 3.35 and Df 0.004 at 12 GHz.', items: [
       { k: 'Dk', label: 'Dk at f_ref', unit: '', min: 1, max: 6, step: 0.01 },
       { k: 'Df', label: 'Df at f_ref', unit: '', min: 0, max: 0.03, step: 0.0005 },
       { k: 'frefGHz', label: 'f_ref', unit: 'GHz', min: 0.1, max: 60, step: 0.1 },
       { k: 'dsLowHz', label: 'Lower corner f₁', unit: 'kHz', min: 0.01, max: 1000, step: 0.01, scale: 1e3 },
       { k: 'dsHighHz', label: 'Upper corner f₂', unit: 'GHz', min: 100, max: 10000, step: 10, scale: 1e9 },
     ] },
-    { title: 'Conductor', note: 'Skin-effect loss scales with √f and carries its internal inductance, so the line stays causal.', items: [
+    { title: 'Conductor', loss: { k: 'condLossless', label: 'Lossless conductor (no skin effect, no DC resistance)' }, note: 'Skin-effect loss scales with √f and carries its internal inductance, so the line stays causal.', items: [
       { k: 'condLoss', label: 'Conductor loss at 10 GHz', unit: 'dB/in', min: 0, max: 2, step: 0.01 },
       { k: 'rdc', label: 'DC resistance', unit: 'Ω/in', min: 0, max: 2, step: 0.01 },
-    ], lossless: true },
+    ] },
     { title: 'Ports', note: 'Tx is also the TDR source impedance. Both set the S-parameter reference.', items: [
       { k: 'zTx', label: 'Tx (port 1)', unit: 'Ω', min: 10, max: 150, step: 0.5 },
       { k: 'zRx', label: 'Rx (port 2)', unit: 'Ω', min: 10, max: 150, step: 0.5 },
@@ -1174,11 +1184,15 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     const rail = $('#rail');
     const wide = railWide = !!state.P.extremeZ;
     const portLim = zlim().port;
-    const openNotes = rail.querySelector('details.notes[open]') !== null;
     railShows = [];
-    let html = '';
+    let html = `<div class="group"><h2>TDR plot range</h2><div class="inline">` +
+      `<input type="number" id="zMin" step="any" aria-label="Lowest impedance shown"><span class="note">to</span><input type="number" id="zMax" step="any" aria-label="Highest impedance shown"><span class="note">Ω</span>` +
+      `<button id="zFit" class="ghost" title="Fit the axis to the profile, the ports and the TDR">Autoscale</button></div>` +
+      `<label class="check"><input type="checkbox" id="optLog"> Logarithmic axis</label>` +
+      `<p class="note">On a log axis equal ratios get equal space, so a 30 mΩ contact and a 0.5 Ω one sit a decade apart. Paint tools then work in ratios.</p></div>`;
     GROUPS.forEach((g, gi) => {
-      html += `<div class="group"><h2>${g.title}</h2>`;
+      html += `<div class="group" id="grp_${gi}"><h2>${g.title}</h2>`;
+      if (g.loss) html += `<label class="check"><input type="checkbox" id="p_${g.loss.k}"> ${g.loss.label}</label>`;
       if (g.note) html += `<p class="note">${g.note}${g.title === 'Ports' && wide ? ' <span class="exp">Experimental range: 1 mΩ to 1 MΩ.</span>' : ''}</p>`;
       g.items.forEach(it => {
         html += wide && isPort(it.k) ? pairHTML('p_' + it.k, it.label, it.unit, portLim[0], portLim[1], it.step, true)
@@ -1188,25 +1202,11 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
         `<button id="rxShort" title="Rx = 1 mΩ: a short, like a probe landed on the short standard">Short</button>` +
         `<button id="rxOpen" title="Rx = 1 MΩ: an open, like a lifted probe">Open</button>` +
         `<button id="rxLine" class="ghost" title="Rx = the line impedance">Line Z₀</button></div>`;
-      if (g.lossless) html += `<label class="check"><input type="checkbox" id="p_lossless"> Lossless (no conductor or dielectric loss)</label>`;
       html += '</div>';
     });
-    html += `<div class="group"><h2>TDR plot range</h2><div class="inline">` +
-      `<input type="number" id="zMin" step="1" aria-label="Lowest impedance shown"><span class="note">to</span><input type="number" id="zMax" step="1" aria-label="Highest impedance shown"><span class="note">Ω</span><button id="zFit" class="ghost">Fit</button></div></div>`;
     html += `<div class="group"><h2>Export</h2><p class="note">Touchstone of the current S-parameters (RI). Unequal port impedances write version 2.0 with a [Reference] line.</p>` +
       `<div class="inline"><button id="copyS2p">Copy .s2p text</button><span class="toast" id="s2pMsg"></span></div><textarea id="s2pbox" hidden readonly aria-label="Touchstone text"></textarea></div>`;
-    html += `<details class="notes"${openNotes ? ' open' : ''}><summary>How the model works</summary><ul>
-      <li>The painted profile is 500 equal cells. Each cell is a uniform line of its painted impedance; lumped elements sit on cell boundaries. S-parameters come from the ABCD cascade, so they are exact for this structure.</li>
-      <li>R′ and L′ scale with Z and C′ with 1/Z, as if width alone changed the impedance. Loss per inch is the same everywhere, and only the reflections change with what you paint.</li>
-      <li>Dielectric: <code>ε(f) = ε∞ + Δε·ln((f₂+jf)/(f₁+jf)) / ln(f₂/f₁)</code>, anchored to Dk and Df at f_ref. Conductor: <code>R_dc + (1+j)·K·√f</code>.</li>
-      <li>TDR: S11 times a Kaiser half-window, inverse FFT, trapezoid-rule integration, then <code>Z = Z_Tx(1+ρ)/(1−ρ)</code>. The window sets rise time and ringing; the orange trace is what a TDR would show, the indigo line is the truth.</li>
-      <li>With loss on, the orange trace sits a little above the painted line and creeps upward along it. Skin-effect resistance and internal inductance raise the low-frequency impedance. Tick Lossless to see it vanish.</li>
-      <li>Labels on short painted bumps use the TDR area method: <code>L = 2Z₀∫ρ dt</code>, <code>C = −(2/Z₀)∫ρ dt</code> over round-trip time. Long excursions show average impedance and length instead.</li>
-      <li>ILD is dB(S21) minus a least-squares fit of a0 + a1√f + a2·f + a4·f² over the whole sweep.</li>
-      <li>Privacy: the page makes no network requests and keeps nothing, not even in browser storage. Save writes a .tdrp file to your computer (a ZIP holding project.json, with a CRC-32 that Open verifies) and Open reads it back; Export JSON writes the same project as readable text. The standalone build adds a Content-Security-Policy that blocks every outgoing connection, so the browser itself enforces this.</li>
-      <li>Nothing radiates and nothing couples. Power that is neither reflected nor transmitted is absorbed in the line or in series R.</li>
-      <li>Experimental impedance range (gear menu): 1 mΩ is a short and 1 MΩ an open, for the ports, the profile, stubs and series R. The S-parameters stay referenced to Tx and Rx, so with Rx shorted S21 is tiny by definition; the TDR is the useful view. A painted 1 mΩ section keeps the same loss per inch as any other cell. Stubs can be open or shorted at the far end: a 1 mΩ shorted stub is a short to ground at its position, DC included, while a 1 mΩ open stub is a nanofarad capacitor that is open at DC.</li>
-    </ul></details>`;
+
     rail.innerHTML = html;
     GROUPS.forEach(g => g.items.forEach(it => {
       const sc = it.scale || 1;
@@ -1217,9 +1217,13 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
         if (it.k === 'lenIn') { for (const e of state.elems) e.x = Math.min(e.x, v); renderEditor(); }
       }, { noUndo: true, after: () => { syncEditor(); schedule(); } }));
     }));
-    const ll = $('#p_lossless');
-    ll.checked = state.P.lossless;
-    ll.addEventListener('change', () => { state.P.lossless = ll.checked; schedule(); });
+    GROUPS.forEach((g, gi) => {
+      if (!g.loss) return;
+      const cb = $('#p_' + g.loss.k);
+      cb.addEventListener('change', () => { state.P[g.loss.k] = cb.checked; state.P.lossless = !!(state.P.condLossless && state.P.dielLossless); syncLoss(); schedule(); });
+    });
+    $('#optLog').addEventListener('change', (ev) => { pushUndo(true); state.zLog = ev.target.checked; autoRange(false); schedule(); });
+    syncLoss();
     $('#zMin').addEventListener('change', (ev) => { const v = +ev.target.value; if (rangeOk(v, state.zMax)) state.zMin = v; syncRange(); schedule(true); });
     $('#zMax').addEventListener('change', (ev) => { const v = +ev.target.value; if (rangeOk(state.zMin, v)) state.zMax = v; syncRange(); schedule(true); });
     if (wide) {
@@ -1232,8 +1236,22 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     $('#copyS2p').addEventListener('click', copyS2p);
     syncRange();
   }
+  // the loss checks, and dim the sliders they switch off
+  function syncLoss() {
+    GROUPS.forEach((g, gi) => {
+      if (!g.loss) return;
+      const on = !!state.P[g.loss.k];
+      $('#p_' + g.loss.k).checked = on;
+      $('#grp_' + gi).querySelectorAll('.pair input').forEach(inp => {
+        const k = inp.id.replace(/^p_/, '').replace(/N$/, '');
+        // Df, f_ref and the corners for the dielectric; condLoss and rdc for the conductor
+        if (on && k !== 'Dk' && g.items.some(it => it.k === k)) { inp.disabled = true; inp.title = 'Off: ' + g.loss.label.toLowerCase(); }
+        else { inp.disabled = false; inp.title = ''; }
+      });
+    });
+  }
   const showZ = (v) => Math.abs(v) >= 100 || v === 0 ? +v.toFixed(1) : +v.toPrecision(4);
-  function syncRange() { $('#zMin').value = showZ(state.zMin); $('#zMax').value = showZ(state.zMax); $('#zMin').step = $('#zMax').step = 'any'; }
+  function syncRange() { $('#zMin').value = showZ(state.zMin); $('#zMax').value = showZ(state.zMax); $('#optLog').checked = !!state.zLog; }
   // the same rule the project parser applies to a saved view
   function rangeOk(lo, hi) {
     if (!isFinite(lo) || !isFinite(hi)) return false;
@@ -1277,24 +1295,17 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   function openGear(open) {
     gearPanel.hidden = !open;
     gearBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    if (open) { syncGear(); placeGear(); $('#optLog').focus(); }
+    if (open) { syncGear(); placeGear(); $('#optWide').focus(); }
   }
   function syncGear() {
-    $('#optLog').checked = !!state.zLog;
     $('#optWide').checked = !!state.P.extremeZ;
     $('#gearDot').hidden = !state.P.extremeZ;
-    gearBtn.title = state.P.extremeZ ? 'Settings (experimental impedance range is on)' : 'Settings: view and experimental options';
+    gearBtn.title = state.P.extremeZ ? 'Settings (experimental impedance range is on)' : 'Settings: experimental options';
   }
   gearBtn.addEventListener('click', () => openGear(gearPanel.hidden));
   document.addEventListener('pointerdown', (ev) => { if (!gearPanel.hidden && !gearPanel.contains(ev.target) && !gearBtn.contains(ev.target)) openGear(false); });
   document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && !gearPanel.hidden) { openGear(false); gearBtn.focus(); } });
   window.addEventListener('resize', () => { if (!gearPanel.hidden) placeGear(); });
-  $('#optLog').addEventListener('change', (ev) => {
-    pushUndo(true);
-    state.zLog = ev.target.checked;
-    autoRange(false);
-    schedule();
-  });
   $('#optWide').addEventListener('change', (ev) => setWide(ev.target.checked));
   function setWide(on) {
     if (on === !!state.P.extremeZ) return;
@@ -1325,7 +1336,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     const lines = [];
     lines.push('! TDR Painter v__VERSION__ export, ' + new Date().toISOString().slice(0, 10));
     if (state.projectName) lines.push('! project: ' + state.projectName.replace(/[\r\n]/g, ' '));
-    lines.push(`! ${P.lenIn} in line, Z0 ${P.z0} ohm, Dk ${P.Dk} Df ${P.Df} @ ${P.frefGHz} GHz (Djordjevic-Sarkar), cond ${P.lossless ? 0 : P.condLoss} dB/in @10 GHz, Rdc ${P.lossless ? 0 : P.rdc} ohm/in`);
+    lines.push(`! ${P.lenIn} in line, Z0 ${P.z0} ohm, Dk ${P.Dk} Df ${P.dielLossless ? 0 : P.Df} @ ${P.frefGHz} GHz (Djordjevic-Sarkar), cond ${P.condLossless ? 0 : P.condLoss} dB/in @10 GHz, Rdc ${P.condLossless ? 0 : P.rdc} ohm/in`);
     for (const e of state.elems) lines.push(`! element ${chipLabel(e)} at ${e.x} in${e.count > 1 ? ', pitch ' + e.pitch + ' in' : ''}`);
     if (v2) lines.push('[Version] 2.0');
     lines.push(`# GHz S RI R ${v2 ? P.zTx : P.zTx}`);
@@ -1366,7 +1377,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     if (railWide !== !!state.P.extremeZ) buildRail();
     railShows.forEach(f => f());
     syncGear();
-    $('#p_lossless').checked = !!state.P.lossless;
+    syncLoss();
     $('#projName').value = state.projectName || '';
     sel.value = '';
     syncRange(); renderEditor(); schedule();

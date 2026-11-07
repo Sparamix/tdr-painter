@@ -249,6 +249,21 @@ const db = (r, i) => 20 * Math.log10(mag(r, i));
   }
 }
 
+// 11c) Conductor and dielectric loss switch off separately; lossless means both
+{
+  const s21 = (extra) => { const P = { ...base, ...extra }; const prep = E.prepare(P); const s = E.solve(prep, E.buildCascade(flat(50), [], P)); return Math.hypot(s.s21r[1000], s.s21i[1000]); };
+  const lossy = s21({}), noCond = s21({ condLossless: true }), noDiel = s21({ dielLossless: true }), none = s21({ lossless: true }), both = s21({ condLossless: true, dielLossless: true });
+  const okb = (name, cond, detail) => { if (!cond) fails++; console.log(`${cond ? 'PASS' : 'FAIL'}  ${name}${cond ? '' : '  ' + detail}`); };
+  okb('conductor-only lossless keeps dielectric loss', noCond > lossy && noCond < 1 - 1e-3, [lossy, noCond]);
+  okb('dielectric-only lossless keeps conductor loss', noDiel > lossy && noDiel < 1 - 1e-3, [lossy, noDiel]);
+  okb('both parts off equals lossless', Math.abs(both - none) < 1e-15 && Math.abs(none - 1) < 1e-9, [both, none]);
+  const PJ = require(path.join(__dirname, '..', 'src', 'project.js'));
+  const pp = (params) => PJ.parse({ format: PJ.FORMAT, formatVersion: 1, params, profile: { cells: 500, runs: [[50, 500]] } }, 500).P;
+  const legacy = pp({ lossless: true }), half = pp({ condLossless: true });
+  okb('legacy lossless: true means both parts', legacy.condLossless && legacy.dielLossless && legacy.lossless);
+  okb('one part alone leaves lossless false', half.condLossless && !half.dielLossless && !half.lossless);
+}
+
 // 12) Timing
 {
   const P = { ...base };

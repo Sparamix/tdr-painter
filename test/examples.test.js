@@ -37,7 +37,7 @@ for (const f of files) {
   // (true/false flags such as extremeZ may be left out, which means false)
   for (const k of Object.keys(PJ.DEFAULTS)) {
     const given = obj.params && obj.params[k];
-    const ok = PJ.FLAGS.includes(k) ? (given === undefined ? p.P[k] === false : given === p.P[k]) : given === p.P[k];
+    const ok = PJ.FLAGS.includes(k) ? (given === undefined || given === p.P[k]) : given === p.P[k];
     check(`${tag} params.${k} present and within limits`, ok, `${given} -> ${p.P[k]}`);
   }
   const lim = PJ.limits(p.P.extremeZ);

@@ -12,7 +12,8 @@ Open `dist/index.html` in a browser, or serve the `dist/` folder with GitHub Pag
 - **Drop in** a shunt C, series L, series R or a stub, open (a via stub) or shorted to ground. Drag the chips in the strip under the plot, set copies and pitch for periodic loading.
 - **Lock** an element so it can't be dragged by accident, or **Clone** it to get a copy beside it that you can drag into place.
 - **Compare** with Pin reference: the pinned curves stay on every plot as dots in the same color, while solid lines follow your edits. Export the current S-parameters as Touchstone text.
-- **Settings** (the gear): a logarithmic impedance axis, and the experimental **Allow extra low and high impedances**, which opens the ports, the painted profile, stub impedance and series R to 1 mΩ (a short) through 1 MΩ (an open) and adds Short and Open buttons for Rx. Both are saved with the project.
+- **TDR plot range** at the top of the side panel: type a range, Autoscale, or switch to a logarithmic axis. Conductor and dielectric loss can each be switched off.
+- **Settings** (the gear): the experimental **Allow extra low and high impedances**, which opens the ports, the painted profile, stub impedance and series R to 1 mΩ (a short) through 1 MΩ (an open) and adds Short and Open buttons for Rx. It is saved with the project, like the log axis.
 - **Save** a project as a `.tdrp` file on your computer and **Open** it later, or drop the file onto the page. **Export JSON** writes the same project as readable text, and Open takes either. Ctrl/⌘ S, Ctrl/⌘ Shift S and Ctrl/⌘ O work too.
 
 ## Examples

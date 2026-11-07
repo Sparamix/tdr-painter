@@ -28,7 +28,7 @@ NS = 500  # cells in a TDR Painter profile
 # TDR Painter defaults (src/project.js). Every project written here lists all of them explicitly.
 DEFAULTS = dict(lenIn=2, z0=50, Dk=3.35, Df=0.004, frefGHz=12, dsLowHz=1e3, dsHighHz=1e12,
                 condLoss=0.4, condRefGHz=10, rdc=0.2, fmaxGHz=50, nf=1001,
-                zTx=50, zRx=50, beta=4.2, lossless=False, extremeZ=False)
+                zTx=50, zRx=50, beta=4.2, lossless=False, condLossless=False, dielLossless=False, extremeZ=False)
 WIDE = (0.001, 1e6)      # the experimental range (params.extremeZ): shorts and opens
 NORMAL_Z = (5, 200)
 
@@ -45,6 +45,10 @@ class Structure:
 
     def __post_init__(self):
         self.params = {**DEFAULTS, **self.params}
+        P = self.params      # as project.js normalizeLoss: lossless means both, and follows the two parts
+        if P['lossless']:
+            P['condLossless'] = P['dielLossless'] = True
+        P['lossless'] = bool(P['condLossless'] and P['dielLossless'])
         total = sum(s[0] for s in self.sections)
         if abs(total - self.params['lenIn']) > 1e-9:
             raise ValueError(f'sections add up to {total} in, lenIn is {self.params["lenIn"]}')
@@ -117,7 +121,7 @@ class Structure:
     # ---------------------------------------------------------------- scikit-rf network
     def permittivity(self, freq, constant_df=False):
         P = self.params
-        if P['lossless'] or P['Df'] <= 0:
+        if P['dielLossless'] or P['Df'] <= 0:
             return np.full(freq.npoints, complex(P['Dk']))
         if constant_df:   # frequency-independent Dk and Df: the classic non-causal model (negative control only)
             return np.full(freq.npoints, complex(P['Dk'], -P['Dk'] * P['Df']))
@@ -132,7 +136,7 @@ class Structure:
         f = freq.f
         w = 2 * np.pi * f
         sq = math.sqrt(P['Dk'])
-        if P['lossless']:
+        if P['condLossless']:
             kc = rdcN = 0.0
         else:
             alpha_c = P['condLoss'] / 8.685889638 / IN          # Np/m of the nominal line at condRef
@@ -216,7 +220,7 @@ class Structure:
         L is a short, R is R, and a shorted stub is its own DC resistance to ground (as in the engine, a lossless
         one is 1e-15 ohm). Computed as a real ABCD cascade."""
         P = self.params
-        rdcn = 0.0 if P['lossless'] else P['rdc'] / P['z0']          # ohm per inch per ohm of line impedance
+        rdcn = 0.0 if P['condLossless'] else P['rdc'] / P['z0']          # ohm per inch per ohm of line impedance
         A, B, C, D = 1.0, 0.0, 0.0, 1.0
 
         def series(r):

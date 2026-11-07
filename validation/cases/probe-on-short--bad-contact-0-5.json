@@ -21,6 +21,8 @@
   "zRx": 0.001,
   "beta": 6,
   "lossless": true,
+  "condLossless": true,
+  "dielLossless": true,
   "extremeZ": true
  },
  "profile": {

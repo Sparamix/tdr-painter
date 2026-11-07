@@ -18,7 +18,7 @@ const R = (x, ohm, extra) => ({ type: 'R', x, value: ohm, count: 1, pitch: 0.15,
 const STUB = (x, mil, z, extra) => ({ type: 'stub', x, stubZ: z, stubLen: mil, end: 'open', count: 1, pitch: 0.15, locked: false, ...extra });
 
 function example({ slug, order, category, name, note, params = {}, paint, elements = [], view = null, isDefault = false }) {
-  const P = { ...PJ.DEFAULTS, ...params };
+  const P = PJ.normalizeLoss({ ...PJ.DEFAULTS, ...params });
   const prof = new Float64Array(NS).fill(P.z0);
   const cellX = (i) => (i + 0.5) / NS * P.lenIn;
   const t = {

@@ -176,6 +176,24 @@ async def main():
         check("out-of-range values are clamped", clamped == {"Dk": 6, "len": 0.25, "zTx": 50, "el": [["C", 0.25, 1, 30]]}, clamped)
         tmp.unlink()
 
+        # ---- conductor and dielectric loss switch separately ----
+        await pg.select_option("#preset", label="Clean 50 Ω line")
+        await pg.check("#p_condLossless")
+        check("lossless conductor alone: conductor off, dielectric on",
+              await st("[__tdrState.P.condLossless, __tdrState.P.dielLossless, __tdrState.P.lossless]") == [True, False, False]
+              and await pg.is_disabled("#p_condLossN") and not await pg.is_disabled("#p_DfN"))
+        await pg.check("#p_dielLossless")
+        check("both checks make the line lossless", await st("__tdrState.P.lossless") is True and await pg.is_disabled("#p_DfN")
+              and not await pg.is_disabled("#p_DkN"))
+        await pg.uncheck("#p_condLossless"); await pg.uncheck("#p_dielLossless")
+        legacy = dict(doc, params={k: v for k, v in doc["params"].items() if k not in ("condLossless", "dielLossless")})
+        legacy["params"]["lossless"] = True
+        tmp.write_text(json.dumps(legacy))
+        await pg.set_input_files("#projFile", str(tmp))
+        await pg.wait_for_timeout(150)
+        check("an older project's lossless: true ticks both checks",
+              await pg.is_checked("#p_condLossless") and await pg.is_checked("#p_dielLossless"))
+
         # ---- settings menu: log axis and the experimental wide impedance range ----
         await pg.select_option("#preset", label="Clean 50 Ω line")
         await pg.click("#gear")
@@ -190,12 +208,16 @@ async def main():
         lv = late.split("Late level")[1].split()
         lv_ohm = float(lv[0]) * {"mΩ": 1e-3, "Ω": 1, "kΩ": 1e3}[lv[1]]
         check("TDR late level falls toward a short (lossy line: skin-effect creep still above Rdc)", lv_ohm < 5, late)
-        await pg.click("#gear")
+        await pg.keyboard.press("Escape")
+        check("Escape closes the panel", not await pg.is_visible("#gearPanel"))
         await pg.check("#optLog")
         rng = await st("[__tdrState.zLog, __tdrState.zMin, __tdrState.zMax]")
         check("log axis on, fitted to a positive range", rng[0] is True and 0 < rng[1] < 0.5 and rng[2] >= 50, rng)
-        await pg.keyboard.press("Escape")
-        check("Escape closes the panel", not await pg.is_visible("#gearPanel"))
+        check("plot range sits at the top of the rail, with Autoscale",
+              await pg.evaluate("document.querySelector('#rail .group').contains(document.querySelector('#zFit'))")
+              and (await pg.inner_text("#zFit")).strip() == "Autoscale")
+        check("How the model works sits in the main column",
+              await pg.evaluate("document.querySelector('section.stage').contains(document.querySelector('#modelNotes'))"))
         await pg.click("[data-add=stub]")
         await pg.fill("#edZN", "0.001"); await pg.press("#edZN", "Enter")
         check("stub impedance takes 1 mohm", await st("__tdrState.elems.find(e => e.id === __tdrState.selId).stubZ") == 0.001)

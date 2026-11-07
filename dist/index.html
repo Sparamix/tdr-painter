@@ -188,6 +188,9 @@ aside.rail { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .check { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--fg-2); }
 .check input { accent-color: var(--ink); width: 16px; height: 16px; }
 .inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pair input:disabled { opacity: 0.45; cursor: default; }
+#zMin, #zMax { width: 74px; }
+#modelNotes ul { max-width: 104ch; }
 details.notes { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; }
 details.notes summary { cursor: pointer; font-family: var(--font-display); font-stretch: 105%; font-weight: 700; font-size: 14px; }
 details.notes ul { margin: 10px 0 2px; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--fg-2); font-size: 13px; }
@@ -234,16 +237,11 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       <select id="preset" aria-label="Load an example"></select>
       <button id="pin" title="Keep the current curves as a dotted reference">Pin reference</button>
       <button id="unpin" class="ghost" disabled>Clear reference</button>
-      <button id="gear" class="gear" aria-haspopup="dialog" aria-expanded="false" aria-controls="gearPanel" aria-label="Settings" title="Settings: view and experimental options"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-dasharray="2.16 2.16"/><circle cx="8" cy="8" r="4.1" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/></svg><span class="dot" id="gearDot" hidden></span></button>
+      <button id="gear" class="gear" aria-haspopup="dialog" aria-expanded="false" aria-controls="gearPanel" aria-label="Settings" title="Settings: experimental options"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-dasharray="2.16 2.16"/><circle cx="8" cy="8" r="4.1" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/></svg><span class="dot" id="gearDot" hidden></span></button>
     </div>
   </header>
 
   <div class="gearpanel" id="gearPanel" role="dialog" aria-label="Settings" hidden>
-    <section>
-      <h2>View</h2>
-      <label class="check"><input type="checkbox" id="optLog"> Logarithmic impedance axis</label>
-      <p class="note">Equal ratios get equal space, so a 20 mΩ contact and a 0.5 Ω one sit a decade apart instead of both on the floor. Paint tools work in ratios on this axis.</p>
-    </section>
     <section>
       <h2 class="exp">Experimental</h2>
       <label class="check"><input type="checkbox" id="optWide"> Allow extra low and high impedances</label>
@@ -325,11 +323,23 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
         </div>
       </div>
       <div class="readout" id="fread"></div>
+      <details class="notes" id="modelNotes"><summary>How the model works</summary><ul>
+      <li>The painted profile is 500 equal cells. Each cell is a uniform line of its painted impedance; lumped elements sit on cell boundaries. S-parameters come from the ABCD cascade, so they are exact for this structure.</li>
+      <li>R′ and L′ scale with Z and C′ with 1/Z, as if width alone changed the impedance. Loss per inch is the same everywhere, and only the reflections change with what you paint.</li>
+      <li>Dielectric: <code>ε(f) = ε∞ + Δε·ln((f₂+jf)/(f₁+jf)) / ln(f₂/f₁)</code>, anchored to Dk and Df at f_ref. Conductor: <code>R_dc + (1+j)·K·√f</code>.</li>
+      <li>TDR: S11 times a Kaiser half-window, inverse FFT, trapezoid-rule integration, then <code>Z = Z_Tx(1+ρ)/(1−ρ)</code>. The window sets rise time and ringing; the orange trace is what a TDR would show, the indigo line is the truth.</li>
+      <li>With loss on, the orange trace sits a little above the painted line and creeps upward along it. Skin-effect resistance and internal inductance raise the low-frequency impedance. Tick Lossless conductor to see it vanish.</li>
+      <li>Labels on short painted bumps use the TDR area method: <code>L = 2Z₀∫ρ dt</code>, <code>C = −(2/Z₀)∫ρ dt</code> over round-trip time. Long excursions show average impedance and length instead.</li>
+      <li>ILD is dB(S21) minus a least-squares fit of a0 + a1√f + a2·f + a4·f² over the whole sweep.</li>
+      <li>Privacy: the page makes no network requests and keeps nothing, not even in browser storage. Save writes a .tdrp file to your computer (a ZIP holding project.json, with a CRC-32 that Open verifies) and Open reads it back; Export JSON writes the same project as readable text. The standalone build adds a Content-Security-Policy that blocks every outgoing connection, so the browser itself enforces this.</li>
+      <li>Nothing radiates and nothing couples. Power that is neither reflected nor transmitted is absorbed in the line or in series R.</li>
+      <li>Experimental impedance range (gear menu): 1 mΩ is a short and 1 MΩ an open, for the ports, the profile, stubs and series R. The S-parameters stay referenced to Tx and Rx, so with Rx shorted S21 is tiny by definition; the TDR is the useful view. A painted 1 mΩ section keeps the same loss per inch as any other cell. Stubs can be open or shorted at the far end: a 1 mΩ shorted stub is a short to ground at its position, DC included, while a 1 mΩ open stub is a nanofarad capacitor that is open at DC.</li>
+      </ul></details>
     </section>
 
     <aside class="rail" id="rail"></aside>
   </div>
-  <footer class="foot">TDR Painter v0.7.0 · Runs entirely in your browser. Projects are .tdrp or .json files you save and open yourself; nothing is uploaded or stored.</footer>
+  <footer class="foot">TDR Painter v0.7.1 · Runs entirely in your browser. Projects are .tdrp or .json files you save and open yourself; nothing is uploaded or stored.</footer>
 </div>
 
 <script>
@@ -425,14 +435,15 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     const f = new Float64Array(nf);
     for (let k = 0; k < nf; k++) f[k] = k * df;
     const Dk = P.Dk;
-    const lossless = !!P.lossless;
-    const ds = makeDS(Dk, lossless ? 0 : P.Df, P.frefGHz * 1e9, P.dsLowHz, P.dsHighHz);
+    // lossless (both) or each part on its own
+    const noDiel = !!(P.lossless || P.dielLossless), noCond = !!(P.lossless || P.condLossless);
+    const ds = makeDS(Dk, noDiel ? 0 : P.Df, P.frefGHz * 1e9, P.dsLowHz, P.dsHighHz);
     const sqDk = Math.sqrt(Dk);
     const Lu = sqDk / C0;                     // H/m per ohm
     // conductor: alpha_c [Np/m] at fc for the nominal line -> normalized surface impedance coefficient
-    const alphaC = lossless ? 0 : (P.condLoss / 8.685889638) / IN;      // Np/m at condRef
+    const alphaC = noCond ? 0 : (P.condLoss / 8.685889638) / IN;        // Np/m at condRef
     const kc = 2 * alphaC / Math.sqrt(P.condRefGHz * 1e9);              // per ohm, * sqrt(f)
-    const rdcN = lossless ? 0 : (P.rdc / IN) / P.z0;                     // per ohm
+    const rdcN = noCond ? 0 : (P.rdc / IN) / P.z0;                       // per ohm
     const gRe = new Float64Array(nf), gIm = new Float64Array(nf);        // gamma (1/m)
     const zRe = new Float64Array(nf), zIm = new Float64Array(nf);        // zeta: Zc / Z_nominal
     const epsRe = new Float64Array(nf), epsIm = new Float64Array(nf);
@@ -905,9 +916,15 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   const DEFAULTS = {
     lenIn: 2, z0: 50, Dk: 3.35, Df: 0.004, frefGHz: 12, dsLowHz: 1e3, dsHighHz: 1e12,
     condLoss: 0.4, condRefGHz: 10, rdc: 0.2, fmaxGHz: 50, nf: 1001,
-    zTx: 50, zRx: 50, beta: 4.2, lossless: false, extremeZ: false,
+    zTx: 50, zRx: 50, beta: 4.2, lossless: false, condLossless: false, dielLossless: false, extremeZ: false,
   };
-  const FLAGS = ['lossless', 'extremeZ'];   // booleans; a missing flag means false
+  const FLAGS = ['lossless', 'condLossless', 'dielLossless', 'extremeZ'];   // booleans; a missing flag means false
+  /** lossless (from v0.7.0 and earlier) means both; afterwards it is kept equal to condLossless && dielLossless. */
+  function normalizeLoss(P) {
+    if (P.lossless) { P.condLossless = true; P.dielLossless = true; }
+    P.lossless = !!(P.condLossless && P.dielLossless);
+    return P;
+  }
   // Same ranges as the page's sliders (stored in base units: Hz, inches, ohms).
   const LIMITS = {
     lenIn: [0.25, 10], z0: [20, 120], Dk: [1, 6], Df: [0, 0.03], frefGHz: [0.1, 60],
@@ -957,6 +974,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     const P = { ...DEFAULTS };
     const src = obj.params && typeof obj.params === 'object' ? obj.params : {};
     for (const k of FLAGS) P[k] = src[k] === true;
+    normalizeLoss(P);
     const lim = limits(P.extremeZ);
     for (const k of Object.keys(DEFAULTS)) {
       if (FLAGS.includes(k)) continue;
@@ -1009,7 +1027,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     return { name: text(obj.name, 80), P, prof, elements, view, example };
   }
 
-  const api = { FORMAT, FORMAT_VERSION, DEFAULTS, FLAGS, LIMITS, Z_LIMITS, WIDE, ELEMENT, CATEGORIES, limits, quantZ, encodeProfile, parse };
+  const api = { FORMAT, FORMAT_VERSION, DEFAULTS, FLAGS, LIMITS, Z_LIMITS, WIDE, ELEMENT, CATEGORIES, limits, quantZ, normalizeLoss, encodeProfile, parse };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.TDRProject = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -1027,23 +1045,23 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   const DEFAULTS = PJ.DEFAULTS;
   // Built-in and community examples from examples/*.json, bundled by build.js.
   const EXAMPLES = [
-{"format":"tdr-painter-project","formatVersion":1,"app":"0.6.0","name":"Clean 50 Ω line","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[],"example":{"category":"Basics","order":10,"note":"A matched, lossy 2 in stripline and nothing else. S11 stays far down, and all of the insertion loss is conductor and dielectric loss: the power plot shows it as absorbed, not reflected.","author":"TDR Painter"}},
-{"format":"tdr-painter-project","formatVersion":1,"app":"0.6.0","name":"45 Ω trace (impedance tolerance)","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[45,500]]},"elements":[],"example":{"category":"Basics","order":11,"note":"The whole trace is 10% low. The TDR reads 45 Ω, and S11 ripples with nulls every 1/(2τ) ≈ 1.6 GHz, where τ is the one-way delay. Change the Length and watch the ripple spacing follow.","author":"TDR Painter"}},
-{"format":"tdr-painter-project","formatVersion":1,"app":"0.6.0","name":"Painted taper 50 → 40 → 50 Ω","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[50,100],[49.95,1],[49.85,1],[49.75,1],[49.65,1],[49.55,1],[49.45,1],[49.35,1],[49.25,1],[49.15,1],[49.05,1],[48.95,1],[48.85,1],[48.75,1],[48.65,1],[48.55,1],[48.45,1],[48.35,1],[48.25,1],[48.15,1],[48.05,1],[47.95,1],[47.85,1],[47.75,1],[47.65,1],[47.55,1],[47.45,1],[47.35,1],[47.25,1],[47.15,1],[47.05,1],[46.95,1],[46.85,1],[46.75,1],[46.65,1],[46.55,1],[46.45,1],[46.35,1],[46.25,1],[46.15,1],[46.05,1],[45.95,1],[45.85,1],[45.75,1],[45.65,1],[45.55,1],[45.45,1],[45.35,1],[45.25,1],[45.15,1],[45.05,1],[44.95,1],[44.85,1],[44.75,1],[44.65,1],[44.55,1],[44.45,1],[44.35,1],[44.25,1],[44.15,1],[44.05,1],[43.95,1],[43.85,1],[43.75,1],[43.65,1],[43.55,1],[43.45,1],[43.35,1],[43.25,1],[43.15,1],[43.05,1],[42.95,1],[42.85,1],[42.75,1],[42.65,1],[42.55,1],[42.45,1],[42.35,1],[42.25,1],[42.15,1],[42.05,1],[41.95,1],[41.85,1],[41.75,1],[41.65,1],[41.55,1],[41.45,1],[41.35,1],[41.25,1],[41.15,1],[41.05,1],[40.95,1],[40.85,1],[40.75,1],[40.65,1],[40.55,1],[40.45,1],[40.35,1],[40.25,1],[40.15,1],[40.05,1],[40,100],[40.05,1],[40.15,1],[40.25,1],[40.35,1],[40.45,1],[40.55,1],[40.65,1],[40.75,1],[40.85,1],[40.95,1],[41.05,1],[41.15,1],[41.25,1],[41.35,1],[41.45,1],[41.55,1],[41.65,1],[41.75,1],[41.85,1],[41.95,1],[42.05,1],[42.15,1],[42.25,1],[42.35,1],[42.45,1],[42.55,1],[42.65,1],[42.75,1],[42.85,1],[42.95,1],[43.05,1],[43.15,1],[43.25,1],[43.35,1],[43.45,1],[43.55,1],[43.65,1],[43.75,1],[43.85,1],[43.95,1],[44.05,1],[44.15,1],[44.25,1],[44.35,1],[44.45,1],[44.55,1],[44.65,1],[44.75,1],[44.85,1],[44.95,1],[45.05,1],[45.15,1],[45.25,1],[45.35,1],[45.45,1],[45.55,1],[45.65,1],[45.75,1],[45.85,1],[45.95,1],[46.05,1],[46.15,1],[46.25,1],[46.35,1],[46.45,1],[46.55,1],[46.65,1],[46.75,1],[46.85,1],[46.95,1],[47.05,1],[47.15,1],[47.25,1],[47.35,1],[47.45,1],[47.55,1],[47.65,1],[47.75,1],[47.85,1],[47.95,1],[48.05,1],[48.15,1],[48.25,1],[48.35,1],[48.45,1],[48.55,1],[48.65,1],[48.75,1],[48.85,1],[48.95,1],[49.05,1],[49.15,1],[49.25,1],[49.35,1],[49.45,1],[49.55,1],[49.65,1],[49.75,1],[49.85,1],[49.95,1],[50,100]]},"elements":[],"example":{"category":"Basics","order":12,"note":"Gradual transitions reflect much less at high frequency than abrupt ones. Pin reference, then use Plateau with a narrow Width to paint the same 40 Ω dip with sharp edges, and compare S11 above a few GHz.","author":"TDR Painter"}},
-{"format":"tdr-painter-project","formatVersion":1,"app":"0.6.0","name":"Lossy creep on a 10 in line","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":10,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[],"example":{"category":"Basics","order":13,"note":"The painted line is flat, yet the TDR climbs along it: series resistance from skin effect adds up with distance, so a lossy line looks like a rising impedance. Tick Lossless in the Conductor panel and the climb disappears.","author":"TDR Painter"}},
-{"format":"tdr-painter-project","formatVersion":1,"app":"0.6.0","name":"Shunt C and series L","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[{"type":"C","x":0.6,"value":0.1,"count":1,"pitch":0.15,"locked":false},{"type":"L","x":1.4,"value":0.25,"count":1,"pitch":0.15,"locked":false}],"example":{"category":"Discontinuities","order":20,"note":"Capacitance pulls the TDR down and inductance pushes it up. The area of each feature gives its value: C = −(2/Z₀)∫ρ dt and L = 2Z₀∫ρ dt over round-trip time. Drag either chip and watch the S11 ripple pattern change.","author":"TDR Painter"}},
-{"format":"tdr-painter-project","formatVersion":1,"app":"0.6.0","name":"Via stub resonance, 60 mil","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[{"type":"C","x":1,"value":0.08,"count":1,"pitch":0.15,"locked":false},{"type":"stub","x":1,"stubZ":45,"stubLen":60,"end":"open","count":1,"pitch":0.15,"locked":false}],"example":{"category":"Discontinuities","order":21,"note":"An open 60 mil stub notches S21 near v/(4ℓ) ≈ 27 GHz, yet the TDR shows only a modest dip. Select the S chip and drag Stub length: the notch moves while the TDR barely changes. Back-drilling shortens exactly this stub.","author":"TDR Painter"}},
-{"format":"tdr-painter-project","formatVersion":1,"app":"0.6.0","name":"Pad compensated with series L","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[{"type":"L","x":0.98,"value":0.19,"count":1,"pitch":0.15,"locked":false},{"type":"C","x":1,"value":0.15,"count":1,"pitch":0.15,"locked":false},{"type":"L","x":1.02,"value":0.19,"count":1,"pitch":0.15,"locked":false}],"example":{"category":"Discontinuities","order":22,"note":"A 0.15 pF pad flanked by two 0.19 nH sections behaves like a short 50 Ω line, because √(L/C) ≈ Z₀. Pin reference, then remove both L chips to see how much the compensation buys in return loss.","author":"TDR Painter"}},
-{"format":"tdr-painter-project","formatVersion":1,"app":"0.6.0","name":"Rx pad capacitance, 0.25 pF","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[{"type":"C","x":2,"value":0.25,"count":1,"pitch":0.15,"locked":false}],"example":{"category":"Discontinuities","order":23,"note":"A capacitive receiver pad at the far end. Return loss degrades with frequency, and the TDR dips right where the line ends. Try the Rx impedance slider to see a resistive mismatch on top of it.","author":"TDR Painter"}},
-{"format":"tdr-painter-project","formatVersion":1,"app":"0.6.0","name":"Resolution: two pads 40 mil apart","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[{"type":"C","x":0.98,"value":0.1,"count":1,"pitch":0.15,"locked":false},{"type":"C","x":1.02,"value":0.1,"count":1,"pitch":0.15,"locked":false}],"example":{"category":"TDR artifacts","order":30,"note":"Two 0.1 pF pads only 40 mil apart. At f_max 50 GHz the TDR rise time blurs them into one dip. Raise f_max to 110 GHz to separate them, or drop it to 20 GHz to merge them completely. The resolution readout under the plot tracks this.","author":"TDR Painter"}},
-{"format":"tdr-painter-project","formatVersion":1,"app":"0.6.0","name":"Masking: two identical 30 Ω sections","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":true,"extremeZ":false},"profile":{"cells":500,"runs":[[50,100],[42,1],[30,48],[42,1],[50,150],[42,1],[30,48],[42,1],[50,150]]},"elements":[],"example":{"category":"TDR artifacts","order":31,"note":"Both sections are painted at exactly 30 Ω, but the TDR reads the second one higher, because less of the step gets through the first. The bounce between the two sections also shows up later as a small ghost. Loss is off so only masking remains.","author":"TDR Painter"}},
-{"format":"tdr-painter-project","formatVersion":1,"app":"0.6.0","name":"Ghost after a via stub","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2.5,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[{"type":"C","x":0.5,"value":0.25,"count":1,"pitch":0.15,"locked":false},{"type":"C","x":1.1,"value":0.08,"count":1,"pitch":0.15,"locked":false},{"type":"stub","x":1.1,"stubZ":45,"stubLen":60,"end":"open","count":1,"pitch":0.15,"locked":false}],"example":{"category":"TDR artifacts","order":32,"note":"Look past the via: around 1.8 in the TDR shows an inductive-looking spike, but nothing is painted there. It is the via’s reflection bouncing off the capacitive pad at 0.5 in and coming back, so it lands about 2 × (1.1 − 0.5) in after the via. Remove the pad and the spike disappears.","author":"TDR Painter"}},
-{"format":"tdr-painter-project","formatVersion":1,"app":"0.6.0","name":"Board launch + via stub","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[49.387,1],[49.178,1],[48.917,1],[48.599,1],[48.219,1],[47.776,1],[47.271,1],[46.711,1],[46.106,1],[45.471,1],[44.825,1],[44.191,1],[43.594,1],[43.061,1],[42.615,1],[42.283,1],[42.077,1],[42.011,1],[42.09,1],[42.312,1],[42.669,1],[43.148,1],[43.733,1],[44.405,1],[45.148,1],[45.945,1],[46.785,1],[47.658,1],[48.559,1],[49.483,1],[50.424,1],[51.375,1],[52.325,1],[53.254,1],[54.14,1],[54.953,1],[55.661,1],[56.233,1],[56.643,1],[56.869,1],[56.905,1],[56.753,1],[56.431,1],[55.964,1],[55.389,1],[54.745,1],[54.071,1],[53.407,1],[52.776,1],[52.205,1],[51.707,1],[51.288,1],[50.947,1],[50.679,1],[50.475,1],[50.323,1],[50.215,1],[50.139,1],[50.088,1],[50.054,1],[50.032,1],[50.019,1],[50.011,1],[50.006,1],[50.003,1],[50,370],[50.003,1],[50.006,1],[50.011,1],[50.019,1],[50.032,1],[50.054,1],[50.088,1],[50.139,1],[50.215,1],[50.323,1],[50.475,1],[50.679,1],[50.947,1],[51.288,1],[51.707,1],[52.205,1],[52.776,1],[53.405,1],[54.071,1],[54.745,1],[55.389,1],[55.964,1],[56.431,1],[56.753,1],[56.905,1],[56.869,1],[56.643,1],[56.233,1],[55.661,1],[54.953,1],[54.14,1],[53.254,1],[52.325,1],[51.375,1],[50.424,1],[49.483,1],[48.559,1],[47.658,1],[46.785,1],[45.945,1],[45.148,1],[44.405,1],[43.733,1],[43.148,1],[42.669,1],[42.312,1],[42.09,1],[42.011,1],[42.077,1],[42.283,1],[42.615,1],[43.061,1],[43.594,1],[44.191,1],[44.825,1],[45.471,1],[46.106,1],[46.711,1],[47.271,1],[47.776,1],[48.219,1],[48.599,1],[48.917,1],[49.178,1],[49.387,1]]},"elements":[{"type":"C","x":1,"value":0.08,"count":1,"pitch":0.15,"locked":false},{"type":"stub","x":1,"stubZ":45,"stubLen":60,"end":"open","count":1,"pitch":0.15,"locked":false}],"example":{"category":"Realistic channels","order":40,"note":"Connector launches at both ends (capacitive pad, then inductive pin) and a via with a 60 mil stub in the middle. A typical first look at a channel: the stub dominates S21 near 27 GHz, the launches set the return loss.","author":"TDR Painter","default":true}},
-{"format":"tdr-painter-project","formatVersion":1,"app":"0.6.0","name":"Probes on 42 Ω stripline, good contact","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":1.56,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[50,170],[46.08,1],[42,158],[46.08,1],[50,170]]},"elements":[{"type":"R","x":0.5,"value":0.02,"count":1,"pitch":0.15,"locked":false},{"type":"L","x":0.5,"value":0.12,"count":1,"pitch":0.15,"locked":false},{"type":"C","x":0.52,"value":0.06,"count":1,"pitch":0.15,"locked":false},{"type":"C","x":1.04,"value":0.06,"count":1,"pitch":0.15,"locked":false},{"type":"L","x":1.06,"value":0.12,"count":1,"pitch":0.15,"locked":false},{"type":"R","x":1.06,"value":0.02,"count":1,"pitch":0.15,"locked":false}],"example":{"category":"Realistic channels","order":41,"note":"50 Ω coax (the first and last 0.5 in), an inductive probe tip (0.12 nH), a capacitive pad (0.06 pF), 0.5 in of 42 Ω stripline, then the same in reverse. Tip and pad partly cancel; the 42 Ω section sets the low-frequency ripple. Both contacts are 0.02 Ω. Try 0.25 nH tips to see a spring-probe fixture.","author":"TDR Painter"}},
-{"format":"tdr-painter-project","formatVersion":1,"app":"0.6.0","name":"Probes on 42 Ω stripline, bad Tx contact","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":1.56,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[50,170],[46.08,1],[42,158],[46.08,1],[50,170]]},"elements":[{"type":"R","x":0.5,"value":3,"count":1,"pitch":0.15,"locked":false},{"type":"L","x":0.5,"value":0.12,"count":1,"pitch":0.15,"locked":false},{"type":"C","x":0.52,"value":0.06,"count":1,"pitch":0.15,"locked":false},{"type":"C","x":1.04,"value":0.06,"count":1,"pitch":0.15,"locked":false},{"type":"L","x":1.06,"value":0.12,"count":1,"pitch":0.15,"locked":false},{"type":"R","x":1.06,"value":0.02,"count":1,"pitch":0.15,"locked":false}],"example":{"category":"Realistic channels","order":42,"note":"Same fixture, but the Tx probe lands with 3 Ω of contact resistance. The TDR steps up by about 3 Ω at the tip and stays up to DC, so the 42 Ω stripline now reads about 46 Ω instead of 43 Ω: a bad contact quietly corrupts every impedance behind it. S11 also no longer matches S22.","author":"TDR Painter"}},
-{"format":"tdr-painter-project","formatVersion":1,"app":"0.6.0","name":"Serpentine, 5 in, corner capacitance","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":5,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[{"type":"C","x":0.6,"value":0.012,"count":13,"pitch":0.3,"locked":false},{"type":"C","x":0.62,"value":0.012,"count":13,"pitch":0.3,"locked":false}],"example":{"category":"Realistic channels","order":43,"note":"A 5 in trace with 13 U-turns, each made of two 90° corners of about 0.012 pF. One corner is negligible, but at a regular 0.3 in pitch they add up near v/(2p) ≈ 11 GHz and its harmonics; look at S11 and ILD there. This 1-D model leaves out coupling between the parallel runs, which in a real serpentine shortens the delay.","author":"TDR Painter"}},
-{"format":"tdr-painter-project","formatVersion":1,"app":"0.6.0","name":"GSG probe on a short, good contact","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":1,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":67,"nf":1001,"zTx":50,"zRx":0.001,"beta":6,"lossless":true,"extremeZ":true},"profile":{"cells":500,"runs":[[50,250],[0.001,250]]},"elements":[{"type":"L","x":0.5,"value":0.02,"count":1,"pitch":0.15,"locked":false},{"type":"R","x":0.5,"value":0.03,"count":1,"pitch":0.15,"locked":false}],"view":{"zMin":0.0005,"zMax":200,"log":true},"example":{"category":"Realistic channels","order":44,"note":"A probe landed on the short of a cal substrate, seen from the calibrated tips: a lossless 50 Ω lead, 20 pH of tip and strip inductance, a 30 mΩ contact, and the short (a 1 mΩ section into a 1 mΩ Rx). On the log axis the TDR drops from 50 Ω to about 30 mΩ and stays there; on a linear axis it is just zero. Kaiser β 6 keeps the window ringing near ±4 mΩ. Pin this, then open the bad-contact example. Uses the experimental impedance range (gear menu).","author":"TDR Painter"}},
-{"format":"tdr-painter-project","formatVersion":1,"app":"0.6.0","name":"GSG probe on a short, bad contact","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":1,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":67,"nf":1001,"zTx":50,"zRx":0.001,"beta":6,"lossless":true,"extremeZ":true},"profile":{"cells":500,"runs":[[50,250],[0.001,250]]},"elements":[{"type":"L","x":0.5,"value":0.02,"count":1,"pitch":0.15,"locked":false},{"type":"R","x":0.5,"value":0.5,"count":1,"pitch":0.15,"locked":false}],"view":{"zMin":0.0005,"zMax":200,"log":true},"example":{"category":"Realistic channels","order":45,"note":"The same short with a 0.5 Ω contact. The TDR after the short sits at 0.5 Ω, more than a decade above a good landing, and |S11| reads about −0.17 dB instead of 0 dB. A bad signal tip and two bad ground tips look alike: both put resistance in the one current loop, so a one-port can’t tell which. One lifted ground mostly adds inductance (the grounds were in parallel); raise the L chip and the edge barely moves. Set R to 1 MΩ for a probe that never landed.","author":"TDR Painter"}}
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.7.1","name":"Clean 50 Ω line","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"condLossless":false,"dielLossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[],"example":{"category":"Basics","order":10,"note":"A matched, lossy 2 in stripline and nothing else. S11 stays far down, and all of the insertion loss is conductor and dielectric loss: the power plot shows it as absorbed, not reflected.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.7.1","name":"45 Ω trace (impedance tolerance)","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"condLossless":false,"dielLossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[45,500]]},"elements":[],"example":{"category":"Basics","order":11,"note":"The whole trace is 10% low. The TDR reads 45 Ω, and S11 ripples with nulls every 1/(2τ) ≈ 1.6 GHz, where τ is the one-way delay. Change the Length and watch the ripple spacing follow.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.7.1","name":"Painted taper 50 → 40 → 50 Ω","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"condLossless":false,"dielLossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[50,100],[49.95,1],[49.85,1],[49.75,1],[49.65,1],[49.55,1],[49.45,1],[49.35,1],[49.25,1],[49.15,1],[49.05,1],[48.95,1],[48.85,1],[48.75,1],[48.65,1],[48.55,1],[48.45,1],[48.35,1],[48.25,1],[48.15,1],[48.05,1],[47.95,1],[47.85,1],[47.75,1],[47.65,1],[47.55,1],[47.45,1],[47.35,1],[47.25,1],[47.15,1],[47.05,1],[46.95,1],[46.85,1],[46.75,1],[46.65,1],[46.55,1],[46.45,1],[46.35,1],[46.25,1],[46.15,1],[46.05,1],[45.95,1],[45.85,1],[45.75,1],[45.65,1],[45.55,1],[45.45,1],[45.35,1],[45.25,1],[45.15,1],[45.05,1],[44.95,1],[44.85,1],[44.75,1],[44.65,1],[44.55,1],[44.45,1],[44.35,1],[44.25,1],[44.15,1],[44.05,1],[43.95,1],[43.85,1],[43.75,1],[43.65,1],[43.55,1],[43.45,1],[43.35,1],[43.25,1],[43.15,1],[43.05,1],[42.95,1],[42.85,1],[42.75,1],[42.65,1],[42.55,1],[42.45,1],[42.35,1],[42.25,1],[42.15,1],[42.05,1],[41.95,1],[41.85,1],[41.75,1],[41.65,1],[41.55,1],[41.45,1],[41.35,1],[41.25,1],[41.15,1],[41.05,1],[40.95,1],[40.85,1],[40.75,1],[40.65,1],[40.55,1],[40.45,1],[40.35,1],[40.25,1],[40.15,1],[40.05,1],[40,100],[40.05,1],[40.15,1],[40.25,1],[40.35,1],[40.45,1],[40.55,1],[40.65,1],[40.75,1],[40.85,1],[40.95,1],[41.05,1],[41.15,1],[41.25,1],[41.35,1],[41.45,1],[41.55,1],[41.65,1],[41.75,1],[41.85,1],[41.95,1],[42.05,1],[42.15,1],[42.25,1],[42.35,1],[42.45,1],[42.55,1],[42.65,1],[42.75,1],[42.85,1],[42.95,1],[43.05,1],[43.15,1],[43.25,1],[43.35,1],[43.45,1],[43.55,1],[43.65,1],[43.75,1],[43.85,1],[43.95,1],[44.05,1],[44.15,1],[44.25,1],[44.35,1],[44.45,1],[44.55,1],[44.65,1],[44.75,1],[44.85,1],[44.95,1],[45.05,1],[45.15,1],[45.25,1],[45.35,1],[45.45,1],[45.55,1],[45.65,1],[45.75,1],[45.85,1],[45.95,1],[46.05,1],[46.15,1],[46.25,1],[46.35,1],[46.45,1],[46.55,1],[46.65,1],[46.75,1],[46.85,1],[46.95,1],[47.05,1],[47.15,1],[47.25,1],[47.35,1],[47.45,1],[47.55,1],[47.65,1],[47.75,1],[47.85,1],[47.95,1],[48.05,1],[48.15,1],[48.25,1],[48.35,1],[48.45,1],[48.55,1],[48.65,1],[48.75,1],[48.85,1],[48.95,1],[49.05,1],[49.15,1],[49.25,1],[49.35,1],[49.45,1],[49.55,1],[49.65,1],[49.75,1],[49.85,1],[49.95,1],[50,100]]},"elements":[],"example":{"category":"Basics","order":12,"note":"Gradual transitions reflect much less at high frequency than abrupt ones. Pin reference, then use Plateau with a narrow Width to paint the same 40 Ω dip with sharp edges, and compare S11 above a few GHz.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.7.1","name":"Lossy creep on a 10 in line","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":10,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"condLossless":false,"dielLossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[],"example":{"category":"Basics","order":13,"note":"The painted line is flat, yet the TDR climbs along it: series resistance from skin effect adds up with distance, so a lossy line looks like a rising impedance. Tick Lossless in the Conductor panel and the climb disappears.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.7.1","name":"Shunt C and series L","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"condLossless":false,"dielLossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[{"type":"C","x":0.6,"value":0.1,"count":1,"pitch":0.15,"locked":false},{"type":"L","x":1.4,"value":0.25,"count":1,"pitch":0.15,"locked":false}],"example":{"category":"Discontinuities","order":20,"note":"Capacitance pulls the TDR down and inductance pushes it up. The area of each feature gives its value: C = −(2/Z₀)∫ρ dt and L = 2Z₀∫ρ dt over round-trip time. Drag either chip and watch the S11 ripple pattern change.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.7.1","name":"Via stub resonance, 60 mil","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"condLossless":false,"dielLossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[{"type":"C","x":1,"value":0.08,"count":1,"pitch":0.15,"locked":false},{"type":"stub","x":1,"stubZ":45,"stubLen":60,"end":"open","count":1,"pitch":0.15,"locked":false}],"example":{"category":"Discontinuities","order":21,"note":"An open 60 mil stub notches S21 near v/(4ℓ) ≈ 27 GHz, yet the TDR shows only a modest dip. Select the S chip and drag Stub length: the notch moves while the TDR barely changes. Back-drilling shortens exactly this stub.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.7.1","name":"Pad compensated with series L","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"condLossless":false,"dielLossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[{"type":"L","x":0.98,"value":0.19,"count":1,"pitch":0.15,"locked":false},{"type":"C","x":1,"value":0.15,"count":1,"pitch":0.15,"locked":false},{"type":"L","x":1.02,"value":0.19,"count":1,"pitch":0.15,"locked":false}],"example":{"category":"Discontinuities","order":22,"note":"A 0.15 pF pad flanked by two 0.19 nH sections behaves like a short 50 Ω line, because √(L/C) ≈ Z₀. Pin reference, then remove both L chips to see how much the compensation buys in return loss.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.7.1","name":"Rx pad capacitance, 0.25 pF","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"condLossless":false,"dielLossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[{"type":"C","x":2,"value":0.25,"count":1,"pitch":0.15,"locked":false}],"example":{"category":"Discontinuities","order":23,"note":"A capacitive receiver pad at the far end. Return loss degrades with frequency, and the TDR dips right where the line ends. Try the Rx impedance slider to see a resistive mismatch on top of it.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.7.1","name":"Resolution: two pads 40 mil apart","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"condLossless":false,"dielLossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[{"type":"C","x":0.98,"value":0.1,"count":1,"pitch":0.15,"locked":false},{"type":"C","x":1.02,"value":0.1,"count":1,"pitch":0.15,"locked":false}],"example":{"category":"TDR artifacts","order":30,"note":"Two 0.1 pF pads only 40 mil apart. At f_max 50 GHz the TDR rise time blurs them into one dip. Raise f_max to 110 GHz to separate them, or drop it to 20 GHz to merge them completely. The resolution readout under the plot tracks this.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.7.1","name":"Masking: two identical 30 Ω sections","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":true,"condLossless":true,"dielLossless":true,"extremeZ":false},"profile":{"cells":500,"runs":[[50,100],[42,1],[30,48],[42,1],[50,150],[42,1],[30,48],[42,1],[50,150]]},"elements":[],"example":{"category":"TDR artifacts","order":31,"note":"Both sections are painted at exactly 30 Ω, but the TDR reads the second one higher, because less of the step gets through the first. The bounce between the two sections also shows up later as a small ghost. Loss is off so only masking remains.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.7.1","name":"Ghost after a via stub","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2.5,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"condLossless":false,"dielLossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[{"type":"C","x":0.5,"value":0.25,"count":1,"pitch":0.15,"locked":false},{"type":"C","x":1.1,"value":0.08,"count":1,"pitch":0.15,"locked":false},{"type":"stub","x":1.1,"stubZ":45,"stubLen":60,"end":"open","count":1,"pitch":0.15,"locked":false}],"example":{"category":"TDR artifacts","order":32,"note":"Look past the via: around 1.8 in the TDR shows an inductive-looking spike, but nothing is painted there. It is the via’s reflection bouncing off the capacitive pad at 0.5 in and coming back, so it lands about 2 × (1.1 − 0.5) in after the via. Remove the pad and the spike disappears.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.7.1","name":"Board launch + via stub","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":2,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"condLossless":false,"dielLossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[49.387,1],[49.178,1],[48.917,1],[48.599,1],[48.219,1],[47.776,1],[47.271,1],[46.711,1],[46.106,1],[45.471,1],[44.825,1],[44.191,1],[43.594,1],[43.061,1],[42.615,1],[42.283,1],[42.077,1],[42.011,1],[42.09,1],[42.312,1],[42.669,1],[43.148,1],[43.733,1],[44.405,1],[45.148,1],[45.945,1],[46.785,1],[47.658,1],[48.559,1],[49.483,1],[50.424,1],[51.375,1],[52.325,1],[53.254,1],[54.14,1],[54.953,1],[55.661,1],[56.233,1],[56.643,1],[56.869,1],[56.905,1],[56.753,1],[56.431,1],[55.964,1],[55.389,1],[54.745,1],[54.071,1],[53.407,1],[52.776,1],[52.205,1],[51.707,1],[51.288,1],[50.947,1],[50.679,1],[50.475,1],[50.323,1],[50.215,1],[50.139,1],[50.088,1],[50.054,1],[50.032,1],[50.019,1],[50.011,1],[50.006,1],[50.003,1],[50,370],[50.003,1],[50.006,1],[50.011,1],[50.019,1],[50.032,1],[50.054,1],[50.088,1],[50.139,1],[50.215,1],[50.323,1],[50.475,1],[50.679,1],[50.947,1],[51.288,1],[51.707,1],[52.205,1],[52.776,1],[53.405,1],[54.071,1],[54.745,1],[55.389,1],[55.964,1],[56.431,1],[56.753,1],[56.905,1],[56.869,1],[56.643,1],[56.233,1],[55.661,1],[54.953,1],[54.14,1],[53.254,1],[52.325,1],[51.375,1],[50.424,1],[49.483,1],[48.559,1],[47.658,1],[46.785,1],[45.945,1],[45.148,1],[44.405,1],[43.733,1],[43.148,1],[42.669,1],[42.312,1],[42.09,1],[42.011,1],[42.077,1],[42.283,1],[42.615,1],[43.061,1],[43.594,1],[44.191,1],[44.825,1],[45.471,1],[46.106,1],[46.711,1],[47.271,1],[47.776,1],[48.219,1],[48.599,1],[48.917,1],[49.178,1],[49.387,1]]},"elements":[{"type":"C","x":1,"value":0.08,"count":1,"pitch":0.15,"locked":false},{"type":"stub","x":1,"stubZ":45,"stubLen":60,"end":"open","count":1,"pitch":0.15,"locked":false}],"example":{"category":"Realistic channels","order":40,"note":"Connector launches at both ends (capacitive pad, then inductive pin) and a via with a 60 mil stub in the middle. A typical first look at a channel: the stub dominates S21 near 27 GHz, the launches set the return loss.","author":"TDR Painter","default":true}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.7.1","name":"Probes on 42 Ω stripline, good contact","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":1.56,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"condLossless":false,"dielLossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[50,170],[46.08,1],[42,158],[46.08,1],[50,170]]},"elements":[{"type":"R","x":0.5,"value":0.02,"count":1,"pitch":0.15,"locked":false},{"type":"L","x":0.5,"value":0.12,"count":1,"pitch":0.15,"locked":false},{"type":"C","x":0.52,"value":0.06,"count":1,"pitch":0.15,"locked":false},{"type":"C","x":1.04,"value":0.06,"count":1,"pitch":0.15,"locked":false},{"type":"L","x":1.06,"value":0.12,"count":1,"pitch":0.15,"locked":false},{"type":"R","x":1.06,"value":0.02,"count":1,"pitch":0.15,"locked":false}],"example":{"category":"Realistic channels","order":41,"note":"50 Ω coax (the first and last 0.5 in), an inductive probe tip (0.12 nH), a capacitive pad (0.06 pF), 0.5 in of 42 Ω stripline, then the same in reverse. Tip and pad partly cancel; the 42 Ω section sets the low-frequency ripple. Both contacts are 0.02 Ω. Try 0.25 nH tips to see a spring-probe fixture.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.7.1","name":"Probes on 42 Ω stripline, bad Tx contact","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":1.56,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"condLossless":false,"dielLossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[50,170],[46.08,1],[42,158],[46.08,1],[50,170]]},"elements":[{"type":"R","x":0.5,"value":3,"count":1,"pitch":0.15,"locked":false},{"type":"L","x":0.5,"value":0.12,"count":1,"pitch":0.15,"locked":false},{"type":"C","x":0.52,"value":0.06,"count":1,"pitch":0.15,"locked":false},{"type":"C","x":1.04,"value":0.06,"count":1,"pitch":0.15,"locked":false},{"type":"L","x":1.06,"value":0.12,"count":1,"pitch":0.15,"locked":false},{"type":"R","x":1.06,"value":0.02,"count":1,"pitch":0.15,"locked":false}],"example":{"category":"Realistic channels","order":42,"note":"Same fixture, but the Tx probe lands with 3 Ω of contact resistance. The TDR steps up by about 3 Ω at the tip and stays up to DC, so the 42 Ω stripline now reads about 46 Ω instead of 43 Ω: a bad contact quietly corrupts every impedance behind it. S11 also no longer matches S22.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.7.1","name":"Serpentine, 5 in, corner capacitance","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":5,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":50,"nf":1001,"zTx":50,"zRx":50,"beta":4.2,"lossless":false,"condLossless":false,"dielLossless":false,"extremeZ":false},"profile":{"cells":500,"runs":[[50,500]]},"elements":[{"type":"C","x":0.6,"value":0.012,"count":13,"pitch":0.3,"locked":false},{"type":"C","x":0.62,"value":0.012,"count":13,"pitch":0.3,"locked":false}],"example":{"category":"Realistic channels","order":43,"note":"A 5 in trace with 13 U-turns, each made of two 90° corners of about 0.012 pF. One corner is negligible, but at a regular 0.3 in pitch they add up near v/(2p) ≈ 11 GHz and its harmonics; look at S11 and ILD there. This 1-D model leaves out coupling between the parallel runs, which in a real serpentine shortens the delay.","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.7.1","name":"GSG probe on a short, good contact","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":1,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":67,"nf":1001,"zTx":50,"zRx":0.001,"beta":6,"lossless":true,"condLossless":true,"dielLossless":true,"extremeZ":true},"profile":{"cells":500,"runs":[[50,250],[0.001,250]]},"elements":[{"type":"L","x":0.5,"value":0.02,"count":1,"pitch":0.15,"locked":false},{"type":"R","x":0.5,"value":0.03,"count":1,"pitch":0.15,"locked":false}],"view":{"zMin":0.0005,"zMax":200,"log":true},"example":{"category":"Realistic channels","order":44,"note":"A probe landed on the short of a cal substrate, seen from the calibrated tips: a lossless 50 Ω lead, 20 pH of tip and strip inductance, a 30 mΩ contact, and the short (a 1 mΩ section into a 1 mΩ Rx). On the log axis the TDR drops from 50 Ω to about 30 mΩ and stays there; on a linear axis it is just zero. Kaiser β 6 keeps the window ringing near ±4 mΩ. Pin this, then open the bad-contact example. Uses the experimental impedance range (gear menu).","author":"TDR Painter"}},
+{"format":"tdr-painter-project","formatVersion":1,"app":"0.7.1","name":"GSG probe on a short, bad contact","savedAt":"2026-11-01T00:00:00.000Z","params":{"lenIn":1,"z0":50,"Dk":3.35,"Df":0.004,"frefGHz":12,"dsLowHz":1000,"dsHighHz":1000000000000,"condLoss":0.4,"condRefGHz":10,"rdc":0.2,"fmaxGHz":67,"nf":1001,"zTx":50,"zRx":0.001,"beta":6,"lossless":true,"condLossless":true,"dielLossless":true,"extremeZ":true},"profile":{"cells":500,"runs":[[50,250],[0.001,250]]},"elements":[{"type":"L","x":0.5,"value":0.02,"count":1,"pitch":0.15,"locked":false},{"type":"R","x":0.5,"value":0.5,"count":1,"pitch":0.15,"locked":false}],"view":{"zMin":0.0005,"zMax":200,"log":true},"example":{"category":"Realistic channels","order":45,"note":"The same short with a 0.5 Ω contact. The TDR after the short sits at 0.5 Ω, more than a decade above a good landing, and |S11| reads about −0.17 dB instead of 0 dB. A bad signal tip and two bad ground tips look alike: both put resistance in the one current loop, so a one-port can’t tell which. One lifted ground mostly adds inductance (the grounds were in parallel); raise the L chip and the edge barely moves. Set R to 1 MΩ for a probe that never landed.","author":"TDR Painter"}}
 ];
   const state = {
     P: { ...DEFAULTS },
@@ -1148,7 +1166,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   /* ---------- compute ---------- */
   function compute() {
     const P = state.P;
-    const key = JSON.stringify([P.lenIn, P.z0, P.Dk, P.Df, P.frefGHz, P.dsLowHz, P.dsHighHz, P.condLoss, P.condRefGHz, P.rdc, P.fmaxGHz, P.nf, P.beta, P.lossless]);
+    const key = JSON.stringify([P.lenIn, P.z0, P.Dk, P.Df, P.frefGHz, P.dsLowHz, P.dsHighHz, P.condLoss, P.condRefGHz, P.rdc, P.fmaxGHz, P.nf, P.beta, P.lossless, P.condLossless, P.dielLossless]);
     if (key !== prepKey) { prep = E.prepare(P); prepKey = key; riseT = E.riseTime(prep); }
     prep.P = P;
     const t0 = performance.now();
@@ -1874,17 +1892,17 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       { k: 'lenIn', label: 'Length', unit: 'in', min: 0.25, max: 10, step: 0.05 },
       { k: 'z0', label: 'Line impedance (Flatten and Erase level)', unit: 'Ω', min: 20, max: 120, step: 0.5 },
     ] },
-    { title: 'Dielectric, Djordjevic-Sarkar', note: 'Defaults: Megtron 6 R-5775(N) datasheet point, Dk 3.35 and Df 0.004 at 12 GHz.', items: [
+    { title: 'Dielectric, Djordjevic-Sarkar', loss: { k: 'dielLossless', label: 'Lossless dielectric (Df = 0)' }, note: 'Defaults: Megtron 6 R-5775(N) datasheet point, Dk 3.35 and Df 0.004 at 12 GHz.', items: [
       { k: 'Dk', label: 'Dk at f_ref', unit: '', min: 1, max: 6, step: 0.01 },
       { k: 'Df', label: 'Df at f_ref', unit: '', min: 0, max: 0.03, step: 0.0005 },
       { k: 'frefGHz', label: 'f_ref', unit: 'GHz', min: 0.1, max: 60, step: 0.1 },
       { k: 'dsLowHz', label: 'Lower corner f₁', unit: 'kHz', min: 0.01, max: 1000, step: 0.01, scale: 1e3 },
       { k: 'dsHighHz', label: 'Upper corner f₂', unit: 'GHz', min: 100, max: 10000, step: 10, scale: 1e9 },
     ] },
-    { title: 'Conductor', note: 'Skin-effect loss scales with √f and carries its internal inductance, so the line stays causal.', items: [
+    { title: 'Conductor', loss: { k: 'condLossless', label: 'Lossless conductor (no skin effect, no DC resistance)' }, note: 'Skin-effect loss scales with √f and carries its internal inductance, so the line stays causal.', items: [
       { k: 'condLoss', label: 'Conductor loss at 10 GHz', unit: 'dB/in', min: 0, max: 2, step: 0.01 },
       { k: 'rdc', label: 'DC resistance', unit: 'Ω/in', min: 0, max: 2, step: 0.01 },
-    ], lossless: true },
+    ] },
     { title: 'Ports', note: 'Tx is also the TDR source impedance. Both set the S-parameter reference.', items: [
       { k: 'zTx', label: 'Tx (port 1)', unit: 'Ω', min: 10, max: 150, step: 0.5 },
       { k: 'zRx', label: 'Rx (port 2)', unit: 'Ω', min: 10, max: 150, step: 0.5 },
@@ -1900,11 +1918,15 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     const rail = $('#rail');
     const wide = railWide = !!state.P.extremeZ;
     const portLim = zlim().port;
-    const openNotes = rail.querySelector('details.notes[open]') !== null;
     railShows = [];
-    let html = '';
+    let html = `<div class="group"><h2>TDR plot range</h2><div class="inline">` +
+      `<input type="number" id="zMin" step="any" aria-label="Lowest impedance shown"><span class="note">to</span><input type="number" id="zMax" step="any" aria-label="Highest impedance shown"><span class="note">Ω</span>` +
+      `<button id="zFit" class="ghost" title="Fit the axis to the profile, the ports and the TDR">Autoscale</button></div>` +
+      `<label class="check"><input type="checkbox" id="optLog"> Logarithmic axis</label>` +
+      `<p class="note">On a log axis equal ratios get equal space, so a 30 mΩ contact and a 0.5 Ω one sit a decade apart. Paint tools then work in ratios.</p></div>`;
     GROUPS.forEach((g, gi) => {
-      html += `<div class="group"><h2>${g.title}</h2>`;
+      html += `<div class="group" id="grp_${gi}"><h2>${g.title}</h2>`;
+      if (g.loss) html += `<label class="check"><input type="checkbox" id="p_${g.loss.k}"> ${g.loss.label}</label>`;
       if (g.note) html += `<p class="note">${g.note}${g.title === 'Ports' && wide ? ' <span class="exp">Experimental range: 1 mΩ to 1 MΩ.</span>' : ''}</p>`;
       g.items.forEach(it => {
         html += wide && isPort(it.k) ? pairHTML('p_' + it.k, it.label, it.unit, portLim[0], portLim[1], it.step, true)
@@ -1914,25 +1936,11 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
         `<button id="rxShort" title="Rx = 1 mΩ: a short, like a probe landed on the short standard">Short</button>` +
         `<button id="rxOpen" title="Rx = 1 MΩ: an open, like a lifted probe">Open</button>` +
         `<button id="rxLine" class="ghost" title="Rx = the line impedance">Line Z₀</button></div>`;
-      if (g.lossless) html += `<label class="check"><input type="checkbox" id="p_lossless"> Lossless (no conductor or dielectric loss)</label>`;
       html += '</div>';
     });
-    html += `<div class="group"><h2>TDR plot range</h2><div class="inline">` +
-      `<input type="number" id="zMin" step="1" aria-label="Lowest impedance shown"><span class="note">to</span><input type="number" id="zMax" step="1" aria-label="Highest impedance shown"><span class="note">Ω</span><button id="zFit" class="ghost">Fit</button></div></div>`;
     html += `<div class="group"><h2>Export</h2><p class="note">Touchstone of the current S-parameters (RI). Unequal port impedances write version 2.0 with a [Reference] line.</p>` +
       `<div class="inline"><button id="copyS2p">Copy .s2p text</button><span class="toast" id="s2pMsg"></span></div><textarea id="s2pbox" hidden readonly aria-label="Touchstone text"></textarea></div>`;
-    html += `<details class="notes"${openNotes ? ' open' : ''}><summary>How the model works</summary><ul>
-      <li>The painted profile is 500 equal cells. Each cell is a uniform line of its painted impedance; lumped elements sit on cell boundaries. S-parameters come from the ABCD cascade, so they are exact for this structure.</li>
-      <li>R′ and L′ scale with Z and C′ with 1/Z, as if width alone changed the impedance. Loss per inch is the same everywhere, and only the reflections change with what you paint.</li>
-      <li>Dielectric: <code>ε(f) = ε∞ + Δε·ln((f₂+jf)/(f₁+jf)) / ln(f₂/f₁)</code>, anchored to Dk and Df at f_ref. Conductor: <code>R_dc + (1+j)·K·√f</code>.</li>
-      <li>TDR: S11 times a Kaiser half-window, inverse FFT, trapezoid-rule integration, then <code>Z = Z_Tx(1+ρ)/(1−ρ)</code>. The window sets rise time and ringing; the orange trace is what a TDR would show, the indigo line is the truth.</li>
-      <li>With loss on, the orange trace sits a little above the painted line and creeps upward along it. Skin-effect resistance and internal inductance raise the low-frequency impedance. Tick Lossless to see it vanish.</li>
-      <li>Labels on short painted bumps use the TDR area method: <code>L = 2Z₀∫ρ dt</code>, <code>C = −(2/Z₀)∫ρ dt</code> over round-trip time. Long excursions show average impedance and length instead.</li>
-      <li>ILD is dB(S21) minus a least-squares fit of a0 + a1√f + a2·f + a4·f² over the whole sweep.</li>
-      <li>Privacy: the page makes no network requests and keeps nothing, not even in browser storage. Save writes a .tdrp file to your computer (a ZIP holding project.json, with a CRC-32 that Open verifies) and Open reads it back; Export JSON writes the same project as readable text. The standalone build adds a Content-Security-Policy that blocks every outgoing connection, so the browser itself enforces this.</li>
-      <li>Nothing radiates and nothing couples. Power that is neither reflected nor transmitted is absorbed in the line or in series R.</li>
-      <li>Experimental impedance range (gear menu): 1 mΩ is a short and 1 MΩ an open, for the ports, the profile, stubs and series R. The S-parameters stay referenced to Tx and Rx, so with Rx shorted S21 is tiny by definition; the TDR is the useful view. A painted 1 mΩ section keeps the same loss per inch as any other cell. Stubs can be open or shorted at the far end: a 1 mΩ shorted stub is a short to ground at its position, DC included, while a 1 mΩ open stub is a nanofarad capacitor that is open at DC.</li>
-    </ul></details>`;
+
     rail.innerHTML = html;
     GROUPS.forEach(g => g.items.forEach(it => {
       const sc = it.scale || 1;
@@ -1943,9 +1951,13 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
         if (it.k === 'lenIn') { for (const e of state.elems) e.x = Math.min(e.x, v); renderEditor(); }
       }, { noUndo: true, after: () => { syncEditor(); schedule(); } }));
     }));
-    const ll = $('#p_lossless');
-    ll.checked = state.P.lossless;
-    ll.addEventListener('change', () => { state.P.lossless = ll.checked; schedule(); });
+    GROUPS.forEach((g, gi) => {
+      if (!g.loss) return;
+      const cb = $('#p_' + g.loss.k);
+      cb.addEventListener('change', () => { state.P[g.loss.k] = cb.checked; state.P.lossless = !!(state.P.condLossless && state.P.dielLossless); syncLoss(); schedule(); });
+    });
+    $('#optLog').addEventListener('change', (ev) => { pushUndo(true); state.zLog = ev.target.checked; autoRange(false); schedule(); });
+    syncLoss();
     $('#zMin').addEventListener('change', (ev) => { const v = +ev.target.value; if (rangeOk(v, state.zMax)) state.zMin = v; syncRange(); schedule(true); });
     $('#zMax').addEventListener('change', (ev) => { const v = +ev.target.value; if (rangeOk(state.zMin, v)) state.zMax = v; syncRange(); schedule(true); });
     if (wide) {
@@ -1958,8 +1970,22 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     $('#copyS2p').addEventListener('click', copyS2p);
     syncRange();
   }
+  // the loss checks, and dim the sliders they switch off
+  function syncLoss() {
+    GROUPS.forEach((g, gi) => {
+      if (!g.loss) return;
+      const on = !!state.P[g.loss.k];
+      $('#p_' + g.loss.k).checked = on;
+      $('#grp_' + gi).querySelectorAll('.pair input').forEach(inp => {
+        const k = inp.id.replace(/^p_/, '').replace(/N$/, '');
+        // Df, f_ref and the corners for the dielectric; condLoss and rdc for the conductor
+        if (on && k !== 'Dk' && g.items.some(it => it.k === k)) { inp.disabled = true; inp.title = 'Off: ' + g.loss.label.toLowerCase(); }
+        else { inp.disabled = false; inp.title = ''; }
+      });
+    });
+  }
   const showZ = (v) => Math.abs(v) >= 100 || v === 0 ? +v.toFixed(1) : +v.toPrecision(4);
-  function syncRange() { $('#zMin').value = showZ(state.zMin); $('#zMax').value = showZ(state.zMax); $('#zMin').step = $('#zMax').step = 'any'; }
+  function syncRange() { $('#zMin').value = showZ(state.zMin); $('#zMax').value = showZ(state.zMax); $('#optLog').checked = !!state.zLog; }
   // the same rule the project parser applies to a saved view
   function rangeOk(lo, hi) {
     if (!isFinite(lo) || !isFinite(hi)) return false;
@@ -2003,24 +2029,17 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   function openGear(open) {
     gearPanel.hidden = !open;
     gearBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    if (open) { syncGear(); placeGear(); $('#optLog').focus(); }
+    if (open) { syncGear(); placeGear(); $('#optWide').focus(); }
   }
   function syncGear() {
-    $('#optLog').checked = !!state.zLog;
     $('#optWide').checked = !!state.P.extremeZ;
     $('#gearDot').hidden = !state.P.extremeZ;
-    gearBtn.title = state.P.extremeZ ? 'Settings (experimental impedance range is on)' : 'Settings: view and experimental options';
+    gearBtn.title = state.P.extremeZ ? 'Settings (experimental impedance range is on)' : 'Settings: experimental options';
   }
   gearBtn.addEventListener('click', () => openGear(gearPanel.hidden));
   document.addEventListener('pointerdown', (ev) => { if (!gearPanel.hidden && !gearPanel.contains(ev.target) && !gearBtn.contains(ev.target)) openGear(false); });
   document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && !gearPanel.hidden) { openGear(false); gearBtn.focus(); } });
   window.addEventListener('resize', () => { if (!gearPanel.hidden) placeGear(); });
-  $('#optLog').addEventListener('change', (ev) => {
-    pushUndo(true);
-    state.zLog = ev.target.checked;
-    autoRange(false);
-    schedule();
-  });
   $('#optWide').addEventListener('change', (ev) => setWide(ev.target.checked));
   function setWide(on) {
     if (on === !!state.P.extremeZ) return;
@@ -2049,9 +2068,9 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     const P = state.P, s = R.s;
     const v2 = Math.abs(P.zTx - P.zRx) > 1e-9;
     const lines = [];
-    lines.push('! TDR Painter v0.7.0 export, ' + new Date().toISOString().slice(0, 10));
+    lines.push('! TDR Painter v0.7.1 export, ' + new Date().toISOString().slice(0, 10));
     if (state.projectName) lines.push('! project: ' + state.projectName.replace(/[\r\n]/g, ' '));
-    lines.push(`! ${P.lenIn} in line, Z0 ${P.z0} ohm, Dk ${P.Dk} Df ${P.Df} @ ${P.frefGHz} GHz (Djordjevic-Sarkar), cond ${P.lossless ? 0 : P.condLoss} dB/in @10 GHz, Rdc ${P.lossless ? 0 : P.rdc} ohm/in`);
+    lines.push(`! ${P.lenIn} in line, Z0 ${P.z0} ohm, Dk ${P.Dk} Df ${P.dielLossless ? 0 : P.Df} @ ${P.frefGHz} GHz (Djordjevic-Sarkar), cond ${P.condLossless ? 0 : P.condLoss} dB/in @10 GHz, Rdc ${P.condLossless ? 0 : P.rdc} ohm/in`);
     for (const e of state.elems) lines.push(`! element ${chipLabel(e)} at ${e.x} in${e.count > 1 ? ', pitch ' + e.pitch + ' in' : ''}`);
     if (v2) lines.push('[Version] 2.0');
     lines.push(`# GHz S RI R ${v2 ? P.zTx : P.zTx}`);
@@ -2073,7 +2092,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   /* ---------- projects: plain .json files on the viewer's own computer ----------
      Nothing is sent anywhere or kept in browser storage. Save hands a file to the browser's
      download (or, inside claude.ai, to its save dialog); Open reads a file the viewer picks. */
-  const APP_VERSION = '0.7.0';
+  const APP_VERSION = '0.7.1';
   function projectData(name) {
     return {
       format: PJ.FORMAT, formatVersion: PJ.FORMAT_VERSION, app: APP_VERSION, name, savedAt: new Date().toISOString(),
@@ -2092,7 +2111,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     if (railWide !== !!state.P.extremeZ) buildRail();
     railShows.forEach(f => f());
     syncGear();
-    $('#p_lossless').checked = !!state.P.lossless;
+    syncLoss();
     $('#projName').value = state.projectName || '';
     sel.value = '';
     syncRange(); renderEditor(); schedule();
