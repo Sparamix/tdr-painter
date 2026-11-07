@@ -20,7 +20,8 @@
   "zTx": 50,
   "zRx": 50,
   "beta": 4.2,
-  "lossless": false
+  "lossless": false,
+  "extremeZ": false
  },
  "profile": {
   "cells": 500,

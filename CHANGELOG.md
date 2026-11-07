@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.0 (2026-11-07)
+
+- Settings menu (the gear) with **Allow extra low and high impedances**, an experimental option: Tx and Rx, the painted profile, stub impedance and series R go from 1 mΩ (a short) to 1 MΩ (an open), with log-scale sliders, and Rx gets Short, Open and Line Z₀ buttons. The option is saved with the project (`params.extremeZ`); turning it off brings values back into the normal ranges, and Undo restores them.
+- Logarithmic impedance axis for the TDR plot (`view.log`), with paint tools that work in ratios on it, so contact resistance in the milliohms is readable next to 50 Ω.
+- Shorted stubs: a stub's far end can be open or shorted to ground (`"end": "short"`). A 1 mΩ open stub is a nanofarad capacitor, open at DC, and the editor now says so; a 1 mΩ shorted stub is a short to ground, DC included.
+- Impedances below 1 Ω are stored with four significant digits (1 mΩ steps from 1 Ω up, as before).
+- New examples: a GSG probe on a short standard with good (30 mΩ) and bad (0.5 Ω) contact.
+- Validation: a sixth case, the probe on a short, at 1 mΩ and 1 MΩ ports, a painted 1 mΩ section and a 1 mΩ shorted stub, checked against scikit-rf; the TDR's late level reads the contact resistance to within 1 mΩ.
+
 ## 0.6.0 (2026-11-07)
 
 - New `validation/` suite: five synthetic structures (Beatty standard, via with a 60 mil open stub, periodic shunt C, probe launch with good and bad contact, 10 in lossy taper) built independently in scikit-rf and compared with the engine, plus physics checks (DC, passivity, energy, causality with non-causal negative controls), textbook results (Beatty closed form, quarter-wave stub null, Bloch stopband), a paint-the-TDR round trip, and two cases from scikit-rf's documentation (a measured stepped microstrip and a taper simulated in ANSYS Circuit). `npm run validate` regenerates `validation/report/REPORT.md`.

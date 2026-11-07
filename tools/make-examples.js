@@ -15,9 +15,9 @@ fs.mkdirSync(OUT, { recursive: true });
 const C = (x, pF, extra) => ({ type: 'C', x, value: pF, count: 1, pitch: 0.15, locked: false, ...extra });
 const L = (x, nH, extra) => ({ type: 'L', x, value: nH, count: 1, pitch: 0.15, locked: false, ...extra });
 const R = (x, ohm, extra) => ({ type: 'R', x, value: ohm, count: 1, pitch: 0.15, locked: false, ...extra });
-const STUB = (x, mil, z, extra) => ({ type: 'stub', x, stubZ: z, stubLen: mil, count: 1, pitch: 0.15, locked: false, ...extra });
+const STUB = (x, mil, z, extra) => ({ type: 'stub', x, stubZ: z, stubLen: mil, end: 'open', count: 1, pitch: 0.15, locked: false, ...extra });
 
-function example({ slug, order, category, name, note, params = {}, paint, elements = [], isDefault = false }) {
+function example({ slug, order, category, name, note, params = {}, paint, elements = [], view = null, isDefault = false }) {
   const P = { ...PJ.DEFAULTS, ...params };
   const prof = new Float64Array(NS).fill(P.z0);
   const cellX = (i) => (i + 0.5) / NS * P.lenIn;
@@ -43,6 +43,7 @@ function example({ slug, order, category, name, note, params = {}, paint, elemen
     params: P,
     profile: { cells: NS, runs: PJ.encodeProfile(prof) },
     elements,
+    ...(view ? { view } : {}),
     example: { category, order, note, author: 'TDR Painter', ...(isDefault ? { default: true } : {}) },
   };
   const file = path.join(OUT, `${String(order).padStart(2, '0')}-${slug}.json`);
@@ -141,4 +142,21 @@ example({
   note: 'A 5 in trace with 13 U-turns, each made of two 90° corners of about 0.012 pF. One corner is negligible, but at a regular 0.3 in pitch they add up near v/(2p) ≈ 11 GHz and its harmonics; look at S11 and ILD there. This 1-D model leaves out coupling between the parallel runs, which in a real serpentine shortens the delay.',
   params: { lenIn: 5 },
   elements: [C(0.6, 0.012, { count: 13, pitch: 0.3 }), C(0.62, 0.012, { count: 13, pitch: 0.3 })],
+});
+// A GSG probe on the short of a cal substrate, from the calibrated tips (experimental impedance range, log axis).
+const onShort = (rContact) => ({
+  params: { lenIn: 1, lossless: true, extremeZ: true, zRx: 0.001, fmaxGHz: 67, beta: 6 },
+  paint: (t) => t.plateau(0.5, 1.0, 0.001, 0),
+  elements: [L(0.5, 0.02), R(0.5, rContact)],
+  view: { zMin: 0.0005, zMax: 200, log: true },
+});
+example({
+  slug: 'probe-short-good', order: 44, category: 'Realistic channels', name: 'GSG probe on a short, good contact',
+  note: 'A probe landed on the short of a cal substrate, seen from the calibrated tips: a lossless 50 Ω lead, 20 pH of tip and strip inductance, a 30 mΩ contact, and the short (a 1 mΩ section into a 1 mΩ Rx). On the log axis the TDR drops from 50 Ω to about 30 mΩ and stays there; on a linear axis it is just zero. Kaiser β 6 keeps the window ringing near ±4 mΩ. Pin this, then open the bad-contact example. Uses the experimental impedance range (gear menu).',
+  ...onShort(0.03),
+});
+example({
+  slug: 'probe-short-bad', order: 45, category: 'Realistic channels', name: 'GSG probe on a short, bad contact',
+  note: 'The same short with a 0.5 Ω contact. The TDR after the short sits at 0.5 Ω, more than a decade above a good landing, and |S11| reads about −0.17 dB instead of 0 dB. A bad signal tip and two bad ground tips look alike: both put resistance in the one current loop, so a one-port can’t tell which. One lifted ground mostly adds inductance (the grounds were in parallel); raise the L chip and the edge barely moves. Set R to 1 MΩ for a probe that never landed.',
+  ...onShort(0.5),
 });

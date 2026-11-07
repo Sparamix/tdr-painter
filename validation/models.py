@@ -28,14 +28,17 @@ NS = 500  # cells in a TDR Painter profile
 # TDR Painter defaults (src/project.js). Every project written here lists all of them explicitly.
 DEFAULTS = dict(lenIn=2, z0=50, Dk=3.35, Df=0.004, frefGHz=12, dsLowHz=1e3, dsHighHz=1e12,
                 condLoss=0.4, condRefGHz=10, rdc=0.2, fmaxGHz=50, nf=1001,
-                zTx=50, zRx=50, beta=4.2, lossless=False)
+                zTx=50, zRx=50, beta=4.2, lossless=False, extremeZ=False)
+WIDE = (0.001, 1e6)      # the experimental range (params.extremeZ): shorts and opens
+NORMAL_Z = (5, 200)
 
 
 @dataclass
 class Structure:
     """sections: (length_in, Z) uniform, or (length_in, Z_start, Z_end) linear taper, from x = 0.
     elements: dicts in TDR Painter form, e.g. {'type': 'C', 'x': 1.0, 'value': 0.1} (pF, nH, ohm) or
-    {'type': 'stub', 'x': 1.0, 'stubZ': 45, 'stubLen': 60} (ohm, mil); optional 'count' and 'pitch' (in)."""
+    {'type': 'stub', 'x': 1.0, 'stubZ': 45, 'stubLen': 60} (ohm, mil), with 'end': 'short' for a shorted stub;
+    optional 'count' and 'pitch' (in)."""
     params: dict
     sections: list
     elements: list = field(default_factory=list)
@@ -90,9 +93,9 @@ class Structure:
         runs = []
         i = 0
         while i < NS:
-            z = round(float(prof[i]), 3)
+            z = quant_z(prof[i])
             j = i + 1
-            while j < NS and round(float(prof[j]), 3) == z:
+            while j < NS and quant_z(prof[j]) == z:
                 j += 1
             runs.append([z, j - i])
             i = j
@@ -100,7 +103,7 @@ class Structure:
         for e in self.elements:
             o = {'type': e['type'], 'x': e['x'], 'count': int(e.get('count', 1)), 'pitch': e.get('pitch', 0.15), 'locked': False}
             if e['type'] == 'stub':
-                o.update(stubZ=e['stubZ'], stubLen=e['stubLen'], value=0)
+                o.update(stubZ=e['stubZ'], stubLen=e['stubLen'], value=0, end=e.get('end', 'open'))
             else:
                 o['value'] = e['value']
             elements.append(o)
@@ -202,21 +205,51 @@ class Structure:
         if t == 'R':
             return lumped.resistor(e['value'])
         if t == 'stub':
+            if e.get('end') == 'short':
+                return med(e['stubZ']).shunt_delay_short(e['stubLen'] * MIL, 'm')
             return med(e['stubZ']).shunt_delay_open(e['stubLen'] * MIL, 'm')
         raise ValueError(t)
 
     # ---------------------------------------------------------------- analytic DC
     def dc_sparams(self):
-        """Exact S11, S21 at DC for the painted structure: lines are series Rdc, C and stubs are open,
-        L is a short, R is R."""
+        """Exact S11, S21 at DC for the painted structure: lines are series Rdc, C and open stubs are open,
+        L is a short, R is R, and a shorted stub is its own DC resistance to ground (as in the engine, a lossless
+        one is 1e-15 ohm). Computed as a real ABCD cascade."""
         P = self.params
-        rtot = 0.0
-        if not P['lossless']:
-            rtot += float(np.sum(self.profile())) * P['rdc'] / P['z0'] * self.dx
-        rtot += sum(e['value'] for _, e in self.expanded_elements() if e['type'] == 'R')
+        rdcn = 0.0 if P['lossless'] else P['rdc'] / P['z0']          # ohm per inch per ohm of line impedance
+        A, B, C, D = 1.0, 0.0, 0.0, 1.0
+
+        def series(r):
+            nonlocal B, D
+            B += A * r
+            D += C * r
+
+        def shunt(g):
+            nonlocal A, C
+            A += B * g
+            C += D * g
+        events = self.expanded_elements()
+        prof = self.profile()
+        ei = 0
+        for i in range(NS + 1):
+            while ei < len(events) and round(events[ei][0] / self.dx) == i:
+                e = events[ei][1]
+                if e['type'] == 'R':
+                    series(e['value'])
+                elif e['type'] == 'stub' and e.get('end') == 'short':
+                    shunt(1.0 / max(e['stubZ'] * rdcn / IN * (e['stubLen'] * MIL), 1e-15))
+                ei += 1
+            if i < NS:
+                series(prof[i] * rdcn * self.dx)
         z1, z2 = P['zTx'], P['zRx']
-        den = rtot + z1 + z2
-        return (rtot + z2 - z1) / den, 2 * math.sqrt(z1 * z2) / den
+        den = A * z2 + B + C * z1 * z2 + D * z1
+        return (A * z2 + B - C * z1 * z2 - D * z1) / den, 2 * math.sqrt(z1 * z2) / den
+
+
+def quant_z(z):
+    """Impedance as TDR Painter stores it (project.js quantZ): 1 mohm steps from 1 ohm, 4 significant digits below."""
+    z = float(z)
+    return round(z, 3) if z >= 1 else float(f'{z:.4g}')
 
 
 def frequency(params, include_dc=False):
@@ -239,11 +272,11 @@ def profile_project(params, prof, name):
     st = Structure(dict(params, lenIn=params['lenIn']), [(params['lenIn'], 50.0)])
     doc = st.project(name)
     runs, i = [], 0
-    prof = np.clip(np.asarray(prof, dtype=float), 5, 200)
+    prof = np.clip(np.asarray(prof, dtype=float), *(WIDE if params.get('extremeZ') else NORMAL_Z))
     while i < NS:
-        z = round(float(prof[i]), 3)
+        z = quant_z(prof[i])
         j = i + 1
-        while j < NS and round(float(prof[j]), 3) == z:
+        while j < NS and quant_z(prof[j]) == z:
             j += 1
         runs.append([z, j - i])
         i = j

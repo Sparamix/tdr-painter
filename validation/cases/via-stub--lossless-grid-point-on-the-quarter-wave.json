@@ -20,7 +20,8 @@
   "zTx": 50,
   "zRx": 50,
   "beta": 4.2,
-  "lossless": true
+  "lossless": true,
+  "extremeZ": false
  },
  "profile": {
   "cells": 500,
@@ -56,7 +57,8 @@
    "locked": false,
    "stubZ": 45,
    "stubLen": 60,
-   "value": 0
+   "value": 0,
+   "end": "open"
   }
  ],
  "example": {

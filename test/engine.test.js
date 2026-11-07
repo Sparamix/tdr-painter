@@ -180,6 +180,75 @@ const db = (r, i) => 20 * Math.log10(mag(r, i));
   check('painted dip readout vs TDR integral (pF)', ex[0].C * 1e12, -2 * area / 50 * 1e12, 0.01);
 }
 
+// 11b) Experimental wide impedance range: parser limits, quantization, shorts and opens
+{
+  const ok = (name, cond, detail) => { if (!cond) fails++; console.log(`${cond ? 'PASS' : 'FAIL'}  ${name}${cond ? '' : '  ' + detail}`); };
+  const PJ = require(path.join(__dirname, '..', 'src', 'project.js'));
+  const proj = (params, runs, elements) => ({ format: PJ.FORMAT, formatVersion: 1, params: { ...PJ.DEFAULTS, ...params }, profile: { cells: 500, runs }, elements: elements || [] });
+  const wide = PJ.parse(proj({ extremeZ: true, zRx: 0.001, zTx: 50 }, [[50, 400], [0.0012345, 100]], [{ type: 'R', x: 1, value: 1e6 }, { type: 'stub', x: 1, stubZ: 0.001, stubLen: 60 }]), 500);
+  ok('wide: Rx 1 mohm kept', wide.P.zRx === 0.001, wide.P.zRx);
+  ok('wide: profile below 1 ohm kept', Math.abs(wide.prof[499] - 0.0012345) < 1e-12, wide.prof[499]);
+  ok('wide: R of 1 Mohm kept', wide.elements[0].value === 1e6);
+  ok('wide: stub of 1 mohm kept', wide.elements[1].stubZ === 0.001);
+  const norm = PJ.parse(proj({ zRx: 0.001 }, [[0.5, 500]], [{ type: 'R', x: 1, value: 1e6 }]), 500);
+  ok('normal: Rx clamped to 10 ohm', norm.P.zRx === 10, norm.P.zRx);
+  ok('normal: profile clamped to 5 ohm', norm.prof[0] === 5);
+  ok('normal: R clamped to 25 ohm', norm.elements[0].value === 25);
+  ok('quantZ: 1 mohm steps above 1 ohm', PJ.quantZ(49.99951) === 50 && PJ.quantZ(1.0004) === 1);
+  ok('quantZ: 4 significant digits below 1 ohm', PJ.quantZ(0.00123456) === 0.001235 && PJ.quantZ(0.5) === 0.5);
+  const runs = PJ.encodeProfile(Float64Array.from({ length: 500 }, (_, i) => i < 250 ? 50 : 0.00123456));
+  ok('encodeProfile keeps sub-ohm values', runs.length === 2 && runs[1][0] === 0.001235, JSON.stringify(runs));
+  const v = (view, extremeZ) => PJ.parse({ ...proj({ extremeZ }, [[50, 500]]), view }, 500).view;
+  ok('view: log range kept', JSON.stringify(v({ zMin: 0.001, zMax: 100, log: true })) === '{"zMin":0.001,"zMax":100,"log":true}');
+  ok('view: log range must be positive', v({ zMin: 0, zMax: 100, log: true }) === null);
+  ok('view: narrow linear range needs the wide flag', v({ zMin: 0, zMax: 0.5 }, false) === null && v({ zMin: 0, zMax: 0.5 }, true) !== null);
+
+  // a short and an open at Rx: S11 -> -1 and +1 at DC, TDR settles there; S stays finite and passive
+  for (const [zRx, sign] of [[0.001, -1], [1e6, 1]]) {
+    const P = { ...base, lossless: true, extremeZ: true, zRx };
+    const prep = E.prepare(P);
+    const s = E.solve(prep, E.buildCascade(flat(50), [], P));
+    const g = (zRx - 50) / (zRx + 50);
+    ok(`Rx ${zRx} ohm: S11(DC) = (Zrx-Z0)/(Zrx+Z0)`, Math.abs(s.s11r[0] - g) < 1e-12, s.s11r[0]);
+    let worst = 0, finite = true;
+    for (let k = 0; k < prep.nf; k++) {
+      const a = s.s11r[k] ** 2 + s.s11i[k] ** 2, b = s.s21r[k] ** 2 + s.s21i[k] ** 2;
+      if (!isFinite(a + b)) finite = false;
+      worst = Math.max(worst, Math.abs(a + b - 1));
+    }
+    ok(`Rx ${zRx} ohm: lossless energy |S11|²+|S21|² = 1`, finite && worst < 1e-9, worst.toExponential(2));
+    const td = E.tdr(prep, s.s11r, s.s11i, 2e-9);
+    ok(`Rx ${zRx} ohm: TDR settles at rho = ${sign}`, Math.abs(td.rho[td.rho.length - 1] - g) < 2e-3, td.rho[td.rho.length - 1]);
+  }
+  // a 1 mohm open stub shorts the line at its position (lossless): S21 ~ 0 well above DC
+  {
+    const P = { ...base, lossless: true, extremeZ: true };
+    const prep = E.prepare(P);
+    const s = E.solve(prep, E.buildCascade(flat(50), [{ id: 1, type: 'stub', x: 1, stubZ: 0.001, stubLen: 60, count: 1, pitch: 0 }], P));
+    const k = 200;   // 10 GHz
+    ok('1 mohm open stub shunts the line at 10 GHz (a nanofarad capacitor)', Math.hypot(s.s21r[k], s.s21i[k]) < 1e-3, Math.hypot(s.s21r[k], s.s21i[k]).toExponential(2));
+    ok('... but is open at DC', Math.abs(s.s21r[0] - 1) < 1e-12, s.s21r[0]);
+  }
+  // shorted stubs: a short at DC; a 60 mil, 50 ohm one is an open at its quarter-wave (lossless)
+  {
+    const P = { ...base, lossless: true, extremeZ: true };
+    const prep = E.prepare(P);
+    const sh = (z, len) => E.solve(prep, E.buildCascade(flat(50), [{ id: 1, type: 'stub', x: 1, stubZ: z, stubLen: len, end: 'short', count: 1, pitch: 0 }], P));
+    let s = sh(0.001, 20);
+    ok('1 mohm shorted stub: S11(DC) = -1, S21(DC) = 0', Math.abs(s.s11r[0] + 1) < 1e-12 && Math.abs(s.s21r[0]) < 1e-12, s.s11r[0] + ' ' + s.s21r[0]);
+    ok('1 mohm shorted stub: S21 ~ 0 across the band', Math.max(...Array.from(s.s21r, (v, i) => Math.hypot(v, s.s21i[i]))) < 1e-3);
+    const fq = prep.vRef / (4 * 60e-3 * IN), kq = fq / prep.df;
+    const P2 = { ...P, fmaxGHz: fq * 1000 / 537 / 1e9 };       // put grid point 537 on the quarter-wave
+    const prep2 = E.prepare(P2);
+    s = E.solve(prep2, E.buildCascade(flat(50), [{ id: 1, type: 'stub', x: 1, stubZ: 50, stubLen: 60, end: 'short', count: 1, pitch: 0 }], P2));
+    ok('50 ohm, 60 mil shorted stub is an open at v/(4l): |S21| = 1', Math.abs(Math.hypot(s.s21r[537], s.s21i[537]) - 1) < 1e-9, Math.hypot(s.s21r[537], s.s21i[537]));
+    const PJ = require(path.join(__dirname, '..', 'src', 'project.js'));
+    const pe = PJ.parse({ format: PJ.FORMAT, formatVersion: 1, params: {}, profile: { cells: 500, runs: [[50, 500]] },
+      elements: [{ type: 'stub', x: 1, stubZ: 45, stubLen: 60, end: 'short' }, { type: 'stub', x: 1, stubZ: 45, stubLen: 60, end: 'weird' }] }, 500);
+    ok('parser keeps end: short, and reads anything else as open', pe.elements[0].end === 'short' && pe.elements[1].end === 'open');
+  }
+}
+
 // 12) Timing
 {
   const P = { ...base };

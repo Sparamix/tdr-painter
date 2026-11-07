@@ -157,7 +157,7 @@
     const items = [];
     let ii = 0;
     let i = 0;
-    const q = (z) => Math.round(z * 1000) / 1000;
+    const q = (z) => z >= 1 ? Math.round(z * 1000) / 1000 : +z.toPrecision(4);   // as project.js quantZ
     while (i <= ns) {
       while (ii < ins.length && ins[ii].b === i) { items.push({ kind: 'el', e: ins[ii].e }); ii++; }
       if (i === ns) break;
@@ -175,8 +175,9 @@
     const stubs = [];
     const stubKey = new Map();
     for (const t of items) if (t.kind === 'el' && t.e.type === 'stub') {
-      const key = t.e.stubZ + '|' + t.e.stubLen;
-      if (!stubKey.has(key)) { stubKey.set(key, stubs.length); stubs.push({ Z: t.e.stubZ, lenM: t.e.stubLen * 1e-3 * IN }); }
+      const short = t.e.end === 'short';
+      const key = t.e.stubZ + '|' + t.e.stubLen + '|' + (short ? 's' : 'o');
+      if (!stubKey.has(key)) { stubKey.set(key, stubs.length); stubs.push({ Z: t.e.stubZ, lenM: t.e.stubLen * 1e-3 * IN, short }); }
       t.si = stubKey.get(key);
     }
     return { items, ms, stubs, dxM: dx * IN };
@@ -213,7 +214,7 @@
           shR[q] = sha * cb; shI[q] = cha * sb;
         }
         for (let q = 0; q < nst; q++) {
-          // open stub: Y = tanh(gamma l) / (Zs * zeta)
+          // open stub: Y = tanh(gamma l) / (Zs * zeta); shorted stub: Y = 1 / (Zs * zeta * tanh(gamma l))
           const len = casc.stubs[q].lenM;
           const a = gRe[k] * len, b = gIm[k] * len;
           const ea = Math.exp(a), eb = 1 / ea;
@@ -223,8 +224,21 @@
           const den = cr * cr + ci * ci;
           const tr = (sr * cr + si * ci) / den, ti = (si * cr - sr * ci) / den;
           const Zr = casc.stubs[q].Z * zRe[k], Zi = casc.stubs[q].Z * zIm[k];
-          const d2 = Zr * Zr + Zi * Zi;
-          syR[q] = (tr * Zr + ti * Zi) / d2; syI[q] = (ti * Zr - tr * Zi) / d2;
+          if (casc.stubs[q].short) {
+            // Y = 1 / (Z tanh)
+            const pr = Zr * tr - Zi * ti, pi = Zr * ti + Zi * tr;
+            const d3 = pr * pr + pi * pi;
+            syR[q] = pr / d3; syI[q] = -pi / d3;
+          } else {
+            const d2 = Zr * Zr + Zi * Zi;
+            syR[q] = (tr * Zr + ti * Zi) / d2; syI[q] = (ti * Zr - tr * Zi) / d2;
+          }
+        }
+      } else {
+        // DC: an open stub is open; a shorted stub is its own DC resistance to ground (lossless: a dead short)
+        for (let q = 0; q < nst; q++) {
+          const st = casc.stubs[q];
+          syR[q] = st.short ? 1 / Math.max(st.Z * rdcN * st.lenM, 1e-15) : 0; syI[q] = 0;
         }
       }
       // accumulated ABCD
@@ -259,7 +273,7 @@
           if (e.type === 'R') { series = true; sZr = e.value; }
           else if (e.type === 'L') { series = true; sZi = w * e.value * 1e-9; }
           else if (e.type === 'C') { sYi = w * e.value * 1e-12; }
-          else if (e.type === 'stub') { if (!dc) { sYr = syR[it.si]; sYi = syI[it.si]; } }
+          else if (e.type === 'stub') { sYr = syR[it.si]; sYi = syI[it.si]; }
           if (series) {
             // [a b; c d] * [1 Z; 0 1] -> b += a Z, d += c Z
             br += ar * sZr - ai * sZi; bi += ar * sZi + ai * sZr;

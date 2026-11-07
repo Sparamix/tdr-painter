@@ -34,16 +34,21 @@ for (const f of files) {
   if (ex.default === true) defaults++;
 
   // nothing may be clamped: the file must already be within the page's limits
-  for (const k of Object.keys(PJ.DEFAULTS))
-    check(`${tag} params.${k} present and within limits`, obj.params && obj.params[k] === p.P[k], `${obj.params && obj.params[k]} -> ${p.P[k]}`);
+  // (true/false flags such as extremeZ may be left out, which means false)
+  for (const k of Object.keys(PJ.DEFAULTS)) {
+    const given = obj.params && obj.params[k];
+    const ok = PJ.FLAGS.includes(k) ? (given === undefined ? p.P[k] === false : given === p.P[k]) : given === p.P[k];
+    check(`${tag} params.${k} present and within limits`, ok, `${given} -> ${p.P[k]}`);
+  }
+  const lim = PJ.limits(p.P.extremeZ);
   const runs = obj.profile && obj.profile.runs || [];
   check(`${tag} profile covers ${NS} cells`, obj.profile && obj.profile.cells === NS && runs.reduce((s, r) => s + r[1], 0) === NS);
-  check(`${tag} profile impedances within limits`, runs.every(r => r[0] >= PJ.Z_LIMITS[0] && r[0] <= PJ.Z_LIMITS[1]));
+  check(`${tag} profile impedances within limits`, runs.every(r => r[0] >= lim.prof[0] && r[0] <= lim.prof[1]));
   check(`${tag} every element kept`, (obj.elements || []).length === p.elements.length);
   (obj.elements || []).forEach((e, i) => {
     const q = p.elements[i] || {};
     const same = ['type', 'x', 'count', 'pitch'].every(k => e[k] === q[k]) &&
-      (e.type === 'stub' ? e.stubZ === q.stubZ && e.stubLen === q.stubLen : e.value === q.value);
+      (e.type === 'stub' ? e.stubZ === q.stubZ && e.stubLen === q.stubLen && (e.end || 'open') === q.end : e.value === q.value);
     check(`${tag} element ${i} (${e.type}) within limits`, same);
   });
 

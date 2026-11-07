@@ -176,6 +176,57 @@ async def main():
         check("out-of-range values are clamped", clamped == {"Dk": 6, "len": 0.25, "zTx": 50, "el": [["C", 0.25, 1, 30]]}, clamped)
         tmp.unlink()
 
+        # ---- settings menu: log axis and the experimental wide impedance range ----
+        await pg.select_option("#preset", label="Clean 50 Ω line")
+        await pg.click("#gear")
+        check("gear opens the settings panel", await pg.is_visible("#gearPanel") and await pg.get_attribute("#gear", "aria-expanded") == "true")
+        await pg.check("#optWide")
+        check("wide range on: flag set, Rx Short/Open shown, Rx box takes 1 mohm",
+              await st("__tdrState.P.extremeZ") is True and await pg.is_visible("#rxShort") and await pg.get_attribute("#p_zRxN", "min") == "0.001")
+        await pg.click("#rxShort")
+        await pg.wait_for_timeout(120)
+        check("Short sets Rx to 1 mohm", await st("__tdrState.P.zRx") == 0.001)
+        late = await pg.inner_text("#tread")
+        lv = late.split("Late level")[1].split()
+        lv_ohm = float(lv[0]) * {"mΩ": 1e-3, "Ω": 1, "kΩ": 1e3}[lv[1]]
+        check("TDR late level falls toward a short (lossy line: skin-effect creep still above Rdc)", lv_ohm < 5, late)
+        await pg.click("#gear")
+        await pg.check("#optLog")
+        rng = await st("[__tdrState.zLog, __tdrState.zMin, __tdrState.zMax]")
+        check("log axis on, fitted to a positive range", rng[0] is True and 0 < rng[1] < 0.5 and rng[2] >= 50, rng)
+        await pg.keyboard.press("Escape")
+        check("Escape closes the panel", not await pg.is_visible("#gearPanel"))
+        await pg.click("[data-add=stub]")
+        await pg.fill("#edZN", "0.001"); await pg.press("#edZN", "Enter")
+        check("stub impedance takes 1 mohm", await st("__tdrState.elems.find(e => e.id === __tdrState.selId).stubZ") == 0.001)
+        hint = await pg.inner_text("#edHint")
+        check("a 1 mohm open stub is flagged as a capacitor, not a short", "capacitor, not a short" in hint, hint)
+        await pg.click("[data-end=short]")
+        check("far end switches to Shorted", await st("__tdrState.elems.find(e => e.id === __tdrState.selId).end") == "short"
+              and await pg.get_attribute("[data-end=short]", "aria-pressed") == "true")
+        async with pg.expect_download() as dl_info:
+            await pg.click("#projJson")
+        wide_doc = json.loads(pathlib.Path(await (await dl_info.value).path()).read_text())
+        check("project saves the flag, the short and the log view",
+              wide_doc["params"]["extremeZ"] is True and wide_doc["params"]["zRx"] == 0.001 and wide_doc["view"]["log"] is True
+              and any(e.get("end") == "short" for e in wide_doc["elements"]))
+        await pg.click("#gear")
+        await pg.uncheck("#optWide")
+        check("turning it off brings values back in range",
+              await st("[__tdrState.P.extremeZ, __tdrState.P.zRx, __tdrState.elems.find(e => e.type === 'stub').stubZ]") == [False, 10, 20]
+              and "Undo restores" in await pg.inner_text("#projStatus"))
+        await pg.keyboard.press("Escape")
+        await pg.click("#undo")
+        check("undo restores the wide range and its values",
+              await st("[__tdrState.P.extremeZ, __tdrState.P.zRx]") == [True, 0.001] and await pg.is_visible("#rxShort"))
+        tmp.write_text(json.dumps(wide_doc))
+        await pg.select_option("#preset", label="Clean 50 Ω line")
+        await pg.set_input_files("#projFile", str(tmp))
+        await pg.wait_for_timeout(150)
+        check("opening a wide project turns the range and log view back on",
+              await st("[__tdrState.P.extremeZ, __tdrState.P.zRx, __tdrState.zLog]") == [True, 0.001, True])
+        tmp.unlink()
+
         # ---- privacy: the page made no requests beyond its own file ----
         outside = [u for u in requests if not u.startswith(("file://", "data:", "blob:"))]
         check("no network requests during the whole session", not outside, outside[:5])

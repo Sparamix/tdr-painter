@@ -1,7 +1,7 @@
 {
  "format": "tdr-painter-project",
  "formatVersion": 1,
- "app": "0.5.0",
+ "app": "0.6.0",
  "name": "Ghost after a via stub",
  "savedAt": "2026-11-01T00:00:00.000Z",
  "params": {
@@ -20,7 +20,8 @@
   "zTx": 50,
   "zRx": 50,
   "beta": 4.2,
-  "lossless": false
+  "lossless": false,
+  "extremeZ": false
  },
  "profile": {
   "cells": 500,
@@ -53,6 +54,7 @@
    "x": 1.1,
    "stubZ": 45,
    "stubLen": 60,
+   "end": "open",
    "count": 1,
    "pitch": 0.15,
    "locked": false

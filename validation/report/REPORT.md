@@ -1,8 +1,8 @@
 # TDR Painter verification report
 
-Generated 2026-11-07 by `validation/run_validation.py` with TDR Painter 0.6.0, scikit-rf 2.2.0, NumPy 2.5.3, SciPy 1.18.1, Python 3.13.18 and Node v22.23.4. Rerun the script to regenerate this file; do not edit it by hand.
+Generated 2026-11-07 by `validation/run_validation.py` with TDR Painter 0.7.0, scikit-rf 2.2.0, NumPy 2.5.3, SciPy 1.18.1, Python 3.13.18 and Node v22.23.4. Rerun the script to regenerate this file; do not edit it by hand.
 
-**Result: all pass/fail checks passed** (113 passed).
+**Result: all pass/fail checks passed** (149 passed).
 
 ## What is checked
 
@@ -26,13 +26,14 @@ TDR Painter computes S-parameters from the painted impedance profile and the lum
 | [Periodic shunt capacitance: 10 × 0.1 pF at 0.32 in](#periodic-shunt-capacitance-10--01-pf-at-032-in) | 2e-12 | 2e-04 | 9/9 pass | agrees to 7.3 GHz | agrees to 7.3 GHz |
 | [Probe launch: series R and L, pad C, 42 Ω stripline](#probe-launch-series-r-and-l-pad-c-42-ω-stripline) | 7e-13 | 7e-05 | 9/9 pass | agrees to 5.5 GHz | agrees to 5.5 GHz |
 | [10 in lossy line with a 50 → 40 → 50 Ω linear taper](#10-in-lossy-line-with-a-50--40--50-ω-linear-taper) | 1e-11 | 2e-06 | 7/7 pass | agrees to whole band | agrees to whole band |
+| [GSG probe on a short standard: contact diagnosis](#gsg-probe-on-a-short-standard-contact-diagnosis) | 4e-11 | 2e-04 | 15/15 pass | agrees to 0.7 GHz | agrees to 0.7 GHz |
 
 Tier R, against the outside world: on the [measured stepped microstrip](#stepped-impedance-microstrip-measured) TDR Painter’s TDR is within 3.5 Ω of the measurement (scikit-rf’s own MLine model: 2.6 Ω); on the [microstrip tapers](#microstrip-taper-into-15-ω-ansys-circuit) its |S11| is within 0.023 of ANSYS Circuit (scikit-rf’s MLine: 0.037).
 
 ## Findings
 
 1. **Engine and scikit-rf agree to round-off.** For every structure and variant, S11, S21 and S22 from TDR Painter match
-   scikit-rf to 1e-11 or better, across lossy lines, tapers, stubs, lumped R, L and C, and unequal port impedances.
+   scikit-rf to 4e-11 or better, across lossy lines, tapers, stubs, lumped R, L and C, and unequal port impedances.
 2. **Fixed by this work: the TDR was drawn half a sample (1.2 ps) early.** The engine integrated the impulse response
    with a running sum; scikit-rf uses the trapezoid rule. The engine now uses the trapezoid rule as well, and places
    t = 0 on a sample so that both tools sample the same instants. With the v0.5.0 engine the TDR differed from
@@ -56,7 +57,7 @@ A 1 in, 25 Ω section between 0.75 in leads of 50 Ω stripline. The stepped-impe
 
 ![Beatty standard: 25 Ω section in a 50 Ω line](figures/beatty.png)
 
-Project files: [`cases/beatty.json`](../cases/beatty.json) (opens in TDR Painter), plus one per variant. scikit-rf reference: [`reference/beatty.s2p`](../reference/beatty.s2p).
+Project files: [`cases/beatty.json`](../cases/beatty.json) (opens in TDR Painter), plus one per variant. scikit-rf reference (first variant, referenced to 50 Ω): [`reference/beatty.s2p`](../reference/beatty.s2p).
 
 **Lossy**
 
@@ -105,7 +106,7 @@ The painted-from-TDR model gets the 25 Ω plateau right, but the line after the 
 
 ![Via transition with a 60 mil open stub](figures/via-stub.png)
 
-Project files: [`cases/via-stub.json`](../cases/via-stub.json) (opens in TDR Painter), plus one per variant. scikit-rf reference: [`reference/via-stub.s2p`](../reference/via-stub.s2p).
+Project files: [`cases/via-stub.json`](../cases/via-stub.json) (opens in TDR Painter), plus one per variant. scikit-rf reference (first variant, referenced to 50 Ω): [`reference/via-stub.s2p`](../reference/via-stub.s2p).
 
 **Lossy**
 
@@ -153,7 +154,7 @@ A 4 in, 50 Ω line loaded with ten 0.1 pF shunt capacitors every 0.32 in, like v
 
 ![Periodic shunt capacitance: 10 × 0.1 pF at 0.32 in](figures/periodic-c.png)
 
-Project files: [`cases/periodic-c.json`](../cases/periodic-c.json) (opens in TDR Painter), plus one per variant. scikit-rf reference: [`reference/periodic-c.s2p`](../reference/periodic-c.s2p).
+Project files: [`cases/periodic-c.json`](../cases/periodic-c.json) (opens in TDR Painter), plus one per variant. scikit-rf reference (first variant, referenced to 50 Ω): [`reference/periodic-c.s2p`](../reference/periodic-c.s2p).
 
 **Lossy**
 
@@ -163,7 +164,7 @@ Project files: [`cases/periodic-c.json`](../cases/periodic-c.json) (opens in TDR
 | A | S21: max \|engine − scikit-rf\| | 9.5e-13 | 1.0e-09 | pass |
 | A | S22: max \|engine − scikit-rf\| | 6.9e-13 | 1.0e-09 | pass |
 | A | scikit-rf reference is reciprocal: max \|S12 − S21\| | 1.3e-14 | 1.0e-10 | pass |
-| P | DC: \|S11(0) − closed form\|, \|S21(0) − closed form\| | 0.0e+00 | 1.0e-12 | pass |
+| P | DC: \|S11(0) − closed form\|, \|S21(0) − closed form\| | 1.1e-16 | 1.0e-12 | pass |
 | P | passivity: max singular value of S − 1 | 2.2e-16 | 1.0e-12 | pass |
 | P | causality: S21 impulse before the light-speed front / peak | 1.3e-05 | 3.0e-04 | pass |
 | B | TDR: max \|ρ engine − ρ scikit-rf\| (exact DC, same integration start) | 1.3e-04 | 1.0e-03 | pass |
@@ -202,7 +203,7 @@ At 50 GHz each 0.1 pF capacitor shows up as a dip about as wide as the rise time
 
 ![Probe launch: series R and L, pad C, 42 Ω stripline](figures/probe-launch.png)
 
-Project files: [`cases/probe-launch.json`](../cases/probe-launch.json) (opens in TDR Painter), plus one per variant. scikit-rf reference: [`reference/probe-launch.s2p`](../reference/probe-launch.s2p).
+Project files: [`cases/probe-launch.json`](../cases/probe-launch.json) (opens in TDR Painter), plus one per variant. scikit-rf reference (first variant, referenced to 50 Ω): [`reference/probe-launch.s2p`](../reference/probe-launch.s2p).
 
 **Good contact**
 
@@ -227,7 +228,7 @@ Project files: [`cases/probe-launch.json`](../cases/probe-launch.json) (opens in
 | A | S21: max \|engine − scikit-rf\| | 7.2e-13 | 1.0e-09 | pass |
 | A | S22: max \|engine − scikit-rf\| | 5.3e-13 | 1.0e-09 | pass |
 | A | scikit-rf reference is reciprocal: max \|S12 − S21\| | 4.1e-14 | 1.0e-10 | pass |
-| P | DC: \|S11(0) − closed form\|, \|S21(0) − closed form\| | 1.1e-16 | 1.0e-12 | pass |
+| P | DC: \|S11(0) − closed form\|, \|S21(0) − closed form\| | 6.7e-16 | 1.0e-12 | pass |
 | P | passivity: max singular value of S − 1 | 0.0e+00 | 1.0e-12 | pass |
 | P | causality: S21 impulse before the light-speed front / peak | 1.5e-05 | 3.0e-04 | pass |
 | B | TDR: max \|ρ engine − ρ scikit-rf\| (exact DC, same integration start) | 6.9e-05 | 1.0e-03 | pass |
@@ -242,7 +243,7 @@ Project files: [`cases/probe-launch.json`](../cases/probe-launch.json) (opens in
 | A | S21: max \|engine − scikit-rf\| | 7.1e-13 | 1.0e-09 | pass |
 | A | S22: max \|engine − scikit-rf\| | 5.9e-13 | 1.0e-09 | pass |
 | A | scikit-rf reference is reciprocal: max \|S12 − S21\| | 4.0e-14 | 1.0e-10 | pass |
-| P | DC: \|S11(0) − closed form\|, \|S21(0) − closed form\| | 0.0e+00 | 1.0e-12 | pass |
+| P | DC: \|S11(0) − closed form\|, \|S21(0) − closed form\| | 4.4e-16 | 1.0e-12 | pass |
 | P | passivity: max singular value of S − 1 | 2.2e-16 | 1.0e-12 | pass |
 | P | causality: S21 impulse before the light-speed front / peak | 1.4e-05 | 3.0e-04 | pass |
 | B | TDR: max \|ρ engine − ρ scikit-rf\| (exact DC, same integration start) | 6.9e-05 | 1.0e-03 | pass |
@@ -264,7 +265,7 @@ Two 2 in linear tapers around a 2 in, 40 Ω section on a 10 in line. Exercises t
 
 ![10 in lossy line with a 50 → 40 → 50 Ω linear taper](figures/lossy-taper.png)
 
-Project files: [`cases/lossy-taper.json`](../cases/lossy-taper.json) (opens in TDR Painter), plus one per variant. scikit-rf reference: [`reference/lossy-taper.s2p`](../reference/lossy-taper.s2p).
+Project files: [`cases/lossy-taper.json`](../cases/lossy-taper.json) (opens in TDR Painter), plus one per variant. scikit-rf reference (first variant, referenced to 50 Ω): [`reference/lossy-taper.s2p`](../reference/lossy-taper.s2p).
 
 **Lossy**
 
@@ -306,6 +307,85 @@ Project files: [`cases/lossy-taper.json`](../cases/lossy-taper.json) (opens in T
 | scikit-rf 110 GHz TDR | whole band | 0.05 dB | 0.0 dB | -0.163 vs -0.158 dB |
 
 Long, smooth tapers are where painting works best: the features are far wider than the TDR’s spatial resolution. The remaining error comes from the conductor-loss creep on the 10 in line, which the painted profile takes for a slowly rising impedance.
+
+## GSG probe on a short standard: contact diagnosis
+
+The experimental impedance range: 0.5 in of 50 Ω lead, 20 pH of probe-tip and strip inductance, the contact resistance, and a short (a painted 1 mΩ section into a 1 mΩ receiver). Good contact (30 mΩ), bad contact (0.5 Ω), a lifted probe (1 MΩ), and a lossy version shorted to ground by a 1 mΩ shorted stub, with the line running on into an open receiver. Kaiser β 6, 67 GHz.
+
+![GSG probe on a short standard: contact diagnosis](figures/probe-on-short.png)
+
+Project files: [`cases/probe-on-short.json`](../cases/probe-on-short.json) (opens in TDR Painter), plus one per variant. scikit-rf reference (first variant, referenced to 50 Ω): [`reference/probe-on-short.s2p`](../reference/probe-on-short.s2p).
+
+**Good contact, 30 mΩ**
+
+| Tier | Check | Value | Limit | Result |
+| --- | --- | --- | --- | --- |
+| A | S11: max \|engine − scikit-rf\| | 1.1e-12 | 1.0e-09 | pass |
+| A | S21: max \|engine − scikit-rf\| | 5.7e-14 | 1.0e-09 | pass |
+| A | S22: max \|engine − scikit-rf\| | 1.2e-11 | 1.0e-09 | pass |
+| A | scikit-rf reference is reciprocal: max \|S12 − S21\| | 8.6e-16 | 1.0e-10 | pass |
+| P | DC: \|S11(0) − closed form\|, \|S21(0) − closed form\| | 1.1e-16 | 1.0e-12 | pass |
+| P | passivity: max singular value of S − 1 | 6.7e-16 | 1.0e-12 | pass |
+| P | causality: S21 impulse before the light-speed front / peak | 2.7e-05 | 3.0e-04 | pass |
+| X | TDR after the short reads the contact: \|median late Z − (R + 1 mΩ)\| (mΩ), R = 30 mΩ | 0.93 | 2.00 | pass |
+| X | window ringing on that plateau, peak to peak (mΩ) | 8.0 | 25.0 | pass |
+| B | TDR: max \|ρ engine − ρ scikit-rf\| (exact DC, same integration start) | 1.5e-04 | 1.0e-03 | pass |
+| B | TDR: scikit-rf step_response as a user runs it (linear DC extrapolation) | max \|Δρ\| vs engine 1.7e-04 |  | info |
+
+**Bad contact, 0.5 Ω**
+
+| Tier | Check | Value | Limit | Result |
+| --- | --- | --- | --- | --- |
+| A | S11: max \|engine − scikit-rf\| | 1.1e-12 | 1.0e-09 | pass |
+| A | S21: max \|engine − scikit-rf\| | 5.2e-14 | 1.0e-09 | pass |
+| A | S22: max \|engine − scikit-rf\| | 1.2e-11 | 1.0e-09 | pass |
+| A | scikit-rf reference is reciprocal: max \|S12 − S21\| | 5.3e-15 | 1.0e-10 | pass |
+| P | DC: \|S11(0) − closed form\|, \|S21(0) − closed form\| | 1.7e-18 | 1.0e-12 | pass |
+| P | passivity: max singular value of S − 1 | 6.7e-16 | 1.0e-12 | pass |
+| P | causality: S21 impulse before the light-speed front / peak | 2.7e-05 | 3.0e-04 | pass |
+| X | TDR after the short reads the contact: \|median late Z − (R + 1 mΩ)\| (mΩ), R = 500 mΩ | 0.93 | 2.00 | pass |
+| X | window ringing on that plateau, peak to peak (mΩ) | 8.0 | 25.0 | pass |
+| B | TDR: max \|ρ engine − ρ scikit-rf\| (exact DC, same integration start) | 1.5e-04 | 1.0e-03 | pass |
+| B | TDR: scikit-rf step_response as a user runs it (linear DC extrapolation) | max \|Δρ\| vs engine 1.7e-04 |  | info |
+
+**Lifted probe, 1 MΩ**
+
+| Tier | Check | Value | Limit | Result |
+| --- | --- | --- | --- | --- |
+| A | S11: max \|engine − scikit-rf\| | 2.9e-14 | 1.0e-09 | pass |
+| A | S21: max \|engine − scikit-rf\| | 2.6e-18 | 1.0e-09 | pass |
+| A | S22: max \|engine − scikit-rf\| | 1.1e-11 | 1.0e-09 | pass |
+| A | scikit-rf reference is reciprocal: max \|S12 − S21\| | 1.5e-19 | 1.0e-10 | pass |
+| P | DC: \|S11(0) − closed form\|, \|S21(0) − closed form\| | 5.3e-23 | 1.0e-12 | pass |
+| P | passivity: max singular value of S − 1 | 6.7e-16 | 1.0e-12 | pass |
+| P | causality: not tested | \|S21\| stays below −60 dB (max -127 dB) |  | info |
+| X | TDR after the lifted probe reads as an open: median late impedance (kΩ), at least | 1035 | 1 | pass |
+| B | TDR: max \|ρ engine − ρ scikit-rf\| (exact DC, same integration start) | 1.6e-04 | 1.0e-03 | pass |
+| B | TDR: scikit-rf step_response as a user runs it (linear DC extrapolation) | max \|Δρ\| vs engine 1.7e-04 |  | info |
+
+**Lossy, a 1 mΩ shorted stub to ground, open receiver**
+
+| Tier | Check | Value | Limit | Result |
+| --- | --- | --- | --- | --- |
+| A | S11: max \|engine − scikit-rf\| | 3.9e-11 | 1.0e-09 | pass |
+| A | S21: max \|engine − scikit-rf\| | 1.2e-16 | 1.0e-09 | pass |
+| A | S22: max \|engine − scikit-rf\| | 6.5e-14 | 1.0e-09 | pass |
+| A | scikit-rf reference is reciprocal: max \|S12 − S21\| | 5.8e-21 | 1.0e-10 | pass |
+| P | DC: \|S11(0) − closed form\|, \|S21(0) − closed form\| | 1.1e-16 | 1.0e-12 | pass |
+| P | passivity: max singular value of S − 1 | -2.0e-07 | 1.0e-12 | pass |
+| P | causality: not tested | \|S21\| stays below −60 dB (max -105 dB) |  | info |
+| B | TDR: max \|ρ engine − ρ scikit-rf\| (exact DC, same integration start) | 1.3e-04 | 1.0e-03 | pass |
+| B | TDR: max \|ρ engine − ρ on a 10× finer frequency grid\| | 8.8e-04 | 3.0e-03 | pass |
+| B | TDR: scikit-rf step_response as a user runs it (linear DC extrapolation) | max \|Δρ\| vs engine 3.6e-04; on the 10× finer grid, scikit-rf’s step_response is off by 1.0e-03 |  | info |
+
+**Paint the TDR, then simulate (tier C)**
+
+| Painted from | Agrees to | max \|ΔS21\| up to 10 GHz | max \|ΔS21\| to f_max | S21 at DC, painted vs real |
+| --- | --- | --- | --- | --- |
+| scikit-rf 50 GHz TDR | 0.7 GHz | 37.97 dB | 38.0 dB | -40.969 vs -41.056 dB |
+| scikit-rf 110 GHz TDR | 0.7 GHz | 34.80 dB | 37.7 dB | -40.969 vs -41.056 dB |
+
+Shown and painted here: the bad contact. Its TDR traces back to the 50 Ω lead and a 0.5 Ω section, and inside the TDR window a 0.5 Ω line and a 0.5 Ω resistor look the same. They are not the same network: the resistor absorbs power, so |S11| of the short reads about −0.17 dB, while the painted line only stores it, reads about 0 dB, and rings between the lead and the short with quarter-wave resonances the real contact does not have. The traced profile also cannot say where the resistance sits in the loop (signal or ground tips), or show the 20 pH of tip inductance, which moves the falling edge by only about L/Z₀ ≈ 0.4 ps.
 
 ## Causality: the check catches non-causal models
 

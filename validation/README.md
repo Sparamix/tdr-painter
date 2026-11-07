@@ -26,7 +26,7 @@ Each case is described once as physics (line sections, lumped elements, stubs, m
 | A | Same structure, same S11, S21, S22? | pass/fail, 1e-9 |
 | B | Same TDR as scikit-rf's windowed step response? | pass/fail, 1e-3 in ρ |
 | P | DC limit, passivity, energy conservation, causality (with non-causal negative controls) | pass/fail |
-| X | Beatty closed form, quarter-wave stub null, Bloch stopband | pass/fail |
+| X | Beatty closed form, quarter-wave stub null, Bloch stopband, TDR reading of a contact on a short | pass/fail |
 | C | If you paint the TDR trace you see, how close are the S-parameters? | informational |
 | R | How close to a VNA measurement and to ANSYS Circuit? | informational |
 
@@ -39,6 +39,7 @@ Each case is described once as physics (line sections, lumped elements, stubs, m
 | Periodic shunt C | train of dips that shrink along the line, Bragg stopband | lossy, lossless |
 | Probe launch | inductive spike, pad dip, 42 Ω section, series-R rise | good contact, 3 Ω contact, 3 Ω into a 75 Ω receiver |
 | 10 in lossy taper | 50 → 40 → 50 Ω ramps, conductor-loss creep | lossy, lossless |
+| GSG probe on a short (experimental range) | fall to the contact resistance, read on a log axis | 30 mΩ, 0.5 Ω, lifted (1 MΩ), lossy with a 1 mΩ shorted stub into an open Rx |
 | Stepped microstrip (scikit-rf) | measured capacitive and inductive sections, SMA connectors | measurement and scikit-rf's MLine model |
 | Microstrip taper into 15 Ω (scikit-rf) | 48 → 19 Ω linear and exponential tapers | ANSYS Circuit and scikit-rf's MLine model |
 

@@ -67,7 +67,7 @@ plt.rcParams.update({
 
 # ================================================================================================ cases
 def cases():
-    """The five synthetic structures. Positions sit on TDR Painter's cell boundaries (lenIn / 500)."""
+    """The synthetic structures. Positions sit on TDR Painter's cell boundaries (lenIn / 500)."""
     beatty = Structure(dict(lenIn=2.5), [(0.75, 50), (1.0, 25), (0.75, 50)])
     via = Structure(dict(lenIn=2.0), [(0.98, 50), (0.04, 38), (0.98, 50)],
                     [dict(type='C', x=0.98, value=0.06), dict(type='stub', x=1.02, stubZ=45, stubLen=60)])
@@ -79,6 +79,17 @@ def cases():
                           dict(type='C', x=0.62, value=0.06), dict(type='C', x=1.38, value=0.06),
                           dict(type='L', x=1.4, value=0.12), dict(type='R', x=1.4, value=0.02)])
     taper = Structure(dict(lenIn=10.0), [(2, 50), (2, 50, 40), (2, 40), (2, 40, 50), (2, 50)])
+
+    def on_short(r_contact, z_rx=0.001, lossless=True, stub=False):
+        """A GSG probe on the short of a cal substrate, seen from the calibrated tips (experimental range):
+        0.5 in of 50 ohm lead, 20 pH of tip and strip inductance, the contact resistance, then the short:
+        a painted 1 mohm section into a 1 mohm Rx, or (stub=True) a 1 mohm shorted stub with the line running
+        on into an open Rx."""
+        P = dict(lenIn=1.0, extremeZ=True, lossless=lossless, zRx=z_rx, fmaxGHz=67, beta=6)
+        els = [dict(type='L', x=0.5, value=0.02), dict(type='R', x=0.5, value=r_contact)]
+        if stub:
+            return Structure(P, [(1.0, 50)], els + [dict(type='stub', x=0.5, stubZ=0.001, stubLen=20, end='short')])
+        return Structure(P, [(0.5, 50), (0.5, 0.001)], els)
 
     v = C0 / math.sqrt(3.35)
     f_quarter = v / (4 * 60 * MIL)            # open-stub quarter-wave frequency, lossless
@@ -109,6 +120,15 @@ def cases():
              what='Two 2 in linear tapers around a 2 in, 40 Ω section on a 10 in line. Exercises the loss model, '
                   'the TDR on a long lossy line, and how well 500 painted cells approximate a continuous taper.',
              variants=[('lossy', taper), ('lossless', lossless(taper))], analytic=None, fine=True),
+        dict(slug='probe-on-short', title='GSG probe on a short standard: contact diagnosis',
+             what='The experimental impedance range: 0.5 in of 50 Ω lead, 20 pH of probe-tip and strip inductance, the '
+                  'contact resistance, and a short (a painted 1 mΩ section into a 1 mΩ receiver). Good contact (30 mΩ), '
+                  'bad contact (0.5 Ω), a lifted probe (1 MΩ), and a lossy version shorted to ground by a 1 mΩ shorted '
+                  'stub, with the line running on into an open receiver. Kaiser β 6, 67 GHz.',
+             variants=[('good contact, 30 mΩ', on_short(0.03)), ('bad contact, 0.5 Ω', on_short(0.5)),
+                       ('lifted probe, 1 MΩ', on_short(1e6)),
+                       ('lossy, a 1 mΩ shorted stub to ground, open receiver', on_short(0.03, z_rx=1e6, lossless=False, stub=True))],
+             analytic=check_short, ylog=True, show=1),
     ]
 
 
@@ -218,6 +238,25 @@ def check_beatty(st, r):
             check(f'peak |S11| = 2|Γ|/(1+Γ²) = 0.6 (first peak {f_peak/1e9:.2f} GHz)', abs(peak - 0.6), 1e-3, fmt='{:.1e}', tier='X')]
 
 
+def check_short(st, r):
+    """On a lossless line, the TDR after the short settles at the contact resistance plus the 1 mohm short
+    (a lifted probe reads as an open)."""
+    P = st.params
+    if not P['lossless']:
+        return []
+    rc = next(e['value'] for e in st.elements if e['type'] == 'R')
+    t_short = 2 * 0.5 * IN / r['vRef']
+    late = (r['t'] > t_short + 60e-12)
+    z = np.median(r['z'][late])
+    if rc >= 1e3:
+        return [check('TDR after the lifted probe reads as an open: median late impedance (kΩ), at least', z / 1e3, 1,
+                      kind='min', fmt='{:.0f}', tier='X')]
+    want = rc + 0.001
+    return [check(f'TDR after the short reads the contact: |median late Z − (R + 1 mΩ)| (mΩ), R = {rc*1e3:.0f} mΩ',
+                  abs(z - want) * 1e3, 2, fmt='{:.2f}', tier='X'),
+            check('window ringing on that plateau, peak to peak (mΩ)', float(np.ptp(r['z'][late])) * 1e3, 25, fmt='{:.1f}', tier='X')]
+
+
 def check_stub(st, r, f_q, k):
     if not st.params['lossless']:
         return []
@@ -299,8 +338,11 @@ def run_case(case, quick):
             e1 = np.abs(np.abs(r['s11']) ** 2 + np.abs(r['s21']) ** 2 - 1).max()
             e2 = np.abs(np.abs(r['s22']) ** 2 + np.abs(r['s21']) ** 2 - 1).max()
             checks.append(check('lossless energy: max | |S11|² + |S21|² − 1 | (both ports)', max(e1, e2), LIM['energy'], tier='P'))
-        checks.append(check('causality: S21 impulse before the light-speed front / peak',
-                            precursor(f, r['s21'], P['lenIn'], r['epsInf']), LIM['causal'], tier='P'))
+        if np.abs(r['s21']).max() >= 1e-3:
+            checks.append(check('causality: S21 impulse before the light-speed front / peak',
+                                precursor(f, r['s21'], P['lenIn'], r['epsInf']), LIM['causal'], tier='P'))
+        else:   # e.g. shorted to ground with an open receiver: nothing gets through to test
+            checks.append(info('causality: not tested', f'|S21| stays below −60 dB (max {db(np.abs(r["s21"]).max()):.0f} dB)', tier='P'))
         if case.get('analytic'):
             checks += case['analytic'](st, r)
         # ---- Tier B: TDR
@@ -379,13 +421,18 @@ def figure_case(res, path):
     xu = d['tu'] * r['vRef'] / 2 / IN
     ax.plot(xu, d['zu'].real, color=COL['ref'], lw=5, alpha=0.75, solid_capstyle='round', label=f'scikit-rf TDR (Kaiser β {P["beta"]})')
     ax.plot(r['x'], r['z'], color=COL['refl'], lw=1.3, label='TDR Painter TDR')
-    lo = min(r['profile'].min(), np.nanmin(r['z'])) - 3
-    hi = max(r['profile'].max(), np.nanmax(r['z'])) + 3
-    element_ticks(ax, st0, (lo + 0.5, lo + 2))
+    if case.get('ylog'):
+        ax.set_yscale('log')
+        lo, hi = 3e-3, 300
+        element_ticks(ax, st0, (lo * 1.3, lo * 3))
+    else:
+        lo = min(r['profile'].min(), np.nanmin(r['z'])) - 3
+        hi = max(r['profile'].max(), np.nanmax(r['z'])) + 3
+        element_ticks(ax, st0, (lo + 0.5, lo + 2))
     ax.set_xlim(-0.05 * P['lenIn'], 1.15 * P['lenIn'])
     ax.set_ylim(lo, hi)
     ax.set_xlabel('distance (in), x = v·t/2 at the nominal Dk')
-    ax.set_ylabel('impedance (Ω)')
+    ax.set_ylabel('impedance (Ω)' + (', log scale' if case.get('ylog') else ''))
     ax.set_title(f'{case["title"]}: impedance and TDR ({name0}, f_max {P["fmaxGHz"]:g} GHz)', loc='left')
     ax.legend(loc='upper right', ncol=4)
 
@@ -437,7 +484,8 @@ def main():
         for vi, (vname, st) in enumerate(case['variants'][1:], 1):
             (HERE / 'cases' / f'{case["slug"]}--{slugify(vname)}.json').write_text(
                 json.dumps(st.project(f'{case["title"]} ({vname})', case['what']), indent=1) + '\n')
-        ntw = res['store'][case['variants'][0][0]]['ntw']
+        ntw = res['store'][case['variants'][0][0]]['ntw'].copy()
+        ntw.renormalize(50)          # Touchstone 1.0 needs one reference impedance; the files are all 50 ohm
         ntw.write_touchstone(str(HERE / 'reference' / case['slug']), skrf_comment=False, form='ri')
         figure_case(res, HERE / 'report' / 'figures' / f'{case["slug"]}.png')
 
@@ -558,7 +606,7 @@ def write_report(results, neg, ms, failed):
         w(f'![{case["title"]}](figures/{case["slug"]}.png)\n')
         w(f'Project files: [`cases/{case["slug"]}.json`](../cases/{case["slug"]}.json) (opens in TDR Painter), '
           'plus one per variant. '
-          f'scikit-rf reference: [`reference/{case["slug"]}.s2p`](../reference/{case["slug"]}.s2p).\n')
+          f'scikit-rf reference (first variant, referenced to 50 Ω): [`reference/{case["slug"]}.s2p`](../reference/{case["slug"]}.s2p).\n')
         for row in r['rows']:
             w(f'**{row["variant"][0].upper() + row["variant"][1:]}**\n')
             w(tr('Tier', 'Check', 'Value', 'Limit', 'Result'))
@@ -662,6 +710,13 @@ NOTES = {
                     'reflects but does not dissipate, so the painted model misses the resistor’s insertion loss, '
                     'including at DC (S21 column above), even though its TDR looks the same. The tip inductance and pad '
                     'capacitance are below the 50 GHz resolution and come out as small smoothed bumps.',
+    'probe-on-short': 'Shown and painted here: the bad contact. Its TDR traces back to the 50 Ω lead and a 0.5 Ω '
+                      'section, and inside the TDR window a 0.5 Ω line and a 0.5 Ω resistor look the same. They are '
+                      'not the same network: the resistor absorbs power, so |S11| of the short reads about −0.17 dB, '
+                      'while the painted line only stores it, reads about 0 dB, and rings between the lead and the '
+                      'short with quarter-wave resonances the real contact does not have. The traced profile also '
+                      'cannot say where the resistance sits in the loop (signal or ground tips), or show the 20 pH of '
+                      'tip inductance, which moves the falling edge by only about L/Z₀ ≈ 0.4 ps.',
     'lossy-taper': 'Long, smooth tapers are where painting works best: the features are far wider than the TDR’s '
                    'spatial resolution. The remaining error comes from the conductor-loss creep on the 10 in line, '
                    'which the painted profile takes for a slowly rising impedance.',

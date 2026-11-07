@@ -1,7 +1,7 @@
 {
  "format": "tdr-painter-project",
  "formatVersion": 1,
- "app": "0.5.0",
+ "app": "0.6.0",
  "name": "Rx pad capacitance, 0.25 pF",
  "savedAt": "2026-11-01T00:00:00.000Z",
  "params": {
@@ -20,7 +20,8 @@
   "zTx": 50,
   "zRx": 50,
   "beta": 4.2,
-  "lossless": false
+  "lossless": false,
+  "extremeZ": false
  },
  "profile": {
   "cells": 500,

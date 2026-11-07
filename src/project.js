@@ -11,8 +11,9 @@
   const DEFAULTS = {
     lenIn: 2, z0: 50, Dk: 3.35, Df: 0.004, frefGHz: 12, dsLowHz: 1e3, dsHighHz: 1e12,
     condLoss: 0.4, condRefGHz: 10, rdc: 0.2, fmaxGHz: 50, nf: 1001,
-    zTx: 50, zRx: 50, beta: 4.2, lossless: false,
+    zTx: 50, zRx: 50, beta: 4.2, lossless: false, extremeZ: false,
   };
+  const FLAGS = ['lossless', 'extremeZ'];   // booleans; a missing flag means false
   // Same ranges as the page's sliders (stored in base units: Hz, inches, ohms).
   const LIMITS = {
     lenIn: [0.25, 10], z0: [20, 120], Dk: [1, 6], Df: [0, 0.03], frefGHz: [0.1, 60],
@@ -20,6 +21,9 @@
     fmaxGHz: [5, 110], nf: [1001, 1001], zTx: [10, 150], zRx: [10, 150], beta: [0, 14],
   };
   const Z_LIMITS = [5, 200];
+  // Experimental "Allow extra low and high impedances" (params.extremeZ): ports, painted profile, stub
+  // impedance and series R may go from 1 mohm (a short) to 1 Mohm (an open).
+  const WIDE = [0.001, 1e6];
   const ELEMENT = {
     types: ['C', 'L', 'R', 'stub'],
     value: { C: [0.005, 1], L: [0.01, 2], R: [0.01, 25] },     // pF, nH, ohm
@@ -27,16 +31,25 @@
   };
   const CATEGORIES = ['Basics', 'Discontinuities', 'TDR artifacts', 'Realistic channels', 'Community'];
 
+  /** The impedance limits that apply to a project, by its extremeZ flag. */
+  function limits(extremeZ) {
+    return extremeZ
+      ? { port: WIDE, prof: WIDE, stubZ: WIDE, R: WIDE }
+      : { port: LIMITS.zTx, prof: Z_LIMITS, stubZ: ELEMENT.stubZ, R: ELEMENT.value.R };
+  }
+  /** Impedance as stored: 1 mohm steps from 1 ohm up, four significant digits below 1 ohm. The engine uses the same rule. */
+  const quantZ = (z) => z >= 1 ? Math.round(z * 1000) / 1000 : +z.toPrecision(4);
+
   const num = (v, lo, hi, dflt) => (typeof v === 'number' && isFinite(v)) ? Math.max(lo, Math.min(hi, v)) : dflt;
   const text = (v, max) => typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, max) : '';
 
-  /** Run-length encode a profile as [[ohms, cells], ...], rounded to 1 mohm. */
+  /** Run-length encode a profile as [[ohms, cells], ...], rounded by quantZ. */
   function encodeProfile(prof) {
     const runs = [];
     for (let i = 0; i < prof.length;) {
-      const z = Math.round(prof[i] * 1000) / 1000;
+      const z = quantZ(prof[i]);
       let j = i + 1;
-      while (j < prof.length && Math.round(prof[j] * 1000) / 1000 === z) j++;
+      while (j < prof.length && quantZ(prof[j]) === z) j++;
       runs.push([z, j - i]);
       i = j;
     }
@@ -49,15 +62,18 @@
     if ((obj.formatVersion | 0) > FORMAT_VERSION) throw new Error(`That project was saved by a newer TDR Painter (format ${obj.formatVersion | 0}). Update the page to open it.`);
     const P = { ...DEFAULTS };
     const src = obj.params && typeof obj.params === 'object' ? obj.params : {};
+    for (const k of FLAGS) P[k] = src[k] === true;
+    const lim = limits(P.extremeZ);
     for (const k of Object.keys(DEFAULTS)) {
-      if (k === 'lossless') { P.lossless = src.lossless === true; continue; }
-      P[k] = num(src[k], LIMITS[k][0], LIMITS[k][1], DEFAULTS[k]);
+      if (FLAGS.includes(k)) continue;
+      const r = k === 'zTx' || k === 'zRx' ? lim.port : LIMITS[k];
+      P[k] = num(src[k], r[0], r[1], DEFAULTS[k]);
     }
     const runs = obj.profile && Array.isArray(obj.profile.runs) ? obj.profile.runs : null;
     const cells = [];
     if (runs) for (const r of runs) {
       if (!Array.isArray(r)) continue;
-      const z = num(r[0], Z_LIMITS[0], Z_LIMITS[1], P.z0);
+      const z = num(r[0], lim.prof[0], lim.prof[1], P.z0);
       const n = Math.max(0, Math.min(100000 - cells.length, Math.round(r[1]) || 0));
       for (let k = 0; k < n; k++) cells.push(z);
       if (cells.length >= 100000) break;
@@ -75,16 +91,22 @@
       };
       if (e.type === 'stub') {
         o.value = 0;
-        o.stubZ = num(e.stubZ, ELEMENT.stubZ[0], ELEMENT.stubZ[1], 45);
+        o.stubZ = num(e.stubZ, lim.stubZ[0], lim.stubZ[1], 45);
         o.stubLen = Math.round(num(e.stubLen, ELEMENT.stubLen[0], ELEMENT.stubLen[1], 60));
+        o.end = e.end === 'short' ? 'short' : 'open';
       } else {
-        const lim = ELEMENT.value[e.type];
-        o.value = num(e.value, lim[0], lim[1], lim[0]);
+        const r = e.type === 'R' ? lim.R : ELEMENT.value[e.type];
+        o.value = num(e.value, r[0], r[1], r[0]);
       }
       elements.push(o);
     }
     const v = obj.view || {};
-    const view = (typeof v.zMin === 'number' && typeof v.zMax === 'number' && v.zMax > v.zMin + 1 && v.zMax - v.zMin < 1000) ? { zMin: v.zMin, zMax: v.zMax } : null;
+    const log = v.log === true;
+    const span = v.zMax - v.zMin;
+    const viewOk = typeof v.zMin === 'number' && typeof v.zMax === 'number' && isFinite(v.zMin) && isFinite(v.zMax) && (log
+      ? v.zMin >= 1e-4 && v.zMax <= 1e7 && v.zMax / v.zMin >= 1.2
+      : span >= (P.extremeZ ? 0.01 : 1) && span < (P.extremeZ ? 2e6 : 1000));
+    const view = viewOk ? { zMin: v.zMin, zMax: v.zMax, log } : null;
     const ex = obj.example && typeof obj.example === 'object' ? obj.example : null;
     const example = ex ? {
       category: CATEGORIES.includes(ex.category) ? ex.category : 'Community',
@@ -93,7 +115,7 @@
     return { name: text(obj.name, 80), P, prof, elements, view, example };
   }
 
-  const api = { FORMAT, FORMAT_VERSION, DEFAULTS, LIMITS, Z_LIMITS, ELEMENT, CATEGORIES, encodeProfile, parse };
+  const api = { FORMAT, FORMAT_VERSION, DEFAULTS, FLAGS, LIMITS, Z_LIMITS, WIDE, ELEMENT, CATEGORIES, limits, quantZ, encodeProfile, parse };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.TDRProject = api;
 })(typeof window !== 'undefined' ? window : globalThis);

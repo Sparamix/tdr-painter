@@ -9,19 +9,20 @@ Everything runs in the browser from one HTML file. There is no backend; a full s
 Open `dist/index.html` in a browser, or serve the `dist/` folder with GitHub Pages.
 
 - **Paint** the profile with Draw, Push / pull, Plateau, Smooth and Erase. Short bumps are labeled with their equivalent lumped L or C.
-- **Drop in** a shunt C, series L, series R or open (via) stub. Drag the chips in the strip under the plot, set copies and pitch for periodic loading.
+- **Drop in** a shunt C, series L, series R or a stub, open (a via stub) or shorted to ground. Drag the chips in the strip under the plot, set copies and pitch for periodic loading.
 - **Lock** an element so it can't be dragged by accident, or **Clone** it to get a copy beside it that you can drag into place.
 - **Compare** with Pin reference: the pinned curves stay on every plot as dots in the same color, while solid lines follow your edits. Export the current S-parameters as Touchstone text.
+- **Settings** (the gear): a logarithmic impedance axis, and the experimental **Allow extra low and high impedances**, which opens the ports, the painted profile, stub impedance and series R to 1 mΩ (a short) through 1 MΩ (an open) and adds Short and Open buttons for Rx. Both are saved with the project.
 - **Save** a project as a `.tdrp` file on your computer and **Open** it later, or drop the file onto the page. **Export JSON** writes the same project as readable text, and Open takes either. Ctrl/⌘ S, Ctrl/⌘ Shift S and Ctrl/⌘ O work too.
 
 ## Examples
 
-The Example menu groups 15 built-in channels, each with a short note on what to look at:
+The Example menu groups 17 built-in channels, each with a short note on what to look at:
 
 - **Basics:** clean line, impedance tolerance ripple, painted taper, lossy creep on a 10 in line.
 - **Discontinuities:** shunt C vs series L, via stub resonance, a pad compensated with series L, Rx pad capacitance.
 - **TDR artifacts:** resolution of two close pads, masking by an earlier mismatch, a ghost spike after a via stub.
-- **Realistic channels:** board launch with a via stub, probed 42 Ω stripline with good and bad contact, a 5 in serpentine with corner capacitance.
+- **Realistic channels:** board launch with a via stub, probed 42 Ω stripline with good and bad contact, a 5 in serpentine with corner capacitance, and a GSG probe on a short standard with good and bad contact (experimental impedance range, log axis).
 
 Each example is a plain project file in `examples/`, bundled into the page at build time. New ones are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -57,7 +58,7 @@ The claude.ai build is the same code. There, Save goes through claude.ai's own s
 }
 ```
 
-The profile is run-length encoded as `[impedance in Ω, number of cells]`. Element `type` is `C` (pF), `L` (nH), `R` (Ω) or `stub`. Values out of range are clamped on open, and unknown fields are ignored. A typical project is about 4.5 KB as JSON and under 1 KB as `.tdrp`.
+The profile is run-length encoded as `[impedance in Ω, number of cells]`. Element `type` is `C` (pF), `L` (nH), `R` (Ω) or `stub` (with `"end": "short"` for a shorted stub). `params.extremeZ: true` turns on the experimental 1 mΩ to 1 MΩ range, and `view.log` the log axis. Values out of range are clamped on open, and unknown fields are ignored. A typical project is about 4.5 KB as JSON and under 1 KB as `.tdrp`.
 
 ## How it works
 
@@ -72,7 +73,7 @@ The profile is run-length encoded as `[impedance in Ω, number of cells]`. Eleme
 
 ## Validation
 
-[`validation/`](validation/) checks TDR Painter against independent scikit-rf models of five structures with distinct TDR signatures (a Beatty standard, a via with an open stub, periodic shunt capacitance, a probe launch with good and bad contact, and a 10 in lossy taper), against textbook results, and against a VNA measurement and an ANSYS Circuit simulation published with scikit-rf. S-parameters agree with scikit-rf to about 1e-11 and the TDR to about 2e-4 in ρ. The full results, including where painting a TDR trace stops being a good model, are in [`validation/report/REPORT.md`](validation/report/REPORT.md).
+[`validation/`](validation/) checks TDR Painter against independent scikit-rf models of six structures with distinct TDR signatures (a Beatty standard, a via with an open stub, periodic shunt capacitance, a probe launch with good and bad contact, a 10 in lossy taper, and a GSG probe on a short standard that uses the experimental impedance range), against textbook results, and against a VNA measurement and an ANSYS Circuit simulation published with scikit-rf. S-parameters agree with scikit-rf to about 1e-11 and the TDR to about 2e-4 in ρ. The full results, including where painting a TDR trace stops being a good model, are in [`validation/report/REPORT.md`](validation/report/REPORT.md).
 
 ## Develop
 
