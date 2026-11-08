@@ -312,14 +312,14 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
           <div class="legend"><span><i style="background:var(--trans)"></i>S21</span><span><i class="dash" style="--dc:var(--fg-3)"></i>Fit a0 + a1√f + a2·f + a4·f²</span><span class="lgRef" hidden><i class="dots" style="--dc:var(--trans)"></i>Pinned S21</span></div>
         </div>
         <div class="card">
-          <h3>Insertion loss deviation <small>dB(S21) minus fit</small></h3>
-          <canvas id="cILD" aria-label="Insertion loss deviation versus frequency"></canvas>
-          <div class="legend"><span><i style="background:var(--trans)"></i>ILD (extra loss points down)</span><span class="lgRef" hidden><i class="dots" style="--dc:var(--trans)"></i>Pinned ILD</span></div>
-        </div>
-        <div class="card">
           <h3>Where the power goes <small>|S21|² + |S11|² + absorbed = 1</small></h3>
           <canvas id="cPW" aria-label="Transmitted, reflected and absorbed power fractions versus frequency"></canvas>
           <div class="legend"><span><i style="background:var(--trans)"></i>Transmitted</span><span><i style="background:var(--refl)"></i>Reflected</span><span><i style="background:var(--dissip)"></i>Absorbed in line and R</span></div>
+        </div>
+        <div class="card">
+          <h3>Insertion loss deviation <small>dB(S21) minus fit</small></h3>
+          <canvas id="cILD" aria-label="Insertion loss deviation versus frequency"></canvas>
+          <div class="legend"><span><i style="background:var(--trans)"></i>ILD (extra loss points down)</span><span class="lgRef" hidden><i class="dots" style="--dc:var(--trans)"></i>Pinned ILD</span></div>
         </div>
       </div>
       <div class="readout" id="fread"></div>
