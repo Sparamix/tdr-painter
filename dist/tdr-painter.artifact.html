@@ -204,6 +204,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
 .gearpanel .note { font-size: 12px; color: var(--fg-3); margin: 0 0 0 24px; }
 .gearpanel .check { color: var(--fg); }
 .exp { color: var(--refl); }
+.exp-note { margin: 4px 0 0; font-size: 12px; }
 .quick { gap: 6px; }
 .quick button { padding: 4px 9px; min-height: 30px; font-size: 13px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
@@ -1837,19 +1838,20 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     const wide = !!state.P.extremeZ, lim = zlim();
     if (e.type === 'stub') {
       html += (metric() ? pairHTML('edLen', 'Stub length', 'mm', 0.06, 6.35, 0.01) : pairHTML('edLen', 'Stub length', 'mil', 2, 250, 1)) +
-        (wide ? pairHTML('edZ', 'Stub impedance', 'Ω', lim.stubZ[0], lim.stubZ[1], 1, true) : pairHTML('edZ', 'Stub impedance', 'Ω', 20, 90, 1)) +
+        (wide ? pairHTML('edZ', 'Stub impedance' + EXP_MARK, 'Ω', lim.stubZ[0], lim.stubZ[1], 1, true) : pairHTML('edZ', 'Stub impedance', 'Ω', 20, 90, 1)) +
         `<div class="pair"><label id="edEndL">Far end</label><div class="seg" role="group" aria-labelledby="edEndL">` +
         `<button data-end="open" aria-pressed="${e.end !== 'short'}" title="Open at the far end, like a via stub">Open</button>` +
         `<button data-end="short" aria-pressed="${e.end === 'short'}" title="Shorted to ground at the far end: a short at DC, an open at the quarter-wave">Shorted</button></div></div>`;
     } else if (e.type === 'pad') {
       html += pairHTML('edVal', sp.v.label, sp.v.unit, sp.v.min, sp.v.max, sp.v.step) +
         pairHTML('edZin', 'Zin (Tx side)', 'Ω', PJ.ELEMENT.padZ[0], PJ.ELEMENT.padZ[1], 0.5) + pairHTML('edZout', 'Zout (Rx side)', 'Ω', PJ.ELEMENT.padZ[0], PJ.ELEMENT.padZ[1], 0.5);
-    } else if (e.type === 'R' && wide) html += pairHTML('edVal', sp.v.label, sp.v.unit, lim.R[0], lim.R[1], 0.01, true);
+    } else if (e.type === 'R' && wide) html += pairHTML('edVal', sp.v.label + EXP_MARK, sp.v.unit, lim.R[0], lim.R[1], 0.01, true);
     else html += pairHTML('edVal', sp.v.label, sp.v.unit, sp.v.min, sp.v.max, sp.v.step);
     const lf = LU().f, lu = LU().u, mm = metric();
     html += pairHTML('edX', 'Position', lu, 0, +(L * lf).toFixed(3), mm ? 0.1 : 0.005) + pairHTML('edCnt', 'Copies #', '', 1, 30, 1) +
       pairHTML('edPitch', 'Copies pitch', lu, +(0.02 * lf).toFixed(3), +(1 * lf).toFixed(3), mm ? 0.1 : 0.005);
     html += '</div>';
+    if (wide && (e.type === 'R' || e.type === 'stub')) html += '<p class="note exp-note"><span class="exp">* Experimental range: 1 mΩ to 1 MΩ.</span></p>';
     box.innerHTML = html;
     if (e.type === 'stub') {
       editorShows.push(metric() ? bindPair('edLen', () => e.stubLen * 0.0254, (v) => e.stubLen = Math.round(v / 0.0254 * 100) / 100)
@@ -2029,6 +2031,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     ] },
   ];
   let railShows = [], railWide = null;
+  const EXP_MARK = ' <span class="exp" title="Experimental range">*</span>';   // marks controls the experimental range widens
   const isPort = (k) => k === 'zTx' || k === 'zRx';
   function buildRail() {
     const rail = $('#rail');
@@ -2043,10 +2046,10 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     GROUPS.forEach((g, gi) => {
       html += `<div class="group" id="grp_${gi}"><h2>${g.title}</h2>`;
       if (g.loss) html += `<label class="check"><input type="checkbox" id="p_${g.loss.k}"> ${g.loss.label}</label>`;
-      if (g.note) html += `<p class="note">${g.note}${g.title === 'Ports' && wide ? ' <span class="exp">Experimental range: 1 mΩ to 1 MΩ.</span>' : ''}</p>`;
+      if (g.note) html += `<p class="note">${g.note}${g.title === 'Ports' && wide ? '<br><span class="exp">* Experimental range: 1 mΩ to 1 MΩ.</span>' : ''}</p>`;
       g.items.forEach(it => {
         const um = metric() && it.m;          // metric display: unit, factor and step
-        html += wide && isPort(it.k) ? pairHTML('p_' + it.k, it.label, it.unit, portLim[0], portLim[1], it.step, true)
+        html += wide && isPort(it.k) ? pairHTML('p_' + it.k, it.label + EXP_MARK, it.unit, portLim[0], portLim[1], it.step, true)
           : um ? pairHTML('p_' + it.k, it.label, it.m.unit, +(it.min * it.m.f).toPrecision(6), +(it.max * it.m.f).toPrecision(6), it.m.step, false, it.tip)
           : pairHTML('p_' + it.k, it.label, it.unit, it.min, it.max, it.step, false, it.tip);
       });
