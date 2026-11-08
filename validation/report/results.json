@@ -1,7 +1,7 @@
 {
- "generated": "2026-11-07",
+ "generated": "2026-11-08",
  "versions": {
-  "tdr-painter": "0.8.2",
+  "tdr-painter": "0.8.3",
   "scikit-rf": "2.2.0",
   "numpy": "2.5.3",
   "scipy": "1.18.1",

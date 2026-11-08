@@ -12,7 +12,7 @@ A typical project is about 4.5 KB as JSON and under 1 KB as `.tdrp`.
 
 ```json
 {
-  "format": "tdr-painter-project", "formatVersion": 1, "app": "0.8.2",
+  "format": "tdr-painter-project", "formatVersion": 1, "app": "0.8.3",
   "name": "Via stub study", "savedAt": "2026-11-01T07:20:00.000Z",
   "params": {
     "lenIn": 2, "z0": 50, "Dk": 3.35, "Df": 0.004, "frefGHz": 12, "dsLowHz": 1000, "dsHighHz": 1e12,

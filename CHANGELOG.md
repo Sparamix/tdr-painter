@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.3 (2026-11-08)
+
+- Settings has a Theme switch: Auto (follows the system), Light or Dark. It is not saved, so each visit starts on Auto; inside claude.ai, Auto follows the host's theme.
+- The subtitle no longer calls the frequency views "the exact cascade"; it says the S-parameters come from cascading the line cells. `CITATION.cff` drops the same word.
+- The README shows a dark screenshot on GitHub's dark themes.
+
 ## 0.8.2 (2026-11-07)
 
 - Plateau no longer shows the brush preview at the cursor: it spans what you drag. The brush size still sets how soft its edges are, as the slider's tooltip now explains.
