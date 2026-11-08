@@ -251,11 +251,20 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       </div>
       <label class="label-sm" for="preset">Example</label>
       <select id="preset" aria-label="Load an example"></select>
-      <button id="gear" class="gear" aria-haspopup="dialog" aria-expanded="false" aria-controls="gearPanel" aria-label="Settings" title="Settings: experimental options"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-dasharray="2.16 2.16"/><circle cx="8" cy="8" r="4.1" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/></svg><span class="dot" id="gearDot" hidden></span></button>
+      <button id="gear" class="gear" aria-haspopup="dialog" aria-expanded="false" aria-controls="gearPanel" aria-label="Settings" title="Settings: theme, units, experimental options"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-dasharray="2.16 2.16"/><circle cx="8" cy="8" r="4.1" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/></svg><span class="dot" id="gearDot" hidden></span></button>
     </div>
   </header>
 
   <div class="gearpanel" id="gearPanel" role="dialog" aria-label="Settings" hidden>
+    <section>
+      <h2>Theme</h2>
+      <div class="seg" role="group" aria-label="Theme" id="themeSeg">
+        <button data-theme-pick="auto" aria-pressed="true">Auto</button>
+        <button data-theme-pick="light" aria-pressed="false">Light</button>
+        <button data-theme-pick="dark" aria-pressed="false">Dark</button>
+      </div>
+      <p class="note">Auto follows your system setting. Not saved: the page keeps nothing in your browser, so it opens on Auto each time.</p>
+    </section>
     <section>
       <h2>Units</h2>
       <div class="seg" role="group" aria-label="Units" id="unitSeg">
@@ -2236,7 +2245,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   function openGear(open) {
     gearPanel.hidden = !open;
     gearBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    if (open) { syncGear(); placeGear(); $('#optWide').focus(); }
+    if (open) { syncGear(); placeGear(); $('#themeSeg [aria-pressed="true"]').focus(); }
   }
   function setUnits(u) {
     if (u === state.units) return;
@@ -2244,11 +2253,31 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     buildRail(); renderEditor(); syncBrushOut(); syncGear(); schedule(true);
   }
   document.querySelectorAll('[data-units]').forEach(b => b.addEventListener('click', () => setUnits(b.dataset.units)));
+  // Theme. The palette keys off data-theme on <html>; without it, prefers-color-scheme decides. An embedding host
+  // (claude.ai) may set data-theme itself: Auto restores whatever the host set, and a later change by the host wins.
+  // Nothing is stored, so every visit starts on Auto.
+  const root = document.documentElement;
+  let hostTheme = root.getAttribute('data-theme'), ownTheme = hostTheme, themePick = 'auto';
+  function setTheme(t) {
+    themePick = t;
+    ownTheme = t === 'auto' ? hostTheme : t;
+    if (ownTheme) root.setAttribute('data-theme', ownTheme); else root.removeAttribute('data-theme');
+    syncTheme();
+  }
+  function syncTheme() {
+    document.querySelectorAll('[data-theme-pick]').forEach(b => b.setAttribute('aria-pressed', b.dataset.themePick === themePick ? 'true' : 'false'));
+  }
+  document.querySelectorAll('[data-theme-pick]').forEach(b => b.addEventListener('click', () => setTheme(b.dataset.themePick)));
+  new MutationObserver(() => {
+    const v = root.getAttribute('data-theme');
+    if (v !== ownTheme) { hostTheme = ownTheme = v; themePick = 'auto'; syncTheme(); }
+  }).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
   function syncGear() {
+    syncTheme();
     document.querySelectorAll('[data-units]').forEach(b => b.setAttribute('aria-pressed', b.dataset.units === state.units ? 'true' : 'false'));
     $('#optWide').checked = !!state.P.extremeZ;
     $('#gearDot').hidden = !state.P.extremeZ;
-    gearBtn.title = state.P.extremeZ ? 'Settings (experimental impedance range is on)' : 'Settings: experimental options';
+    gearBtn.title = state.P.extremeZ ? 'Settings (experimental impedance range is on)' : 'Settings: theme, units, experimental options';
   }
   gearBtn.addEventListener('click', () => openGear(gearPanel.hidden));
   document.addEventListener('pointerdown', (ev) => { if (!gearPanel.hidden && !gearPanel.contains(ev.target) && !gearBtn.contains(ev.target)) openGear(false); });
