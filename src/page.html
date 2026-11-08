@@ -734,7 +734,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       const hx = F.X(state.hover.x);
       ctx.save(); ctx.strokeStyle = TK['fg-3']; ctx.globalAlpha = 0.6; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(Math.round(hx) + 0.5, F.y0); ctx.lineTo(Math.round(hx) + 0.5, F.y1); ctx.stroke(); ctx.restore();
-      if (SIZED.includes(state.tool) && state.hover.py != null) drawBrushPreview(ctx, F, hx, state.hover.py);
+      if (PREVIEW.includes(state.tool) && state.hover.py != null) drawBrushPreview(ctx, F, hx, state.hover.py);
     }
     // lane
     const ly0 = h - LANE + 4, ly1 = h - 4;
@@ -1224,10 +1224,13 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   /* ---------- tools & top controls ---------- */
   // Draw paints one cell at a time, so the brush size only applies to the other tools
   const SIZED = ['push', 'plateau', 'smooth', 'erase'];
+  // Plateau spans what you drag; the brush size only softens its two edges, so it gets no cursor preview
+  const PREVIEW = ['push', 'smooth', 'erase'];
   function syncBrush() {
     const sized = SIZED.includes(state.tool);
     $('#brush').disabled = !sized;
-    $('#brush').title = sized ? '' : 'Draw paints one cell at a time; brush size applies to Push / pull, Plateau edges, Smooth and Erase';
+    $('#brush').title = state.tool === 'plateau' ? 'Plateau spans what you drag; brush size only sets how soft its edges are (each edge ramp is half the brush size)'
+      : sized ? '' : 'Draw paints one cell at a time; brush size applies to Push / pull, Plateau edges, Smooth and Erase';
   }
   document.querySelectorAll('#tools button').forEach(b => b.addEventListener('click', () => {
     state.tool = b.dataset.tool;
