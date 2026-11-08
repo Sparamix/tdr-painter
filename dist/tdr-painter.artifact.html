@@ -252,8 +252,8 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     <section class="stage">
       <div class="bench">
         <div class="toolrow">
-          <span class="label-sm">Paint</span>
-          <div class="seg" id="tools" role="group" aria-label="Paint tool">
+          <span class="label-sm">Brush</span>
+          <div class="seg" id="tools" role="group" aria-label="Brush type">
             <button data-tool="draw" aria-pressed="true" title="Draw the profile freehand">Draw</button>
             <button data-tool="push" title="Drag up or down to raise or sink a smooth bump">Push / pull</button>
             <button data-tool="plateau" title="Drag across a span; release sets it to that impedance">Plateau</button>
@@ -261,12 +261,12 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
             <button data-tool="erase" title="Pull back toward the line impedance">Erase</button>
           </div>
           <div class="brush">
-            <label class="label-sm" for="brush">Width</label>
+            <label class="label-sm" for="brush">Brush size</label>
             <input type="range" id="brush" min="5" max="400" step="5" value="60">
             <output id="brushOut">60 mil</output>
           </div>
           <span class="spacer"></span>
-          <div class="seg"><button id="undo" class="ghost">Undo</button><button id="resetProf" class="ghost">Flatten</button></div>
+          <div class="seg"><button id="undo" class="ghost">Undo</button><button id="resetProf" class="ghost" title="Set the whole profile back to Line Z₀; drop-in elements stay">Reset profile</button></div>
         </div>
         <div class="toolrow addrow">
           <span class="label-sm">Drop in</span>
@@ -1290,6 +1290,33 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   const LANE = 50, XLAB = 20;
   function xRange() { const L = state.P.lenIn; return [-0.07 * L, 1.14 * L]; }
   let TF = null;
+  /** Brush preview at the cursor: the Gaussian the tool applies (to ±3σ) and a bracket for the brush size (2σ). */
+  function drawBrushPreview(ctx, F, cx, py) {
+    const pxPerIn = (F.x1 - F.x0) / (F.xmax - F.xmin);
+    const sg = state.brushMil / 1000 / 2 * pxPerIn;          // sigma in px
+    const above = py - F.y0 > 46;                            // room above the cursor? else draw below
+    const base = above ? py - 8 : py + 8, hgt = above ? -26 : 26;
+    ctx.save();
+    ctx.beginPath();
+    for (let k = 0; k <= 60; k++) {
+      const u = -3 + k / 10, x = cx + u * sg, y = base + hgt * Math.exp(-0.5 * u * u);
+      if (k) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+    }
+    ctx.lineTo(cx + 3 * sg, base); ctx.lineTo(cx - 3 * sg, base); ctx.closePath();
+    ctx.fillStyle = TK.ink; ctx.globalAlpha = 0.14; ctx.fill();
+    ctx.globalAlpha = 0.8; ctx.strokeStyle = TK.ink; ctx.lineWidth = 1.2; ctx.stroke();
+    // bracket: the brush size
+    ctx.globalAlpha = 1; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx - sg, base - 3); ctx.lineTo(cx - sg, base + 3); ctx.moveTo(cx - sg, base); ctx.lineTo(cx + sg, base);
+    ctx.moveTo(cx + sg, base - 3); ctx.lineTo(cx + sg, base + 3); ctx.stroke();
+    ctx.font = FONT_DATA; ctx.fillStyle = TK.ink; ctx.textBaseline = above ? 'bottom' : 'top';
+    const lbl = $('#brushOut').textContent;
+    const right = cx + 3 * sg + 6 + ctx.measureText(lbl).width < F.x1;
+    ctx.textAlign = right ? 'left' : 'right';
+    ctx.fillText(lbl, right ? cx + Math.max(sg, 3 * sg) + 6 : cx - Math.max(sg, 3 * sg) - 6, above ? base + hgt / 2 + 6 : base + hgt / 2 - 6);
+    ctx.restore();
+  }
   function drawTDR() {
     const { ctx, w, h } = setup(tdrCv);
     const P = state.P, L = P.lenIn;
@@ -1395,6 +1422,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       const hx = F.X(state.hover.x);
       ctx.save(); ctx.strokeStyle = TK['fg-3']; ctx.globalAlpha = 0.6; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(Math.round(hx) + 0.5, F.y0); ctx.lineTo(Math.round(hx) + 0.5, F.y1); ctx.stroke(); ctx.restore();
+      if (SIZED.includes(state.tool) && state.hover.py != null) drawBrushPreview(ctx, F, hx, state.hover.py);
     }
     // lane
     const ly0 = h - LANE + 4, ly1 = h - 4;
@@ -1626,7 +1654,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       applyTool(x, z, false);
       return;
     }
-    if (ev.pointerType === 'mouse') { state.hover = (py >= TF.y0 && py <= TF.y1) ? { x: Math.max(TF.xmin, Math.min(TF.xmax, x)) } : null; schedule(true); }
+    if (ev.pointerType === 'mouse') { state.hover = (py >= TF.y0 && py <= TF.y1) ? { x: Math.max(TF.xmin, Math.min(TF.xmax, x)), py } : null; schedule(true); }
   });
   function endPointer() {
     if (state.painting && state.tool === 'plateau' && state.plateau) {
@@ -1840,10 +1868,19 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   }));
 
   /* ---------- tools & top controls ---------- */
+  // Draw paints one cell at a time, so the brush size only applies to the other tools
+  const SIZED = ['push', 'plateau', 'smooth', 'erase'];
+  function syncBrush() {
+    const sized = SIZED.includes(state.tool);
+    $('#brush').disabled = !sized;
+    $('#brush').title = sized ? '' : 'Draw paints one cell at a time; brush size applies to Push / pull, Plateau edges, Smooth and Erase';
+  }
   document.querySelectorAll('#tools button').forEach(b => b.addEventListener('click', () => {
     state.tool = b.dataset.tool;
     document.querySelectorAll('#tools button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+    syncBrush(); schedule(true);
   }));
+  syncBrush();
   $('#brush').addEventListener('input', (ev) => { state.brushMil = +ev.target.value; $('#brushOut').textContent = state.brushMil + ' mil'; });
   $('#undo').addEventListener('click', undo);
   $('#resetProf').addEventListener('click', () => { pushUndo(); state.prof.fill(state.P.z0); schedule(); });
