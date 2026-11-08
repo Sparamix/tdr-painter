@@ -17,7 +17,7 @@ abstract: >-
   integrity. The user paints a time-domain reflectometry (TDR) impedance
   profile, drops in lumped and distributed elements (shunt C, series L and R,
   open and shorted stubs, resistive pads), and sees S11, S21, insertion-loss
-  deviation, the power balance and the TDR update live. The model is an exact
+  deviation, the power balance and the TDR update live. The model is an
   ABCD cascade of lossy TEM line cells with a Djordjevic-Sarkar dielectric and
   a skin-effect conductor model. It is verified against independent scikit-rf
   models, textbook closed forms and two published scikit-rf cases (a VNA
