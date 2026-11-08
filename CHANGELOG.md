@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.2 (2026-11-07)
+
+- Plateau no longer shows the brush preview at the cursor: it spans what you drag. The brush size still sets how soft its edges are, as the slider's tooltip now explains.
+
 ## 0.8.1 (2026-11-07)
 
 - Element editor: Remove has a trash icon; the Enabled check sits before the element's symbol and greys it out when off; Lock now freezes every value and Remove, not only the position (Enabled and Clone stay available); Position, Copies # and Copies pitch sit in a shared Placement row, in the same place for every element.
