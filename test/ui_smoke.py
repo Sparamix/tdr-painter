@@ -193,6 +193,13 @@ async def main():
             await pg.click("#projJson")
         pdoc = json.loads(pathlib.Path(await (await dl_info.value).path()).read_text())
         check("panel order is saved in the view", pdoc["view"]["panels"][:3] == ["range", "line", "ports"])
+        await pg.click('[data-move="sweep"][data-dir="-1"]', modifiers=["Shift"])
+        order = await pg.evaluate("[...document.querySelectorAll('#rail .group')].map(g => g.dataset.panel)")
+        check("Shift-click on up sends a panel to the top", order[0] == "sweep", order)
+        await pg.click('[data-move="sweep"][data-dir="1"]', modifiers=["Shift"])
+        order = await pg.evaluate("[...document.querySelectorAll('#rail .group')].map(g => g.dataset.panel)")
+        check("Shift-click on down sends it to the bottom", order[-1] == "sweep", order)
+        await pg.click('[data-move="export"][data-dir="1"]')
         await pg.click('[data-move="ports"][data-dir="1"]'); await pg.click('[data-move="ports"][data-dir="1"]')
         await pg.fill("#p_zRxN", "50"); await pg.press("#p_zRxN", "Enter")
 

@@ -1307,8 +1307,8 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     const head = (key, title) => {
       const i = order.indexOf(key), name = title.split(',')[0];
       return `<div class="ghead"><h2>${title}</h2><span class="mv">` +
-        `<button class="ghost" data-move="${key}" data-dir="-1" aria-label="Move ${name} up"${i === 0 ? ' disabled' : ''}>▲</button>` +
-        `<button class="ghost" data-move="${key}" data-dir="1" aria-label="Move ${name} down"${i === order.length - 1 ? ' disabled' : ''}>▼</button></span></div>`;
+        `<button class="ghost" data-move="${key}" data-dir="-1" aria-label="Move ${name} up" title="Move up (Shift-click: to the top)"${i === 0 ? ' disabled' : ''}>▲</button>` +
+        `<button class="ghost" data-move="${key}" data-dir="1" aria-label="Move ${name} down" title="Move down (Shift-click: to the bottom)"${i === order.length - 1 ? ' disabled' : ''}>▼</button></span></div>`;
     };
     const parts = {};
     parts.range = `<div class="group" data-panel="range">${head('range', 'TDR plot range')}<div class="inline">` +
@@ -1337,7 +1337,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       `<div class="inline"><button id="copyS2p">Copy .s2p text</button><span class="toast" id="s2pMsg"></span></div><textarea id="s2pbox" hidden readonly aria-label="Touchstone text"></textarea></div>`;
 
     rail.innerHTML = order.map(k => parts[k]).join('');
-    rail.querySelectorAll('[data-move]').forEach(b => b.addEventListener('click', () => movePanel(b.dataset.move, +b.dataset.dir)));
+    rail.querySelectorAll('[data-move]').forEach(b => b.addEventListener('click', (ev) => movePanel(b.dataset.move, +b.dataset.dir, ev.shiftKey)));
     GROUPS.forEach(g => g.items.forEach(it => {
       const sc = it.scale || 1;
       const uf = metric() && it.m ? it.m.f : 1;     // shown = stored / scale * uf
@@ -1391,10 +1391,12 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     });
   }
   // reorder the side panel: swap with the neighbour, rebuild, keep focus on the same arrow (or its partner at the end)
-  function movePanel(key, dir) {
+  // toEnd (Shift-click): all the way to the top or the bottom
+  function movePanel(key, dir, toEnd) {
     const o = state.panelOrder, i = o.indexOf(key), j = i + dir;
     if (i < 0 || j < 0 || j >= o.length) return;
-    [o[i], o[j]] = [o[j], o[i]];
+    if (toEnd) { o.splice(i, 1); if (dir < 0) o.unshift(key); else o.push(key); }
+    else [o[i], o[j]] = [o[j], o[i]];
     buildRail(); railShows.forEach(f => f()); syncLoss();
     const b = $(`[data-move="${key}"][data-dir="${dir}"]`);
     (b && !b.disabled ? b : $(`[data-move="${key}"][data-dir="${-dir}"]`)).focus();
