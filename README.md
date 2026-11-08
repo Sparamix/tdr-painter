@@ -77,6 +77,10 @@ The profile is run-length encoded as `[impedance in Ω, number of cells]`. Eleme
 
 [`validation/`](validation/) checks TDR Painter against independent scikit-rf models of seven structures with distinct TDR signatures (a Beatty standard, a via with an open stub, periodic shunt capacitance, a probe launch with good and bad contact, a 10 in lossy taper, resistive attenuator pads, and a GSG probe on a short standard that uses the experimental impedance range), against textbook results, and against a VNA measurement and an ANSYS Circuit simulation published with scikit-rf. S-parameters agree with scikit-rf to about 1e-11 and the TDR to about 2e-4 in ρ. The full results, including where painting a TDR trace stops being a good model, are in [`validation/report/REPORT.md`](validation/report/REPORT.md).
 
+## Future features
+
+[`ROADMAP.md`](ROADMAP.md) keeps the list, with design notes: a TDR rise-time setting (and the window behind it), a Smith chart view, and Touchstone import as a memory trace.
+
 ## Develop
 
 ```sh
