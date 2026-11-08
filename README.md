@@ -231,8 +231,8 @@ about AI involvement in engineering work.
 verification protocol before it ships:
 
 1. **Independent reference models**: every validation structure is built a second time in scikit-rf from its own
-   parts (RLGC lines, its Djordjevic-Svensson permittivity, tees, opens and shorts, lumped elements) and compared to
-   the engine to round-off. 178/178 pass/fail checks pass.
+   parts (RLGC lines, its Djordjevic-Svensson permittivity, tees, opens and shorts, lumped elements). S-parameters
+   agree to 4e-11, the TDR to 2e-4 in ρ; 178/178 pass/fail checks pass.
 
 2. **Physics and textbook checks**: DC limits, passivity, energy conservation, causality (with non-causal negative
    controls that must fail), the Beatty closed form, the quarter-wave stub null, the Bloch stopband and the

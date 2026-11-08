@@ -28,7 +28,7 @@ The easiest way to help is a new **example**: a small channel that teaches one S
 
 ## Bugs and questions
 
-Open an [issue](https://github.com/Sparamix/tdr-painter/issues). For a wrong result, attach the project file (Export JSON) and say what you expected and why: a closed form, a measurement, another tool. Physics corrections are the most valuable reports this project gets.
+Open an [issue](https://github.com/Sparamix/tdr-painter/issues). For a wrong result, attach the project file (Export JSON) and say what you expected and why: a closed form, a measurement, another tool. Physics corrections are especially welcome.
 
 ## Code changes
 
