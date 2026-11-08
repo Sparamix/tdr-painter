@@ -99,7 +99,7 @@
       if (e.type === 'stub') {
         o.value = 0;
         o.stubZ = num(e.stubZ, lim.stubZ[0], lim.stubZ[1], 45);
-        o.stubLen = Math.round(num(e.stubLen, ELEMENT.stubLen[0], ELEMENT.stubLen[1], 60));
+        o.stubLen = Math.round(num(e.stubLen, ELEMENT.stubLen[0], ELEMENT.stubLen[1], 60) * 100) / 100;   // 0.01 mil steps
         o.end = e.end === 'short' ? 'short' : 'open';
       } else {
         const r = e.type === 'R' ? lim.R : ELEMENT.value[e.type];
@@ -119,7 +119,9 @@
       category: CATEGORIES.includes(ex.category) ? ex.category : 'Community',
       note: text(ex.note, 600), author: text(ex.author, 80), order: num(ex.order, -1e6, 1e6, 1000), isDefault: ex.default === true,
     } : null;
-    return { name: text(obj.name, 80), P, prof, elements, view, example };
+    // display units only: everything in the file stays in inches either way
+    const units = v.units === 'metric' || v.units === 'imperial' ? v.units : null;
+    return { name: text(obj.name, 80), P, prof, elements, view, units, example };
   }
 
   const api = { FORMAT, FORMAT_VERSION, DEFAULTS, FLAGS, LIMITS, Z_LIMITS, WIDE, ELEMENT, CATEGORIES, limits, quantZ, normalizeLoss, encodeProfile, parse };

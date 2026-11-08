@@ -280,6 +280,15 @@ const db = (r, i) => 20 * Math.log10(mag(r, i));
   check('parser: enabled false kept, missing means true', (pe.elements[0].enabled === false && pe.elements[1].enabled === true) ? 1 : 0, 1, 0);
 }
 
+// 11e) Display units ride along in the view; stub lengths keep 0.01 mil
+{
+  const PJ = require(path.join(__dirname, '..', 'src', 'project.js'));
+  const pv = (view, elements) => PJ.parse({ format: PJ.FORMAT, formatVersion: 1, params: {}, profile: { cells: 500, runs: [[50, 500]] }, view, elements: elements || [] }, 500);
+  check('units: metric read from the view', pv({ units: 'metric' }).units === 'metric' ? 1 : 0, 1, 0);
+  check('units: anything else is null (keep the current setting)', pv({ units: 'cubits' }).units === null && pv(undefined).units === null ? 1 : 0, 1, 0);
+  check('stub length keeps 0.01 mil', pv(null, [{ type: 'stub', x: 1, stubZ: 45, stubLen: 39.3701 }]).elements[0].stubLen, 39.37, 1e-12);
+}
+
 // 12) Timing
 {
   const P = { ...base };

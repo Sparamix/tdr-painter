@@ -216,6 +216,14 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
 
   <div class="gearpanel" id="gearPanel" role="dialog" aria-label="Settings" hidden>
     <section>
+      <h2>Units</h2>
+      <div class="seg" role="group" aria-label="Units" id="unitSeg">
+        <button data-units="imperial" aria-pressed="true">Imperial: in, mil</button>
+        <button data-units="metric" aria-pressed="false">Metric: mm</button>
+      </div>
+      <p class="note">Lengths, positions, stubs and the brush in inches and mil, or millimeters; conductor loss and DC resistance per inch or per centimeter. Saved with the project; the file itself always stores inches.</p>
+    </section>
+    <section>
       <h2 class="exp">Experimental</h2>
       <label class="check"><input type="checkbox" id="optWide"> Allow extra low and high impedances</label>
       <p class="note">Tx and Rx, the painted profile, stub impedance and series R go from 1 mΩ (a short) to 1 MΩ (an open), and Rx gets Short and Open buttons. Saved with the project. Turning it off brings values back into the normal ranges; Undo restores them.</p>
@@ -338,7 +346,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     elems: [], nextId: 1, selId: null,
     tool: 'draw', brushMil: 60,
     zMin: 30, zMax: 70, zLog: false, fitNext: false,
-    ref: null, memShow: true, undo: [],
+    ref: null, memShow: true, undo: [], units: 'imperial',
     cursorF: null, hover: null,
     drag: null, plateau: null, projectName: '',
   };
@@ -361,6 +369,12 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     if (a >= 1 || a === 0) return z.toFixed(1) + ' Ω';
     return sig(z * 1e3) + ' mΩ';
   }
+  /* units: the model and the files work in inches; Metric only changes what is shown and typed */
+  const metric = () => state.units === 'metric';
+  const LU = () => metric() ? { u: 'mm', f: 25.4, dec: 2 } : { u: 'in', f: 1, dec: 3 };   // lengths along the line
+  const lenTxt = (inch, dec) => (inch * LU().f).toFixed(dec != null ? dec : LU().dec) + ' ' + LU().u;
+  // small lengths: mil, or mm
+  const smallTxt = (inch, sep) => metric() ? +(inch * 25.4).toFixed(2) + (sep ?? ' ') + 'mm' : +(inch * 1000).toFixed(0) + (sep ?? ' ') + 'mil';
   /** Compact axis label: 1m, 20m, 0.5, 50, 2k, 1M. */
   function tickZ(v) {
     const a = Math.abs(v);
@@ -606,18 +620,20 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     // line region shade
     ctx.fillStyle = TK['panel-2'];
     ctx.fillRect(F.X(0), F.y0, F.X(L) - F.X(0), F.y1 - F.y0);
-    const xt = ticks(0, L, Math.max(3, Math.floor((F.x1 - F.x0) / 70)));
+    const xtD = ticks(0, L * LU().f, Math.max(3, Math.floor((F.x1 - F.x0) / 70)));     // in display units
+    const xt = xtD.map(v => v / LU().f);
+    const xstep = xtD.length > 1 ? xtD[1] - xtD[0] : 1;
     const nY = Math.max(3, Math.floor((F.y1 - F.y0) / 40));
     const yt = state.zLog ? logTicks(state.zMin, state.zMax, nY) : ticks(state.zMin, state.zMax, nY);
-    const xd = L >= 2 ? 1 : 2;
+    const xd = xstep >= 1 ? 0 : xstep >= 0.1 ? 1 : 2;
     const compact = state.zLog || Math.max(Math.abs(state.zMin), Math.abs(state.zMax)) >= 1e4 || state.zMax - state.zMin < 0.2;
-    grid(ctx, F, xt, yt, (v) => fmt(v, xd), compact ? tickZ : 'auto');
+    grid(ctx, F, xt, yt, (v) => fmt(v * LU().f, xd), compact ? tickZ : 'auto');
     // axis titles
     ctx.fillStyle = TK['fg-3']; ctx.font = FONT_DATA;
     ctx.textAlign = 'left'; ctx.textBaseline = 'top';
     ctx.fillText('Ω', 6, F.y0 - 16);
     ctx.textAlign = 'right';
-    ctx.fillText('in', F.x1, F.y1 + 5);
+    ctx.fillText(LU().u, F.x1, F.y1 + 5);
     // top axis: round-trip time
     const tps = (x) => 2 * x * IN / (C0 / Math.sqrt(P.Dk)) * 1e12;
     const tt = ticks(0, tps(xmax), Math.max(3, Math.floor((F.x1 - F.x0) / 80)));
@@ -687,7 +703,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
         // the area method assumes small reflections, so big excursions get their impedance instead
         const small = ex.peak > 0.5 * P.z0 && ex.peak < 2 * P.z0;
         if (ex.delay < 30e-12 && small) txt = ex.sign > 0 ? '≈' + (ex.L * 1e9).toFixed(2) + ' nH' : '≈' + (ex.C * 1e12).toFixed(3) + ' pF';
-        else txt = fmtZ(ex.avgZ) + ' · ' + fmt((ex.i1 - ex.i0) / NS * L * 1000, 0) + ' mil';
+        else txt = fmtZ(ex.avgZ) + ' · ' + smallTxt((ex.i1 - ex.i0) / NS * L);
         const yp = F.Y(ex.peak);
         const y = ex.sign > 0 ? Math.max(F.y0 + 12, yp - 8) : Math.min(F.y1 - 4, yp + 18);
         ctx.fillStyle = TK.ink; ctx.textBaseline = 'alphabetic';
@@ -775,7 +791,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     if (e.type === 'R') return 'R ' + (e.value >= 0.01 && e.value < 1e3 ? trimNum(e.value) : tickZ(e.value)) + 'Ω' + tag;
     // the stub's impedance shows only when it is outside the normal range (a short or an open stub)
     const zs = e.stubZ < PJ.ELEMENT.stubZ[0] || e.stubZ > PJ.ELEMENT.stubZ[1] ? ' ' + tickZ(e.stubZ) + 'Ω' : '';
-    return 'S ' + trimNum(e.stubLen) + 'mil' + zs + (e.end === 'short' ? ' gnd' : '') + tag;
+    return 'S ' + smallTxt(e.stubLen / 1000, '') + zs + (e.end === 'short' ? ' gnd' : '') + tag;
   }
   function trimNum(v) { return (+v.toFixed(3)).toString().replace(/^0\./, '.'); }
   function roundRect(ctx, x, y, w, h, r) {
@@ -865,14 +881,14 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     const res = riseT * v / 2 / IN * 1000;
     const zEnd = R.tz[R.tz.length - 1];
     let html = `<span>Rise <b>${(riseT * 1e12).toFixed(1)} ps</b> (Kaiser β ${P.beta})</span>` +
-      `<span>Resolution ≈ <b>${res.toFixed(0)} mil</b></span>` +
+      `<span>Resolution ≈ <b>${smallTxt(res / 1000)}</b></span>` +
       `<span>Line delay <b>${(delay * 1e12).toFixed(0)} ps</b></span>` +
       `<span>Late level <b>${fmtZ(zEnd)}</b></span>`;
     if (state.hover && TF) {
       const x = state.hover.x;
       const i = x >= 0 && x <= P.lenIn ? idxOf(x) : -1;
       let n = 0; while (n < R.tx.length - 1 && R.tx[n] < x) n++;
-      html += `<span>@ <b>${x.toFixed(3)} in</b>: painted ${i >= 0 ? '<b>' + fmtZ(state.prof[i]) + '</b>' : '—'}, TDR <b>${fmtZ(R.tz[n])}</b></span>`;
+      html += `<span>@ <b>${lenTxt(x)}</b>: painted ${i >= 0 ? '<b>' + fmtZ(state.prof[i]) + '</b>' : '—'}, TDR <b>${fmtZ(R.tz[n])}</b></span>`;
     }
     $('#tread').innerHTML = html;
     // frequency cursor readout
@@ -1059,18 +1075,21 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       `<button id="edDel" class="ghost">Remove</button></div></div><div class="ed-grid">`;
     const wide = !!state.P.extremeZ, lim = zlim();
     if (e.type === 'stub') {
-      html += pairHTML('edLen', 'Stub length', 'mil', 2, 250, 1) +
+      html += (metric() ? pairHTML('edLen', 'Stub length', 'mm', 0.06, 6.35, 0.01) : pairHTML('edLen', 'Stub length', 'mil', 2, 250, 1)) +
         (wide ? pairHTML('edZ', 'Stub impedance', 'Ω', lim.stubZ[0], lim.stubZ[1], 1, true) : pairHTML('edZ', 'Stub impedance', 'Ω', 20, 90, 1)) +
         `<div class="pair"><label id="edEndL">Far end</label><div class="seg" role="group" aria-labelledby="edEndL">` +
         `<button data-end="open" aria-pressed="${e.end !== 'short'}" title="Open at the far end, like a via stub">Open</button>` +
         `<button data-end="short" aria-pressed="${e.end === 'short'}" title="Shorted to ground at the far end: a short at DC, an open at the quarter-wave">Shorted</button></div></div>`;
     } else if (e.type === 'R' && wide) html += pairHTML('edVal', sp.v.label, sp.v.unit, lim.R[0], lim.R[1], 0.01, true);
     else html += pairHTML('edVal', sp.v.label, sp.v.unit, sp.v.min, sp.v.max, sp.v.step);
-    html += pairHTML('edX', 'Position', 'in', 0, L, 0.005) + pairHTML('edCnt', 'Copies', '', 1, 30, 1) + pairHTML('edPitch', 'Pitch', 'in', 0.02, 1, 0.005);
+    const lf = LU().f, lu = LU().u, mm = metric();
+    html += pairHTML('edX', 'Position', lu, 0, +(L * lf).toFixed(3), mm ? 0.1 : 0.005) + pairHTML('edCnt', 'Copies', '', 1, 30, 1) +
+      pairHTML('edPitch', 'Pitch', lu, +(0.02 * lf).toFixed(3), +(1 * lf).toFixed(3), mm ? 0.1 : 0.005);
     html += '</div>';
     box.innerHTML = html;
     if (e.type === 'stub') {
-      editorShows.push(bindPair('edLen', () => e.stubLen, (v) => e.stubLen = Math.round(v)));
+      editorShows.push(metric() ? bindPair('edLen', () => e.stubLen * 0.0254, (v) => e.stubLen = Math.round(v / 0.0254 * 100) / 100)
+        : bindPair('edLen', () => e.stubLen, (v) => e.stubLen = Math.round(v)));
       editorShows.push(bindPair('edZ', () => e.stubZ, (v) => e.stubZ = v));
       box.querySelectorAll('[data-end]').forEach(b => b.addEventListener('click', () => {
         if (e.end === b.dataset.end || (!e.end && b.dataset.end === 'open')) return;
@@ -1078,9 +1097,9 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
         const nb = box.querySelector(`[data-end="${b.dataset.end}"]`); if (nb) nb.focus();
       }));
     } else editorShows.push(bindPair('edVal', () => e.value, (v) => e.value = v));
-    editorShows.push(bindPair('edX', () => e.x, (v) => e.x = v));
+    editorShows.push(bindPair('edX', () => e.x * lf, (v) => e.x = v / lf));
     editorShows.push(bindPair('edCnt', () => e.count, (v) => e.count = Math.round(v)));
-    editorShows.push(bindPair('edPitch', () => e.pitch, (v) => e.pitch = v));
+    editorShows.push(bindPair('edPitch', () => e.pitch * lf, (v) => e.pitch = v / lf));
     $('#edDel').addEventListener('click', () => { pushUndo(); state.elems = state.elems.filter(x => x.id !== e.id); state.selId = null; renderEditor(); schedule(); });
     $('#edEn').addEventListener('change', (ev) => { pushUndo(); e.enabled = ev.target.checked; schedule(); });
     $('#edLock').addEventListener('click', () => {
@@ -1169,7 +1188,8 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     syncBrush(); schedule(true);
   }));
   syncBrush();
-  $('#brush').addEventListener('input', (ev) => { state.brushMil = +ev.target.value; $('#brushOut').textContent = state.brushMil + ' mil'; });
+  const syncBrushOut = () => { $('#brushOut').textContent = smallTxt(state.brushMil / 1000); };
+  $('#brush').addEventListener('input', (ev) => { state.brushMil = +ev.target.value; syncBrushOut(); });
   $('#undo').addEventListener('click', undo);
   $('#resetProf').addEventListener('click', () => { pushUndo(); state.prof.fill(state.P.z0); schedule(); });
   document.addEventListener('keydown', (ev) => { if ((ev.ctrlKey || ev.metaKey) && ev.key === 'z' && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) { ev.preventDefault(); undo(); } });
@@ -1208,7 +1228,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   /* ---------- setup rail ---------- */
   const GROUPS = [
     { title: 'Transmission line', master: true, items: [
-      { k: 'lenIn', label: 'Length', unit: 'in', min: 0.25, max: 10, step: 0.05 },
+      { k: 'lenIn', label: 'Length', unit: 'in', min: 0.25, max: 10, step: 0.05, m: { unit: 'mm', f: 25.4, step: 0.5 } },
       { k: 'z0', label: 'Line Z₀', tip: 'The impedance Reset profile and Erase paint back to, and the line the loss settings describe', unit: 'Ω', min: 20, max: 120, step: 0.5 },
     ] },
     { title: 'Dielectric, Djordjevic-Sarkar', loss: { k: 'dielLossless', label: 'Lossless dielectric (Df = 0)' }, note: 'Defaults: Megtron 6 R-5775(N) datasheet point, Dk 3.35 and Df 0.004 at 12 GHz.', items: [
@@ -1219,8 +1239,8 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       { k: 'dsHighHz', label: 'Upper corner f₂', unit: 'GHz', min: 100, max: 10000, step: 10, scale: 1e9 },
     ] },
     { title: 'Conductor', loss: { k: 'condLossless', label: 'Lossless conductor (no skin effect, no DC resistance)' }, note: 'Skin-effect loss scales with √f and carries its internal inductance, so the line stays causal.', items: [
-      { k: 'condLoss', label: 'Conductor loss at 10 GHz', unit: 'dB/in', min: 0, max: 2, step: 0.01 },
-      { k: 'rdc', label: 'DC resistance', unit: 'Ω/in', min: 0, max: 2, step: 0.01 },
+      { k: 'condLoss', label: 'Conductor loss at 10 GHz', unit: 'dB/in', min: 0, max: 2, step: 0.01, m: { unit: 'dB/cm', f: 1 / 2.54, step: 0.002 } },
+      { k: 'rdc', label: 'DC resistance', unit: 'Ω/in', min: 0, max: 2, step: 0.01, m: { unit: 'Ω/cm', f: 1 / 2.54, step: 0.002 } },
     ] },
     { title: 'Ports', note: 'Tx is also the TDR source impedance. Both set the S-parameter reference.', items: [
       { k: 'zTx', label: 'Tx (port 1)', unit: 'Ω', min: 10, max: 150, step: 0.5 },
@@ -1248,7 +1268,9 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       if (g.loss) html += `<label class="check"><input type="checkbox" id="p_${g.loss.k}"> ${g.loss.label}</label>`;
       if (g.note) html += `<p class="note">${g.note}${g.title === 'Ports' && wide ? ' <span class="exp">Experimental range: 1 mΩ to 1 MΩ.</span>' : ''}</p>`;
       g.items.forEach(it => {
+        const um = metric() && it.m;          // metric display: unit, factor and step
         html += wide && isPort(it.k) ? pairHTML('p_' + it.k, it.label, it.unit, portLim[0], portLim[1], it.step, true)
+          : um ? pairHTML('p_' + it.k, it.label, it.m.unit, +(it.min * it.m.f).toPrecision(6), +(it.max * it.m.f).toPrecision(6), it.m.step, false, it.tip)
           : pairHTML('p_' + it.k, it.label, it.unit, it.min, it.max, it.step, false, it.tip);
       });
       if (g.master) html += `<label class="check"><input type="checkbox" id="p_lossless"> Lossless transmission line (no conductor or dielectric loss)</label>`;
@@ -1264,11 +1286,12 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     rail.innerHTML = html;
     GROUPS.forEach(g => g.items.forEach(it => {
       const sc = it.scale || 1;
-      railShows.push(bindPair('p_' + it.k, () => state.P[it.k] / sc, (v) => {
+      const uf = metric() && it.m ? it.m.f : 1;     // shown = stored / scale * uf
+      railShows.push(bindPair('p_' + it.k, () => state.P[it.k] / sc * uf, (v) => {
         const old = state.P[it.k];
-        state.P[it.k] = v * sc;
+        state.P[it.k] = v * sc / uf;
         if (it.k === 'z0') { const d = v - old; for (let i = 0; i < NS; i++) state.prof[i] = clampZ(state.prof[i] + d); if (state.zLog) autoRange(false); else { state.zMin += d; state.zMax += d; } syncRange(); }
-        if (it.k === 'lenIn') { for (const e of state.elems) e.x = Math.min(e.x, v); renderEditor(); }
+        if (it.k === 'lenIn') { for (const e of state.elems) e.x = Math.min(e.x, state.P.lenIn); renderEditor(); }
       }, { noUndo: true, after: () => { syncEditor(); schedule(); } }));
     }));
     GROUPS.forEach((g, gi) => {
@@ -1360,7 +1383,14 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     gearBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
     if (open) { syncGear(); placeGear(); $('#optWide').focus(); }
   }
+  function setUnits(u) {
+    if (u === state.units) return;
+    state.units = u;
+    buildRail(); renderEditor(); syncBrushOut(); syncGear(); schedule(true);
+  }
+  document.querySelectorAll('[data-units]').forEach(b => b.addEventListener('click', () => setUnits(b.dataset.units)));
   function syncGear() {
+    document.querySelectorAll('[data-units]').forEach(b => b.setAttribute('aria-pressed', b.dataset.units === state.units ? 'true' : 'false'));
     $('#optWide').checked = !!state.P.extremeZ;
     $('#gearDot').hidden = !state.P.extremeZ;
     gearBtn.title = state.P.extremeZ ? 'Settings (experimental impedance range is on)' : 'Settings: experimental options';
@@ -1430,7 +1460,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       elements: state.elems.map(e => e.type === 'stub'
         ? { type: e.type, x: e.x, stubZ: e.stubZ, stubLen: e.stubLen, end: e.end === 'short' ? 'short' : 'open', count: e.count, pitch: e.pitch, locked: !!e.locked, enabled: e.enabled !== false }
         : { type: e.type, x: e.x, value: e.value, count: e.count, pitch: e.pitch, locked: !!e.locked, enabled: e.enabled !== false }),
-      view: { zMin: state.zMin, zMax: state.zMax, log: !!state.zLog },
+      view: { zMin: state.zMin, zMax: state.zMax, log: !!state.zLog, units: state.units },
     };
   }
 
@@ -1453,6 +1483,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     state.elems = p.elements.map(e => ({ id: state.nextId++, ...e }));
     state.selId = null;
     if (p.view) { state.zMin = p.view.zMin; state.zMax = p.view.zMax; state.zLog = !!p.view.log; } else { state.zLog = false; autoRange(true); }
+    if (p.units && p.units !== state.units) { state.units = p.units; railWide = null; syncBrushOut(); }   // rebuilt by refreshControls
     state.projectName = p.name || fallbackName || '';
     refreshControls();
   }

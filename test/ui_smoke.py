@@ -189,6 +189,34 @@ async def main():
         await pg.click("#unpin")
         check("Clear memory discards them", await st("__tdrState.ref") is None and await pg.is_disabled("#memShow"))
 
+        # ---- metric display units ----
+        await pg.select_option("#preset", label="Board launch + via stub")
+        await pg.click("#gear")
+        await pg.click("[data-units=metric]")
+        await pg.keyboard.press("Escape")
+        check("metric: line length shows in mm, stored in inches",
+              await pg.input_value("#p_lenInN") == "50.8" and await st("__tdrState.P.lenIn") == 2
+              and "mm" in await pg.inner_text("#brushOut"))
+        check("metric: conductor loss per cm", abs(float(await pg.input_value("#p_condLossN")) - 0.4 / 2.54) < 1e-3)
+        await pg.click("[data-add=stub]")
+        await pg.fill("#edLenN", "1"); await pg.press("#edLenN", "Enter")
+        await pg.fill("#edXN", "25.4"); await pg.press("#edXN", "Enter")
+        sel = await st("__tdrState.elems.find(e => e.id === __tdrState.selId)")
+        check("metric: a 1 mm stub at 25.4 mm is stored as 39.37 mil at 1 in", abs(sel["stubLen"] - 39.37) < 1e-9 and abs(sel["x"] - 1) < 1e-9, sel)
+        async with pg.expect_download() as dl_info:
+            await pg.click("#projJson")
+        mdoc = json.loads(pathlib.Path(await (await dl_info.value).path()).read_text())
+        check("metric is saved as a view setting, the file keeps inches", mdoc["view"]["units"] == "metric" and mdoc["params"]["lenIn"] == 2)
+        await pg.click("#gear")
+        await pg.click("[data-units=imperial]")
+        await pg.keyboard.press("Escape")
+        check("back to imperial", await pg.input_value("#p_lenInN") == "2" and "mil" in await pg.inner_text("#brushOut"))
+        tmp.write_text(json.dumps(mdoc))
+        await pg.set_input_files("#projFile", str(tmp))
+        await pg.wait_for_timeout(150)
+        check("opening a metric project switches the display to metric", await st("__tdrState.units") == "metric" and await pg.input_value("#p_lenInN") == "50.8")
+        await pg.click("#gear"); await pg.click("[data-units=imperial]"); await pg.keyboard.press("Escape")
+
         # ---- conductor and dielectric loss switch separately ----
         await pg.select_option("#preset", label="Clean 50 Ω line")
         await pg.check("#p_condLossless")
