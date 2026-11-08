@@ -2,6 +2,23 @@
   "name": "tdr-painter",
   "version": "0.8.2",
   "description": "Paint a TDR impedance profile, drop in parasitics, and see S11, S21, ILD and the power balance update live.",
+  "keywords": [
+    "signal integrity",
+    "TDR",
+    "S-parameters",
+    "impedance profile",
+    "transmission line",
+    "education",
+    "Sparamix"
+  ],
+  "homepage": "https://sparamix.github.io/tdr-painter/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sparamix/tdr-painter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Sparamix/tdr-painter/issues"
+  },
   "private": true,
   "scripts": {
     "build": "node build.js",
