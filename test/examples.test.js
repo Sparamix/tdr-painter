@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Giorgi Maghlakelidze. Part of TDR Painter (Sparamix).
 // Checks every file in examples/: it must open with the page's own parser without anything being clamped,
 // carry an example block, and simulate to finite, passive S-parameters. Community submissions run through
 // exactly this, so a PR that passes `npm test` will load and behave in the page.

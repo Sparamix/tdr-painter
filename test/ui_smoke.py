@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Giorgi Maghlakelidze. Part of TDR Painter (Sparamix).
 """Browser smoke test for dist/index.html.
 
     pip install playwright && playwright install chromium   # or set CHROME=/path/to/chrome

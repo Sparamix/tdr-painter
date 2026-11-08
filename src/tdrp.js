@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Giorgi Maghlakelidze. Part of TDR Painter (Sparamix).
 /* .tdrp project container: a standard ZIP archive (PKWARE APPNOTE) holding project.json.
  * Entries are deflated with the browser's built-in CompressionStream('deflate-raw'), or stored when that
  * would not be smaller. Every entry carries a CRC-32 of its uncompressed bytes, which read() verifies,

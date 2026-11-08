@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Giorgi Maghlakelidze. Part of TDR Painter (Sparamix).
 """Verify TDR Painter against scikit-rf.
 
     python validation/run_validation.py            # full run, about a minute

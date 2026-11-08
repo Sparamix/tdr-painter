@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Giorgi Maghlakelidze. Part of TDR Painter (Sparamix).
 /* TDR Painter engine: impedance profile + lumped elements -> S-parameters -> band-limited TDR.
  * Model: 1-D TEM cascade. Each profile cell is a uniform lossy line of impedance Z_i.
  * Dielectric: Djordjevic-Sarkar (causal). Conductor: (1+j)*K*sqrt(f) surface impedance + Rdc.

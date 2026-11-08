@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Giorgi Maghlakelidze. Part of TDR Painter (Sparamix).
 """Two cases taken from scikit-rf's documentation, rebuilt in TDR Painter.
 
 1. Stepped-impedance microstrip, measured on an Anritsu VNA and simulated with scikit-rf's MLine

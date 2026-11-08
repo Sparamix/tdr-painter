@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Giorgi Maghlakelidze. Part of TDR Painter (Sparamix).
 // Inlines src/engine.js, src/tdrp.js, src/project.js, examples/*.json and the self-hosted fonts into src/page.html and writes two single-file builds:
 //   dist/index.html                 standalone page (open from disk, or serve with GitHub Pages);
 //                                   carries a Content-Security-Policy that blocks every network connection
@@ -30,8 +32,18 @@ const page = rd('src/page.html')
   .replace('[/*EXAMPLES*/]', () => '[\n' + examplesJs + '\n]')
   .replace(/__VERSION__/g, pkg.version);
 
+// License notice at the top of both builds: the page is its own complete source.
+const NOTICE = `<!--
+  TDR Painter v${pkg.version}, part of Sparamix. Copyright (C) 2026 Giorgi Maghlakelidze.
+  SPDX-License-Identifier: GPL-3.0-or-later
+  Free software: you can redistribute it and/or modify it under the terms of the GNU General Public License,
+  version 3 or (at your option) any later version. It comes with ABSOLUTELY NO WARRANTY.
+  This file is the complete source; the repository is github.com/Sparamix/tdr-painter.
+  Embedded fonts (Archivo, Instrument Sans, JetBrains Mono) are under the SIL Open Font License 1.1.
+-->
+`;
 fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
-fs.writeFileSync(path.join(root, 'dist/tdr-painter.artifact.html'), page);
+fs.writeFileSync(path.join(root, 'dist/tdr-painter.artifact.html'), NOTICE + page);
 
 // No connections of any kind: no fetch/XHR/WebSocket/beacon, no external scripts, styles, fonts or images,
 // no form posts. Inline script and style only; fonts and the favicon are data: URIs.
@@ -52,7 +64,7 @@ if (cut < 0) throw new Error('src/page.html: <div class="wrap"> not found');
 const head = page.slice(0, cut).trim();
 const body = page.slice(cut);
 const standalone = `<!doctype html>
-<html lang="en">
+${NOTICE}<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="${CSP}">

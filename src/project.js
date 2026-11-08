@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Giorgi Maghlakelidze. Part of TDR Painter (Sparamix).
 /* Project format: defaults, limits, profile encoding and the validating parser.
  * Shared by the page and the tests, so examples submitted as .json files are checked by exactly
  * the code that will open them. A project file is untrusted input: every value is clamped.

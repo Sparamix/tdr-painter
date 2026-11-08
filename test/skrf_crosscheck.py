@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Giorgi Maghlakelidze. Part of TDR Painter (Sparamix).
 """Cross-check the JS engine against scikit-rf's Djordjevic-Svensson media.
 
 Builds the same structure in both (50-ohm line with a 42-ohm section and a 0.15 pF shunt C,

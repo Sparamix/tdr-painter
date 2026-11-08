@@ -8,5 +8,6 @@
     "test": "node build.js && node test/engine.test.js && node test/tdrp.test.js && node test/examples.test.js && node test/privacy.test.js",
     "validate": "python3 validation/run_validation.py"
   },
-  "author": "Giorgi Maghlakelidze <giorgi.snp@pm.me>"
+  "author": "Giorgi Maghlakelidze <giorgi.snp@pm.me>",
+  "license": "GPL-3.0-or-later"
 }

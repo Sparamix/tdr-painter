@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Giorgi Maghlakelidze. Part of TDR Painter (Sparamix).
 // Runs TDR Painter's own engine on project files, exactly as the page does, and prints the results as JSON.
 // Used by validation/run_validation.py; nothing here re-implements physics.
 //

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Giorgi Maghlakelidze. Part of TDR Painter (Sparamix).
 // Static privacy check of the built pages. Fails if the shipped code could talk to a server or keep data
 // in the browser. Run after `npm run build` (npm test does both).
 'use strict';

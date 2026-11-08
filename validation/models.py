@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Giorgi Maghlakelidze. Part of TDR Painter (Sparamix).
 """Independent scikit-rf models of TDR Painter structures.
 
 A Structure is a physical description: line sections (uniform or linearly tapered), lumped elements and open

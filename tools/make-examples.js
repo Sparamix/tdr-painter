@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Giorgi Maghlakelidze. Part of TDR Painter (Sparamix).
 // Writes the built-in examples to examples/*.json. The JSON files are the source of truth that build.js
 // bundles into the page; this script only exists to regenerate the built-in set reproducibly.
 // Community examples don't need it: export JSON from the page, add an "example" block, open a PR.

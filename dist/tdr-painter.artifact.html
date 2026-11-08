@@ -1,3 +1,11 @@
+<!--
+  TDR Painter v0.8.2, part of Sparamix. Copyright (C) 2026 Giorgi Maghlakelidze.
+  SPDX-License-Identifier: GPL-3.0-or-later
+  Free software: you can redistribute it and/or modify it under the terms of the GNU General Public License,
+  version 3 or (at your option) any later version. It comes with ABSOLUTELY NO WARRANTY.
+  This file is the complete source; the repository is github.com/Sparamix/tdr-painter.
+  Embedded fonts (Archivo, Instrument Sans, JetBrains Mono) are under the SIL Open Font License 1.1.
+-->
 <title>TDR Painter</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>/* Self-hosted fonts (SIL Open Font License 1.1, see fonts/OFL-*.txt). build.js inlines each url() as a data: URI,
@@ -356,10 +364,12 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
 
     <aside class="rail" id="rail"></aside>
   </div>
-  <footer class="foot">TDR Painter v0.8.2 · Runs entirely in your browser. Projects are .tdrp or .json files you save and open yourself; nothing is uploaded or stored.</footer>
+  <footer class="foot">TDR Painter v0.8.2, part of Sparamix · Free software under the GNU GPL v3 or later; source at github.com/Sparamix/tdr-painter · Runs entirely in your browser. Projects are .tdrp or .json files you save and open yourself; nothing is uploaded or stored.</footer>
 </div>
 
 <script>
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Giorgi Maghlakelidze. Part of TDR Painter (Sparamix).
 /* TDR Painter engine: impedance profile + lumped elements -> S-parameters -> band-limited TDR.
  * Model: 1-D TEM cascade. Each profile cell is a uniform lossy line of impedance Z_i.
  * Dielectric: Djordjevic-Sarkar (causal). Conductor: (1+j)*K*sqrt(f) surface impedance + Rdc.
@@ -793,6 +803,8 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   else root.TDREngine = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Giorgi Maghlakelidze. Part of TDR Painter (Sparamix).
 /* .tdrp project container: a standard ZIP archive (PKWARE APPNOTE) holding project.json.
  * Entries are deflated with the browser's built-in CompressionStream('deflate-raw'), or stored when that
  * would not be smaller. Every entry carries a CRC-32 of its uncompressed bytes, which read() verifies,
@@ -944,6 +956,8 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   else root.TDRP = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Giorgi Maghlakelidze. Part of TDR Painter (Sparamix).
 /* Project format: defaults, limits, profile encoding and the validating parser.
  * Shared by the page and the tests, so examples submitted as .json files are checked by exactly
  * the code that will open them. A project file is untrusted input: every value is clamped.

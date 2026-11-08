@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Giorgi Maghlakelidze. Part of TDR Painter (Sparamix).
 // Tests for the .tdrp container (src/tdrp.js): round trip, interop with Python's zipfile,
 // and refusal of damaged, truncated, foreign, encrypted and oversized archives.
 'use strict';
