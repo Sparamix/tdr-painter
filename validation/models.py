@@ -68,6 +68,8 @@ class Structure:
         """(x, element) for every copy, in TDR Painter's order: by position, then by list order."""
         out = []
         for i, e in enumerate(self.elements):
+            if e.get('enabled', True) is False:
+                continue
             for k in range(int(e.get('count', 1))):
                 x = round(e['x'] + k * e.get('pitch', 0.15), 12)
                 if x <= self.params['lenIn'] + 1e-9:
@@ -105,7 +107,8 @@ class Structure:
             i = j
         elements = []
         for e in self.elements:
-            o = {'type': e['type'], 'x': e['x'], 'count': int(e.get('count', 1)), 'pitch': e.get('pitch', 0.15), 'locked': False}
+            o = {'type': e['type'], 'x': e['x'], 'count': int(e.get('count', 1)), 'pitch': e.get('pitch', 0.15), 'locked': False,
+                 'enabled': e.get('enabled', True) is not False}
             if e['type'] == 'stub':
                 o.update(stubZ=e['stubZ'], stubLen=e['stubLen'], value=0, end=e.get('end', 'open'))
             else:

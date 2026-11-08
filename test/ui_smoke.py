@@ -228,6 +228,10 @@ async def main():
         await pg.click("[data-add=stub]")
         await pg.fill("#edZN", "0.001"); await pg.press("#edZN", "Enter")
         check("stub impedance takes 1 mohm", await st("__tdrState.elems.find(e => e.id === __tdrState.selId).stubZ") == 0.001)
+        await pg.uncheck("#edEn")
+        check("Enabled unticked: the stub stays but leaves the circuit",
+              await st("__tdrState.elems.find(e => e.id === __tdrState.selId).enabled") is False)
+        await pg.check("#edEn")
         hint = await pg.inner_text("#edHint")
         check("a 1 mohm open stub is flagged as a capacitor, not a short", "capacitor, not a short" in hint, hint)
         await pg.click("[data-end=short]")

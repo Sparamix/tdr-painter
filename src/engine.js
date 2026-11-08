@@ -146,6 +146,7 @@
     const dx = P.lenIn / ns;
     const ins = [];
     for (const e of elems) {
+      if (e.enabled === false) continue;   // switched off in the editor: kept in the project, left out of the circuit
       const n = Math.max(1, e.count | 0);
       for (let i = 0; i < n; i++) {
         const x = e.x + i * (e.pitch || 0);

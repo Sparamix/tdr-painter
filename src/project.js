@@ -94,7 +94,7 @@
       const o = {
         type: e.type, x: num(e.x, 0, P.lenIn, 0),
         count: Math.round(num(e.count, ELEMENT.count[0], ELEMENT.count[1], 1)),
-        pitch: num(e.pitch, ELEMENT.pitch[0], ELEMENT.pitch[1], 0.15), locked: e.locked === true,
+        pitch: num(e.pitch, ELEMENT.pitch[0], ELEMENT.pitch[1], 0.15), locked: e.locked === true, enabled: e.enabled !== false,
       };
       if (e.type === 'stub') {
         o.value = 0;

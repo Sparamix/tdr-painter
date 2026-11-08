@@ -264,6 +264,22 @@ const db = (r, i) => 20 * Math.log10(mag(r, i));
   okb('one part alone leaves lossless false', half.condLossless && !half.dielLossless && !half.lossless);
 }
 
+// 11d) A disabled element is left out of the circuit
+{
+  const P = { ...base, lossless: true };
+  const prep = E.prepare(P);
+  const on = E.solve(prep, E.buildCascade(flat(50), [{ id: 1, type: 'C', x: 1, value: 0.5, count: 1, pitch: 0 }], P));
+  const off = E.solve(prep, E.buildCascade(flat(50), [{ id: 1, type: 'C', x: 1, value: 0.5, count: 1, pitch: 0, enabled: false }], P));
+  const none = E.solve(prep, E.buildCascade(flat(50), [], P));
+  const d = Math.max(...Array.from(off.s11r, (v, k) => Math.hypot(v - none.s11r[k], off.s11i[k] - none.s11i[k])));
+  check('disabled C: same as no element', d, 0, 1e-15);
+  check('enabled C: reflects', Math.hypot(on.s11r[400], on.s11i[400]) > 0.1 ? 1 : 0, 1, 0);
+  const PJ = require(path.join(__dirname, '..', 'src', 'project.js'));
+  const pe = PJ.parse({ format: PJ.FORMAT, formatVersion: 1, params: {}, profile: { cells: 500, runs: [[50, 500]] },
+    elements: [{ type: 'C', x: 1, value: 0.1, enabled: false }, { type: 'C', x: 1, value: 0.1 }] }, 500);
+  check('parser: enabled false kept, missing means true', (pe.elements[0].enabled === false && pe.elements[1].enabled === true) ? 1 : 0, 1, 0);
+}
+
 // 12) Timing
 {
   const P = { ...base };

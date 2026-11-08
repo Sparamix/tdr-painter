@@ -481,6 +481,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     const dx = P.lenIn / ns;
     const ins = [];
     for (const e of elems) {
+      if (e.enabled === false) continue;   // switched off in the editor: kept in the project, left out of the circuit
       const n = Math.max(1, e.count | 0);
       for (let i = 0; i < n; i++) {
         const x = e.x + i * (e.pitch || 0);
@@ -989,7 +990,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       const o = {
         type: e.type, x: num(e.x, 0, P.lenIn, 0),
         count: Math.round(num(e.count, ELEMENT.count[0], ELEMENT.count[1], 1)),
-        pitch: num(e.pitch, ELEMENT.pitch[0], ELEMENT.pitch[1], 0.15), locked: e.locked === true,
+        pitch: num(e.pitch, ELEMENT.pitch[0], ELEMENT.pitch[1], 0.15), locked: e.locked === true, enabled: e.enabled !== false,
       };
       if (e.type === 'stub') {
         o.value = 0;
@@ -1114,7 +1115,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   }
   function el(type, x, extra) {
     const base = { C: { value: 0.15 }, L: { value: 0.3 }, R: { value: 2 }, stub: { value: 0, stubZ: 45, stubLen: 60, end: 'open' } }[type];
-    return { id: state.nextId++, type, x, count: 1, pitch: 0.15, locked: false, ...base, ...extra };
+    return { id: state.nextId++, type, x, count: 1, pitch: 0.15, locked: false, enabled: true, ...base, ...extra };
   }
 
   /* ---------- examples ---------- */
@@ -1457,16 +1458,24 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     const mid = (ly0 + ly1) / 2;
     lay.sort((a, b) => (a.e.id === state.selId) - (b.e.id === state.selId));
     for (const c of lay) {
-      const e = c.e, sel = e.id === state.selId;
+      const e = c.e, sel = e.id === state.selId, off = e.enabled === false;
       const cy = mid + (c.row - (nrows - 1) / 2) * gapY;
+      ctx.save();
+      if (off) { ctx.globalAlpha = 0.55; ctx.setLineDash([3, 2]); }   // switched off: faded, dashed outline
       ctx.fillStyle = sel ? TK.ink : TK.panel;
       ctx.strokeStyle = sel ? TK.ink : TK['fg-3']; ctx.lineWidth = 1;
       roundRect(ctx, c.cx - c.cw / 2, cy - hh / 2, c.cw, hh, 5); ctx.fill(); ctx.stroke();
+      ctx.setLineDash([]);
       ctx.fillStyle = sel ? TK.panel : TK.fg;
       if (e.locked) {
         drawLock(ctx, c.cx - c.cw / 2 + 10, cy, sel ? TK.panel : TK.fg);
         ctx.fillText(c.label, c.cx + 6, cy + 0.5);
       } else ctx.fillText(c.label, c.cx, cy + 0.5);
+      if (off) {   // strike through the label
+        const tw = ctx.measureText(c.label).width, tx = e.locked ? c.cx + 6 : c.cx;
+        ctx.strokeStyle = sel ? TK.panel : TK.fg; ctx.beginPath(); ctx.moveTo(tx - tw / 2, cy + 0.5); ctx.lineTo(tx + tw / 2, cy + 0.5); ctx.stroke();
+      }
+      ctx.restore();
       state.chips.push({ id: e.id, x0: c.cx - c.cw / 2, x1: c.cx + c.cw / 2, y0: cy - hh / 2 - 2, y1: cy + hh / 2 + 2 });
     }
     if (!state.elems.length) {
@@ -1768,7 +1777,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       : `<button id="edLock" aria-pressed="false" title="Lock the position so it can't be dragged by accident">${ICON.unlocked}Lock</button>`;
     const title = e.type === 'stub' && e.end === 'short' ? 'Shorted stub (to ground)' : sp.name;
     let html = `<div class="ed-head"><span class="glyph">${sp.glyph}</span><strong>${title}</strong><span class="ed-hint" id="edHint"></span>` +
-      `<div class="ed-actions">${lockBtn}<button id="edClone" title="Duplicate this element next to it, then drag the copy into place">${ICON.clone}Clone</button>` +
+      `<div class="ed-actions"><label class="check en" title="Untick to take this element out of the circuit and compare"><input type="checkbox" id="edEn"${e.enabled !== false ? ' checked' : ''}> Enabled</label>${lockBtn}<button id="edClone" title="Duplicate this element next to it, then drag the copy into place">${ICON.clone}Clone</button>` +
       `<button id="edDel" class="ghost">Remove</button></div></div><div class="ed-grid">`;
     const wide = !!state.P.extremeZ, lim = zlim();
     if (e.type === 'stub') {
@@ -1795,6 +1804,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     editorShows.push(bindPair('edCnt', () => e.count, (v) => e.count = Math.round(v)));
     editorShows.push(bindPair('edPitch', () => e.pitch, (v) => e.pitch = v));
     $('#edDel').addEventListener('click', () => { pushUndo(); state.elems = state.elems.filter(x => x.id !== e.id); state.selId = null; renderEditor(); schedule(); });
+    $('#edEn').addEventListener('change', (ev) => { pushUndo(); e.enabled = ev.target.checked; schedule(); });
     $('#edLock').addEventListener('click', () => {
       pushUndo(); e.locked = !e.locked; renderEditor(); schedule(true);
       $('#edLock').focus();
@@ -2136,8 +2146,8 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       params: { ...state.P },
       profile: { cells: NS, runs: PJ.encodeProfile(state.prof) },
       elements: state.elems.map(e => e.type === 'stub'
-        ? { type: e.type, x: e.x, stubZ: e.stubZ, stubLen: e.stubLen, end: e.end === 'short' ? 'short' : 'open', count: e.count, pitch: e.pitch, locked: !!e.locked }
-        : { type: e.type, x: e.x, value: e.value, count: e.count, pitch: e.pitch, locked: !!e.locked }),
+        ? { type: e.type, x: e.x, stubZ: e.stubZ, stubLen: e.stubLen, end: e.end === 'short' ? 'short' : 'open', count: e.count, pitch: e.pitch, locked: !!e.locked, enabled: e.enabled !== false }
+        : { type: e.type, x: e.x, value: e.value, count: e.count, pitch: e.pitch, locked: !!e.locked, enabled: e.enabled !== false }),
       view: { zMin: state.zMin, zMax: state.zMax, log: !!state.zLog },
     };
   }
