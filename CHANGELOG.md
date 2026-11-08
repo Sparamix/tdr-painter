@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.8.0 (2026-11-07)
+
+- **Attenuator** drop-in: an ideal resistive T pad with Zin (Tx side), Zout (Rx side) and loss in dB, held at or above the minimum-loss pad when Zin and Zout differ. Validated against scikit-rf resistors and the closed form.
+- **Enabled** check on every element: a disabled element stays in the project and on the strip (faded, dashed, struck through) but leaves the circuit.
+- **Memory traces named as on a VNA:** Data → Memory, Hide/Show memory, Clear memory (was Pin reference / Clear reference).
+- **Units** in the settings menu: imperial (in, mil, per inch) or metric (mm, per cm). Files keep inches; the choice is saved as `view.units`.
+- **Side-panel groups move** up and down with arrow buttons; the order is saved as `view.panels`.
+- Brush: the toolbar reads Brush and Brush size, hovering the TDR shows the brush's size and shape at the cursor, and Flatten is now Reset profile.
+- Transmission line group (was Line) with Line Z₀ and a Lossless transmission line switch for both losses at once.
+- ILD now sits under insertion loss; Copies # and Copies pitch; Frequency sweep and TDR; the experimental range is marked with an orange asterisk.
+
 ## 0.7.1 (2026-11-07)
 
 - Conductor and dielectric loss switch off separately: **Lossless conductor** and **Lossless dielectric** sit at the top of their groups and dim the sliders they turn off (`params.condLossless`, `params.dielLossless`). `lossless` still means both, and older projects that set it open with both checks ticked.

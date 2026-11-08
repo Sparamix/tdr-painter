@@ -1,8 +1,8 @@
 # TDR Painter verification report
 
-Generated 2026-11-07 by `validation/run_validation.py` with TDR Painter 0.7.1, scikit-rf 2.2.0, NumPy 2.5.3, SciPy 1.18.1, Python 3.13.18 and Node v22.23.4. Rerun the script to regenerate this file; do not edit it by hand.
+Generated 2026-11-07 by `validation/run_validation.py` with TDR Painter 0.8.0, scikit-rf 2.2.0, NumPy 2.5.3, SciPy 1.18.1, Python 3.13.18 and Node v22.23.4. Rerun the script to regenerate this file; do not edit it by hand.
 
-**Result: all pass/fail checks passed** (169 passed).
+**Result: all pass/fail checks passed** (178 passed).
 
 ## What is checked
 
@@ -43,7 +43,7 @@ Tier R, against the outside world: on the [measured stepped microstrip](#stepped
 3. **scikit-rf’s `step_response` sits slightly off on lossy lines.** It extrapolates S11 to DC linearly and integrates
    from half a record (1/(2Δf)) before t = 0, so the slow conductor-loss tail that wraps around the record turns into
    a small offset. Run that way, it differs from TDR Painter by up to 5e-03 in ρ (on the
-   10 in lossy line with a 50 → 40 → 50 Ω linear taper). (The 10× finer-grid reference was skipped in this run, `--quick`.) For lossless structures the two agree. The tier B pass/fail
+   10 in lossy line with a 50 → 40 → 50 Ω linear taper). Against a reference computed on a 10× finer frequency grid (no wrap-around to speak of), TDR Painter is within 2e-03 on every lossy case and scikit-rf’s `step_response` within 6e-03. For lossless structures the two agree. The tier B pass/fail
    check therefore compares like with like (same DC value, same integration start), and the as-a-user comparison is
    listed for information.
 4. **Painting the TDR is a good model only where the TDR resolves the structure.** Tier C shows how far you get by
@@ -72,7 +72,8 @@ Project files: [`cases/beatty.json`](../cases/beatty.json) (opens in TDR Painter
 | P | passivity: max singular value of S − 1 | -2.2e-16 | 1.0e-12 | pass |
 | P | causality: S21 impulse before the light-speed front / peak | 2.4e-05 | 3.0e-04 | pass |
 | B | TDR: max \|ρ engine − ρ scikit-rf\| (exact DC, same integration start) | 6.9e-05 | 1.0e-03 | pass |
-| B | TDR: scikit-rf step_response as a user runs it (linear DC extrapolation) | max \|Δρ\| vs engine 4.1e-03 |  | info |
+| B | TDR: max \|ρ engine − ρ on a 10× finer frequency grid\| | 3.4e-04 | 3.0e-03 | pass |
+| B | TDR: scikit-rf step_response as a user runs it (linear DC extrapolation) | max \|Δρ\| vs engine 4.1e-03; on the 10× finer grid, scikit-rf’s step_response is off by 4.4e-03 |  | info |
 
 **Lossless**
 
@@ -120,7 +121,8 @@ Project files: [`cases/via-stub.json`](../cases/via-stub.json) (opens in TDR Pai
 | P | passivity: max singular value of S − 1 | 4.4e-16 | 1.0e-12 | pass |
 | P | causality: S21 impulse before the light-speed front / peak | 2.8e-05 | 3.0e-04 | pass |
 | B | TDR: max \|ρ engine − ρ scikit-rf\| (exact DC, same integration start) | 4.6e-05 | 1.0e-03 | pass |
-| B | TDR: scikit-rf step_response as a user runs it (linear DC extrapolation) | max \|Δρ\| vs engine 3.1e-04 |  | info |
+| B | TDR: max \|ρ engine − ρ on a 10× finer frequency grid\| | 7.8e-04 | 3.0e-03 | pass |
+| B | TDR: scikit-rf step_response as a user runs it (linear DC extrapolation) | max \|Δρ\| vs engine 3.1e-04; on the 10× finer grid, scikit-rf’s step_response is off by 1.0e-03 |  | info |
 
 **Lossless, grid point on the quarter-wave**
 
@@ -167,7 +169,8 @@ Project files: [`cases/periodic-c.json`](../cases/periodic-c.json) (opens in TDR
 | P | passivity: max singular value of S − 1 | 2.2e-16 | 1.0e-12 | pass |
 | P | causality: S21 impulse before the light-speed front / peak | 1.3e-05 | 3.0e-04 | pass |
 | B | TDR: max \|ρ engine − ρ scikit-rf\| (exact DC, same integration start) | 1.3e-04 | 1.0e-03 | pass |
-| B | TDR: scikit-rf step_response as a user runs it (linear DC extrapolation) | max \|Δρ\| vs engine 8.7e-04 |  | info |
+| B | TDR: max \|ρ engine − ρ on a 10× finer frequency grid\| | 4.4e-04 | 3.0e-03 | pass |
+| B | TDR: scikit-rf step_response as a user runs it (linear DC extrapolation) | max \|Δρ\| vs engine 8.7e-04; on the 10× finer grid, scikit-rf’s step_response is off by 7.5e-04 |  | info |
 
 **Lossless**
 
@@ -215,7 +218,8 @@ Project files: [`cases/probe-launch.json`](../cases/probe-launch.json) (opens in
 | P | passivity: max singular value of S − 1 | 2.2e-16 | 1.0e-12 | pass |
 | P | causality: S21 impulse before the light-speed front / peak | 1.5e-05 | 3.0e-04 | pass |
 | B | TDR: max \|ρ engine − ρ scikit-rf\| (exact DC, same integration start) | 7.3e-05 | 1.0e-03 | pass |
-| B | TDR: scikit-rf step_response as a user runs it (linear DC extrapolation) | max \|Δρ\| vs engine 4.2e-04 |  | info |
+| B | TDR: max \|ρ engine − ρ on a 10× finer frequency grid\| | 4.7e-04 | 3.0e-03 | pass |
+| B | TDR: scikit-rf step_response as a user runs it (linear DC extrapolation) | max \|Δρ\| vs engine 4.2e-04; on the 10× finer grid, scikit-rf’s step_response is off by 8.3e-04 |  | info |
 
 **Bad contact, 3 Ω**
 
@@ -229,7 +233,8 @@ Project files: [`cases/probe-launch.json`](../cases/probe-launch.json) (opens in
 | P | passivity: max singular value of S − 1 | 0.0e+00 | 1.0e-12 | pass |
 | P | causality: S21 impulse before the light-speed front / peak | 1.5e-05 | 3.0e-04 | pass |
 | B | TDR: max \|ρ engine − ρ scikit-rf\| (exact DC, same integration start) | 6.9e-05 | 1.0e-03 | pass |
-| B | TDR: scikit-rf step_response as a user runs it (linear DC extrapolation) | max \|Δρ\| vs engine 2.8e-04 |  | info |
+| B | TDR: max \|ρ engine − ρ on a 10× finer frequency grid\| | 4.2e-04 | 3.0e-03 | pass |
+| B | TDR: scikit-rf step_response as a user runs it (linear DC extrapolation) | max \|Δρ\| vs engine 2.8e-04; on the 10× finer grid, scikit-rf’s step_response is off by 4.1e-04 |  | info |
 
 **Bad contact, 75 Ω receiver**
 
@@ -243,7 +248,8 @@ Project files: [`cases/probe-launch.json`](../cases/probe-launch.json) (opens in
 | P | passivity: max singular value of S − 1 | 2.2e-16 | 1.0e-12 | pass |
 | P | causality: S21 impulse before the light-speed front / peak | 1.4e-05 | 3.0e-04 | pass |
 | B | TDR: max \|ρ engine − ρ scikit-rf\| (exact DC, same integration start) | 6.9e-05 | 1.0e-03 | pass |
-| B | TDR: scikit-rf step_response as a user runs it (linear DC extrapolation) | max \|Δρ\| vs engine 2.9e-04 |  | info |
+| B | TDR: max \|ρ engine − ρ on a 10× finer frequency grid\| | 4.1e-04 | 3.0e-03 | pass |
+| B | TDR: scikit-rf step_response as a user runs it (linear DC extrapolation) | max \|Δρ\| vs engine 2.9e-04; on the 10× finer grid, scikit-rf’s step_response is off by 4.5e-04 |  | info |
 
 **Paint the TDR, then simulate (tier C)**
 
@@ -276,7 +282,8 @@ Project files: [`cases/lossy-taper.json`](../cases/lossy-taper.json) (opens in T
 | P | passivity: max singular value of S − 1 | -2.2e-16 | 1.0e-12 | pass |
 | P | causality: S21 impulse before the light-speed front / peak | 3.7e-05 | 3.0e-04 | pass |
 | B | TDR: max \|ρ engine − ρ scikit-rf\| (exact DC, same integration start) | 2.5e-06 | 1.0e-03 | pass |
-| B | TDR: scikit-rf step_response as a user runs it (linear DC extrapolation) | max \|Δρ\| vs engine 5.0e-03 |  | info |
+| B | TDR: max \|ρ engine − ρ on a 10× finer frequency grid\| | 2.0e-03 | 3.0e-03 | pass |
+| B | TDR: scikit-rf step_response as a user runs it (linear DC extrapolation) | max \|Δρ\| vs engine 5.0e-03; on the 10× finer grid, scikit-rf’s step_response is off by 5.9e-03 |  | info |
 
 **Lossless**
 
@@ -354,7 +361,8 @@ Project files: [`cases/attenuator.json`](../cases/attenuator.json) (opens in TDR
 | P | passivity: max singular value of S − 1 | -3.4e-01 | 1.0e-12 | pass |
 | P | causality: S21 impulse before the light-speed front / peak | 2.4e-05 | 3.0e-04 | pass |
 | B | TDR: max \|ρ engine − ρ scikit-rf\| (exact DC, same integration start) | 9.0e-06 | 1.0e-03 | pass |
-| B | TDR: scikit-rf step_response as a user runs it (linear DC extrapolation) | max \|Δρ\| vs engine 1.1e-04 |  | info |
+| B | TDR: max \|ρ engine − ρ on a 10× finer frequency grid\| | 8.7e-05 | 3.0e-03 | pass |
+| B | TDR: scikit-rf step_response as a user runs it (linear DC extrapolation) | max \|Δρ\| vs engine 1.1e-04; on the 10× finer grid, scikit-rf’s step_response is off by 1.8e-04 |  | info |
 
 **Paint the TDR, then simulate (tier C)**
 
@@ -363,7 +371,7 @@ Project files: [`cases/attenuator.json`](../cases/attenuator.json) (opens in TDR
 | scikit-rf 50 GHz TDR | 0.1 GHz | 7.03 dB | 7.0 dB | -0.034 vs -6.032 dB |
 | scikit-rf 110 GHz TDR | 0.1 GHz | 7.03 dB | 7.0 dB | -0.034 vs -6.032 dB |
 
-Shown and painted here: the 6 dB pad ahead of the 30 Ω section. The pad itself is invisible in the TDR, because it is matched, and the 30 Ω section behind it shows as a dip to only about 44 Ω: its reflection (Γ = −0.25) comes back through the pad twice, 12 dB weaker. Painting that TDR gives a plain line with a shallow 44 Ω dip, so the painted model has neither the pad’s 6 dB of loss nor the real mismatch. A pad is the clearest case of what a TDR cannot see: loss that does not reflect.
+Shown and painted here: the 6 dB pad ahead of the 30 Ω section. The pad itself is invisible in the TDR, because it is matched, and the 30 Ω section behind it shows as a dip to only about 45 Ω: its reflection (Γ = −0.25) comes back through the pad twice, 12 dB weaker. Painting that TDR gives a plain line with a shallow 45 Ω dip, so the painted model has neither the pad’s 6 dB of loss nor the real mismatch. A pad is the clearest case of what a TDR cannot see: loss that does not reflect.
 
 ## GSG probe on a short standard: contact diagnosis
 
@@ -432,7 +440,8 @@ Project files: [`cases/probe-on-short.json`](../cases/probe-on-short.json) (open
 | P | passivity: max singular value of S − 1 | -2.0e-07 | 1.0e-12 | pass |
 | P | causality: not tested | \|S21\| stays below −60 dB (max -105 dB) |  | info |
 | B | TDR: max \|ρ engine − ρ scikit-rf\| (exact DC, same integration start) | 1.3e-04 | 1.0e-03 | pass |
-| B | TDR: scikit-rf step_response as a user runs it (linear DC extrapolation) | max \|Δρ\| vs engine 3.6e-04 |  | info |
+| B | TDR: max \|ρ engine − ρ on a 10× finer frequency grid\| | 8.8e-04 | 3.0e-03 | pass |
+| B | TDR: scikit-rf step_response as a user runs it (linear DC extrapolation) | max \|Δρ\| vs engine 3.6e-04; on the 10× finer grid, scikit-rf’s step_response is off by 1.0e-03 |  | info |
 
 **Paint the TDR, then simulate (tier C)**
 

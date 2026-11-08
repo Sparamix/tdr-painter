@@ -1,7 +1,7 @@
 {
  "generated": "2026-11-07",
  "versions": {
-  "tdr-painter": "0.7.1",
+  "tdr-painter": "0.8.0",
   "scikit-rf": "2.2.0",
   "numpy": "2.5.3",
   "scipy": "1.18.1",
@@ -84,8 +84,15 @@
        "tier": "B"
       },
       {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 on a 10\u00d7 finer frequency grid|",
+       "value": 0.0003377508119278838,
+       "limit": 0.003,
+       "ok": true,
+       "tier": "B"
+      },
+      {
        "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
-       "text": "max |\u0394\u03c1| vs engine 4.1e-03",
+       "text": "max |\u0394\u03c1| vs engine 4.1e-03; on the 10\u00d7 finer grid, scikit-rf\u2019s step_response is off by 4.4e-03",
        "ok": null,
        "tier": "B"
       }
@@ -267,8 +274,15 @@
        "tier": "B"
       },
       {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 on a 10\u00d7 finer frequency grid|",
+       "value": 0.0007768603637144378,
+       "limit": 0.003,
+       "ok": true,
+       "tier": "B"
+      },
+      {
        "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
-       "text": "max |\u0394\u03c1| vs engine 3.1e-04",
+       "text": "max |\u0394\u03c1| vs engine 3.1e-04; on the 10\u00d7 finer grid, scikit-rf\u2019s step_response is off by 1.0e-03",
        "ok": null,
        "tier": "B"
       }
@@ -443,8 +457,15 @@
        "tier": "B"
       },
       {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 on a 10\u00d7 finer frequency grid|",
+       "value": 0.0004439681935908286,
+       "limit": 0.003,
+       "ok": true,
+       "tier": "B"
+      },
+      {
        "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
-       "text": "max |\u0394\u03c1| vs engine 8.7e-04",
+       "text": "max |\u0394\u03c1| vs engine 8.7e-04; on the 10\u00d7 finer grid, scikit-rf\u2019s step_response is off by 7.5e-04",
        "ok": null,
        "tier": "B"
       }
@@ -626,8 +647,15 @@
        "tier": "B"
       },
       {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 on a 10\u00d7 finer frequency grid|",
+       "value": 0.0004725098653751772,
+       "limit": 0.003,
+       "ok": true,
+       "tier": "B"
+      },
+      {
        "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
-       "text": "max |\u0394\u03c1| vs engine 4.2e-04",
+       "text": "max |\u0394\u03c1| vs engine 4.2e-04; on the 10\u00d7 finer grid, scikit-rf\u2019s step_response is off by 8.3e-04",
        "ok": null,
        "tier": "B"
       }
@@ -693,8 +721,15 @@
        "tier": "B"
       },
       {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 on a 10\u00d7 finer frequency grid|",
+       "value": 0.00042216959868171533,
+       "limit": 0.003,
+       "ok": true,
+       "tier": "B"
+      },
+      {
        "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
-       "text": "max |\u0394\u03c1| vs engine 2.8e-04",
+       "text": "max |\u0394\u03c1| vs engine 2.8e-04; on the 10\u00d7 finer grid, scikit-rf\u2019s step_response is off by 4.1e-04",
        "ok": null,
        "tier": "B"
       }
@@ -760,8 +795,15 @@
        "tier": "B"
       },
       {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 on a 10\u00d7 finer frequency grid|",
+       "value": 0.00040823663387782455,
+       "limit": 0.003,
+       "ok": true,
+       "tier": "B"
+      },
+      {
        "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
-       "text": "max |\u0394\u03c1| vs engine 2.9e-04",
+       "text": "max |\u0394\u03c1| vs engine 2.9e-04; on the 10\u00d7 finer grid, scikit-rf\u2019s step_response is off by 4.5e-04",
        "ok": null,
        "tier": "B"
       }
@@ -869,8 +911,15 @@
        "tier": "B"
       },
       {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 on a 10\u00d7 finer frequency grid|",
+       "value": 0.0020351007649492547,
+       "limit": 0.003,
+       "ok": true,
+       "tier": "B"
+      },
+      {
        "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
-       "text": "max |\u0394\u03c1| vs engine 5.0e-03",
+       "text": "max |\u0394\u03c1| vs engine 5.0e-03; on the 10\u00d7 finer grid, scikit-rf\u2019s step_response is off by 5.9e-03",
        "ok": null,
        "tier": "B"
       }
@@ -1200,8 +1249,15 @@
        "tier": "B"
       },
       {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 on a 10\u00d7 finer frequency grid|",
+       "value": 8.657868864837999e-05,
+       "limit": 0.003,
+       "ok": true,
+       "tier": "B"
+      },
+      {
        "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
-       "text": "max |\u0394\u03c1| vs engine 1.1e-04",
+       "text": "max |\u0394\u03c1| vs engine 1.1e-04; on the 10\u00d7 finer grid, scikit-rf\u2019s step_response is off by 1.8e-04",
        "ok": null,
        "tier": "B"
       }
@@ -1529,8 +1585,15 @@
        "tier": "B"
       },
       {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 on a 10\u00d7 finer frequency grid|",
+       "value": 0.0008832684661578272,
+       "limit": 0.003,
+       "ok": true,
+       "tier": "B"
+      },
+      {
        "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
-       "text": "max |\u0394\u03c1| vs engine 3.6e-04",
+       "text": "max |\u0394\u03c1| vs engine 3.6e-04; on the 10\u00d7 finer grid, scikit-rf\u2019s step_response is off by 1.0e-03",
        "ok": null,
        "tier": "B"
       }
