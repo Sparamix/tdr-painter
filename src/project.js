@@ -36,6 +36,8 @@
     padZ: [5, 500],                                                         // attenuator image impedances, ohm
     stubZ: [20, 90], stubLen: [2, 250], count: [1, 30], pitch: [0.02, 1],
   };
+  // side-panel groups, top to bottom by default; a project may save its own order (view.panels)
+  const PANELS = ['range', 'line', 'diel', 'cond', 'ports', 'sweep', 'export'];
   const CATEGORIES = ['Basics', 'Discontinuities', 'TDR artifacts', 'Realistic channels', 'Community'];
 
   /** The impedance limits that apply to a project, by its extremeZ flag. */
@@ -127,10 +129,16 @@
     } : null;
     // display units only: everything in the file stays in inches either way
     const units = v.units === 'metric' || v.units === 'imperial' ? v.units : null;
-    return { name: text(obj.name, 80), P, prof, elements, view, units, example };
+    // panel order: known names once each, in the saved order, then any missing ones in the default order
+    let panels = null;
+    if (Array.isArray(v.panels)) {
+      const seen = v.panels.filter((k, i, a) => PANELS.includes(k) && a.indexOf(k) === i);
+      panels = seen.concat(PANELS.filter(k => !seen.includes(k)));
+    }
+    return { name: text(obj.name, 80), P, prof, elements, view, units, panels, example };
   }
 
-  const api = { FORMAT, FORMAT_VERSION, DEFAULTS, FLAGS, LIMITS, Z_LIMITS, WIDE, ELEMENT, CATEGORIES, limits, quantZ, normalizeLoss, encodeProfile, parse };
+  const api = { FORMAT, FORMAT_VERSION, DEFAULTS, FLAGS, LIMITS, Z_LIMITS, WIDE, ELEMENT, PANELS, CATEGORIES, limits, quantZ, normalizeLoss, encodeProfile, parse };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.TDRProject = api;
 })(typeof window !== 'undefined' ? window : globalThis);

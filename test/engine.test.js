@@ -311,6 +311,14 @@ const db = (r, i) => 20 * Math.log10(mag(r, i));
   check('6 dB, 50 ohm T pad: shunt 66.93 ohm', r.r3, 66.93, 0.01);
 }
 
+// 11g) Side-panel order from the view: known names once, missing ones appended in the default order
+{
+  const PJ = require(path.join(__dirname, '..', 'src', 'project.js'));
+  const pv = (panels) => PJ.parse({ format: PJ.FORMAT, formatVersion: 1, params: {}, profile: { cells: 500, runs: [[50, 500]] }, view: { panels } }, 500).panels;
+  check('panels: saved order kept, gaps filled', JSON.stringify(pv(['ports', 'bogus', 'ports', 'line'])) === JSON.stringify(['ports', 'line', 'range', 'diel', 'cond', 'sweep', 'export']) ? 1 : 0, 1, 0);
+  check('panels: none saved means null (keep the current order)', pv(undefined) === null ? 1 : 0, 1, 0);
+}
+
 // 12) Timing
 {
   const P = { ...base };

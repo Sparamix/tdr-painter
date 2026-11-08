@@ -174,6 +174,11 @@ button.nudge { animation: nudge 0.22s ease-in-out 2; }
 
 aside.rail { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .group { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.ghead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mv { display: inline-flex; gap: 2px; flex: none; }
+.mv button { min-height: 26px; min-width: 28px; padding: 0 6px; font-size: 10px; line-height: 1; color: var(--fg-3); border-color: transparent; }
+.mv button:hover:not(:disabled) { color: var(--fg); border-color: var(--line); }
+.mv button:disabled { opacity: 0.3; }
 .group h2 { margin: 0; font-family: var(--font-display); font-stretch: 105%; font-weight: 700; font-size: 14px; letter-spacing: 0.01em; }
 .group .note { font-size: 12px; color: var(--fg-3); margin: 0; }
 .check { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--fg-2); }
@@ -969,6 +974,8 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     padZ: [5, 500],                                                         // attenuator image impedances, ohm
     stubZ: [20, 90], stubLen: [2, 250], count: [1, 30], pitch: [0.02, 1],
   };
+  // side-panel groups, top to bottom by default; a project may save its own order (view.panels)
+  const PANELS = ['range', 'line', 'diel', 'cond', 'ports', 'sweep', 'export'];
   const CATEGORIES = ['Basics', 'Discontinuities', 'TDR artifacts', 'Realistic channels', 'Community'];
 
   /** The impedance limits that apply to a project, by its extremeZ flag. */
@@ -1060,10 +1067,16 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     } : null;
     // display units only: everything in the file stays in inches either way
     const units = v.units === 'metric' || v.units === 'imperial' ? v.units : null;
-    return { name: text(obj.name, 80), P, prof, elements, view, units, example };
+    // panel order: known names once each, in the saved order, then any missing ones in the default order
+    let panels = null;
+    if (Array.isArray(v.panels)) {
+      const seen = v.panels.filter((k, i, a) => PANELS.includes(k) && a.indexOf(k) === i);
+      panels = seen.concat(PANELS.filter(k => !seen.includes(k)));
+    }
+    return { name: text(obj.name, 80), P, prof, elements, view, units, panels, example };
   }
 
-  const api = { FORMAT, FORMAT_VERSION, DEFAULTS, FLAGS, LIMITS, Z_LIMITS, WIDE, ELEMENT, CATEGORIES, limits, quantZ, normalizeLoss, encodeProfile, parse };
+  const api = { FORMAT, FORMAT_VERSION, DEFAULTS, FLAGS, LIMITS, Z_LIMITS, WIDE, ELEMENT, PANELS, CATEGORIES, limits, quantZ, normalizeLoss, encodeProfile, parse };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.TDRProject = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -1105,7 +1118,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     elems: [], nextId: 1, selId: null,
     tool: 'draw', brushMil: 60,
     zMin: 30, zMax: 70, zLog: false, fitNext: false,
-    ref: null, memShow: true, undo: [], units: 'imperial',
+    ref: null, memShow: true, undo: [], units: 'imperial', panelOrder: PJ.PANELS.slice(),
     cursorF: null, hover: null,
     drag: null, plateau: null, projectName: '',
   };
@@ -2006,26 +2019,26 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
 
   /* ---------- setup rail ---------- */
   const GROUPS = [
-    { title: 'Transmission line', master: true, items: [
+    { key: 'line', title: 'Transmission line', master: true, items: [
       { k: 'lenIn', label: 'Length', unit: 'in', min: 0.25, max: 10, step: 0.05, m: { unit: 'mm', f: 25.4, step: 0.5 } },
       { k: 'z0', label: 'Line Z₀', tip: 'The impedance Reset profile and Erase paint back to, and the line the loss settings describe', unit: 'Ω', min: 20, max: 120, step: 0.5 },
     ] },
-    { title: 'Dielectric, Djordjevic-Sarkar', loss: { k: 'dielLossless', label: 'Lossless dielectric (Df = 0)' }, note: 'Defaults: Megtron 6 R-5775(N) datasheet point, Dk 3.35 and Df 0.004 at 12 GHz.', items: [
+    { key: 'diel', title: 'Dielectric, Djordjevic-Sarkar', loss: { k: 'dielLossless', label: 'Lossless dielectric (Df = 0)' }, note: 'Defaults: Megtron 6 R-5775(N) datasheet point, Dk 3.35 and Df 0.004 at 12 GHz.', items: [
       { k: 'Dk', label: 'Dk at f_ref', unit: '', min: 1, max: 6, step: 0.01 },
       { k: 'Df', label: 'Df at f_ref', unit: '', min: 0, max: 0.03, step: 0.0005 },
       { k: 'frefGHz', label: 'f_ref', unit: 'GHz', min: 0.1, max: 60, step: 0.1 },
       { k: 'dsLowHz', label: 'Lower corner f₁', unit: 'kHz', min: 0.01, max: 1000, step: 0.01, scale: 1e3 },
       { k: 'dsHighHz', label: 'Upper corner f₂', unit: 'GHz', min: 100, max: 10000, step: 10, scale: 1e9 },
     ] },
-    { title: 'Conductor', loss: { k: 'condLossless', label: 'Lossless conductor (no skin effect, no DC resistance)' }, note: 'Skin-effect loss scales with √f and carries its internal inductance, so the line stays causal.', items: [
+    { key: 'cond', title: 'Conductor', loss: { k: 'condLossless', label: 'Lossless conductor (no skin effect, no DC resistance)' }, note: 'Skin-effect loss scales with √f and carries its internal inductance, so the line stays causal.', items: [
       { k: 'condLoss', label: 'Conductor loss at 10 GHz', unit: 'dB/in', min: 0, max: 2, step: 0.01, m: { unit: 'dB/cm', f: 1 / 2.54, step: 0.002 } },
       { k: 'rdc', label: 'DC resistance', unit: 'Ω/in', min: 0, max: 2, step: 0.01, m: { unit: 'Ω/cm', f: 1 / 2.54, step: 0.002 } },
     ] },
-    { title: 'Ports', note: 'Tx is also the TDR source impedance. Both set the S-parameter reference.', items: [
+    { key: 'ports', title: 'Ports', note: 'Tx is also the TDR source impedance. Both set the S-parameter reference.', items: [
       { k: 'zTx', label: 'Tx (port 1)', unit: 'Ω', min: 10, max: 150, step: 0.5 },
       { k: 'zRx', label: 'Rx (port 2)', unit: 'Ω', min: 10, max: 150, step: 0.5 },
     ] },
-    { title: 'Frequency sweep and TDR', note: '1001 points from DC. Kaiser window centered on DC; β 4.2 by default, scikit-rf uses 6.', items: [
+    { key: 'sweep', title: 'Frequency sweep and TDR', note: '1001 points from DC. Kaiser window centered on DC; β 4.2 by default, scikit-rf uses 6.', items: [
       { k: 'fmaxGHz', label: 'f_max', unit: 'GHz', min: 5, max: 110, step: 1 },
       { k: 'beta', label: 'Kaiser β', unit: '', min: 0, max: 14, step: 0.1 },
     ] },
@@ -2038,13 +2051,21 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     const wide = railWide = !!state.P.extremeZ;
     const portLim = zlim().port;
     railShows = [];
-    let html = `<div class="group"><h2>TDR plot range</h2><div class="inline">` +
+    const order = state.panelOrder;
+    const head = (key, title) => {
+      const i = order.indexOf(key), name = title.split(',')[0];
+      return `<div class="ghead"><h2>${title}</h2><span class="mv">` +
+        `<button class="ghost" data-move="${key}" data-dir="-1" aria-label="Move ${name} up"${i === 0 ? ' disabled' : ''}>▲</button>` +
+        `<button class="ghost" data-move="${key}" data-dir="1" aria-label="Move ${name} down"${i === order.length - 1 ? ' disabled' : ''}>▼</button></span></div>`;
+    };
+    const parts = {};
+    parts.range = `<div class="group" data-panel="range">${head('range', 'TDR plot range')}<div class="inline">` +
       `<input type="number" id="zMin" step="any" aria-label="Lowest impedance shown"><span class="note">to</span><input type="number" id="zMax" step="any" aria-label="Highest impedance shown"><span class="note">Ω</span>` +
       `<button id="zFit" class="ghost" title="Fit the axis to the profile, the ports and the TDR">Autoscale</button></div>` +
       `<label class="check"><input type="checkbox" id="optLog"> Logarithmic axis</label>` +
       `<p class="note">On a log axis equal ratios get equal space, so a 30 mΩ contact and a 0.5 Ω one sit a decade apart. Paint tools then work in ratios.</p></div>`;
     GROUPS.forEach((g, gi) => {
-      html += `<div class="group" id="grp_${gi}"><h2>${g.title}</h2>`;
+      let html = `<div class="group" id="grp_${gi}" data-panel="${g.key}">${head(g.key, g.title)}`;
       if (g.loss) html += `<label class="check"><input type="checkbox" id="p_${g.loss.k}"> ${g.loss.label}</label>`;
       if (g.note) html += `<p class="note">${g.note}${g.title === 'Ports' && wide ? '<br><span class="exp">* Experimental range: 1 mΩ to 1 MΩ.</span>' : ''}</p>`;
       g.items.forEach(it => {
@@ -2058,12 +2079,13 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
         `<button id="rxShort" title="Rx = 1 mΩ: a short, like a probe landed on the short standard">Short</button>` +
         `<button id="rxOpen" title="Rx = 1 MΩ: an open, like a lifted probe">Open</button>` +
         `<button id="rxLine" class="ghost" title="Rx = the line impedance">Line Z₀</button></div>`;
-      html += '</div>';
+      parts[g.key] = html + '</div>';
     });
-    html += `<div class="group"><h2>Export</h2><p class="note">Touchstone of the current S-parameters (RI). Unequal port impedances write version 2.0 with a [Reference] line.</p>` +
+    parts.export = `<div class="group" data-panel="export">${head('export', 'Export')}<p class="note">Touchstone of the current S-parameters (RI). Unequal port impedances write version 2.0 with a [Reference] line.</p>` +
       `<div class="inline"><button id="copyS2p">Copy .s2p text</button><span class="toast" id="s2pMsg"></span></div><textarea id="s2pbox" hidden readonly aria-label="Touchstone text"></textarea></div>`;
 
-    rail.innerHTML = html;
+    rail.innerHTML = order.map(k => parts[k]).join('');
+    rail.querySelectorAll('[data-move]').forEach(b => b.addEventListener('click', () => movePanel(b.dataset.move, +b.dataset.dir)));
     GROUPS.forEach(g => g.items.forEach(it => {
       const sc = it.scale || 1;
       const uf = metric() && it.m ? it.m.f : 1;     // shown = stored / scale * uf
@@ -2115,6 +2137,15 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
         else { inp.disabled = false; inp.title = ''; }
       });
     });
+  }
+  // reorder the side panel: swap with the neighbour, rebuild, keep focus on the same arrow (or its partner at the end)
+  function movePanel(key, dir) {
+    const o = state.panelOrder, i = o.indexOf(key), j = i + dir;
+    if (i < 0 || j < 0 || j >= o.length) return;
+    [o[i], o[j]] = [o[j], o[i]];
+    buildRail(); railShows.forEach(f => f()); syncLoss();
+    const b = $(`[data-move="${key}"][data-dir="${dir}"]`);
+    (b && !b.disabled ? b : $(`[data-move="${key}"][data-dir="${-dir}"]`)).focus();
   }
   const showZ = (v) => Math.abs(v) >= 100 || v === 0 ? +v.toFixed(1) : +v.toPrecision(4);
   function syncRange() { $('#zMin').value = showZ(state.zMin); $('#zMax').value = showZ(state.zMax); $('#optLog').checked = !!state.zLog; }
@@ -2241,7 +2272,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
         ? { type: e.type, x: e.x, stubZ: e.stubZ, stubLen: e.stubLen, end: e.end === 'short' ? 'short' : 'open', count: e.count, pitch: e.pitch, locked: !!e.locked, enabled: e.enabled !== false }
         : e.type === 'pad' ? { type: e.type, x: e.x, value: e.value, zIn: e.zIn, zOut: e.zOut, count: e.count, pitch: e.pitch, locked: !!e.locked, enabled: e.enabled !== false }
         : { type: e.type, x: e.x, value: e.value, count: e.count, pitch: e.pitch, locked: !!e.locked, enabled: e.enabled !== false }),
-      view: { zMin: state.zMin, zMax: state.zMax, log: !!state.zLog, units: state.units },
+      view: { zMin: state.zMin, zMax: state.zMax, log: !!state.zLog, units: state.units, panels: state.panelOrder.slice() },
     };
   }
 
@@ -2265,6 +2296,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     state.selId = null;
     if (p.view) { state.zMin = p.view.zMin; state.zMax = p.view.zMax; state.zLog = !!p.view.log; } else { state.zLog = false; autoRange(true); }
     if (p.units && p.units !== state.units) { state.units = p.units; railWide = null; syncBrushOut(); }   // rebuilt by refreshControls
+    if (p.panels && p.panels.join() !== state.panelOrder.join()) { state.panelOrder = p.panels; railWide = null; }
     state.projectName = p.name || fallbackName || '';
     refreshControls();
   }
