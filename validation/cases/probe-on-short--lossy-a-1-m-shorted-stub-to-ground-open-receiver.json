@@ -41,6 +41,7 @@
    "count": 1,
    "pitch": 0.15,
    "locked": false,
+   "enabled": true,
    "value": 0.02
   },
   {
@@ -49,6 +50,7 @@
    "count": 1,
    "pitch": 0.15,
    "locked": false,
+   "enabled": true,
    "value": 0.03
   },
   {
@@ -57,6 +59,7 @@
    "count": 1,
    "pitch": 0.15,
    "locked": false,
+   "enabled": true,
    "stubZ": 0.001,
    "stubLen": 20,
    "value": 0,

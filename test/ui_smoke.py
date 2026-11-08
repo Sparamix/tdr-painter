@@ -176,6 +176,15 @@ async def main():
         check("out-of-range values are clamped", clamped == {"Dk": 6, "len": 0.25, "zTx": 50, "el": [["C", 0.25, 1, 30]]}, clamped)
         tmp.unlink()
 
+        # ---- attenuator ----
+        await pg.select_option("#preset", label="Clean 50 Ω line")
+        await pg.click("[data-add=pad]")
+        await pg.fill("#edZoutN", "75"); await pg.press("#edZoutN", "Enter")
+        await pg.fill("#edValN", "0.1"); await pg.press("#edValN", "Enter")
+        pad = await st("__tdrState.elems.find(e => e.id === __tdrState.selId)")
+        check("attenuator 50 -> 75 ohm is held at the 5.72 dB minimum-loss pad", pad["type"] == "pad" and abs(pad["value"] - 5.72) < 1e-9, pad)
+        check("attenuator hint lists the T-pad resistors", "to ground" in await pg.inner_text("#edHint"))
+
         # ---- memory traces: Data → Memory, Hide/Show, Clear ----
         await pg.select_option("#preset", label="Clean 50 Ω line")
         check("memory buttons start disabled", await pg.is_disabled("#memShow") and await pg.is_disabled("#unpin"))

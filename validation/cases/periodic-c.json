@@ -41,6 +41,7 @@
    "count": 10,
    "pitch": 0.32,
    "locked": false,
+   "enabled": true,
    "value": 0.1
   }
  ],

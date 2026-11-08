@@ -1,0 +1,55 @@
+{
+ "format": "tdr-painter-project",
+ "formatVersion": 1,
+ "app": "validation",
+ "name": "Resistive attenuator pads",
+ "savedAt": "2026-11-07T00:00:00.000Z",
+ "params": {
+  "lenIn": 2.0,
+  "z0": 50,
+  "Dk": 3.35,
+  "Df": 0.004,
+  "frefGHz": 12,
+  "dsLowHz": 1000.0,
+  "dsHighHz": 1000000000000.0,
+  "condLoss": 0.4,
+  "condRefGHz": 10,
+  "rdc": 0.2,
+  "fmaxGHz": 50,
+  "nf": 1001,
+  "zTx": 50,
+  "zRx": 50,
+  "beta": 4.2,
+  "lossless": true,
+  "condLossless": true,
+  "dielLossless": true,
+  "extremeZ": false
+ },
+ "profile": {
+  "cells": 500,
+  "runs": [
+   [
+    50.0,
+    500
+   ]
+  ]
+ },
+ "elements": [
+  {
+   "type": "pad",
+   "x": 1.0,
+   "count": 1,
+   "pitch": 0.15,
+   "locked": false,
+   "enabled": true,
+   "value": 10,
+   "zIn": 50,
+   "zOut": 50
+  }
+ ],
+ "example": {
+  "category": "Community",
+  "note": "Ideal resistive T pads on a 2 in line: a matched 10 dB, 50 \u03a9 pad; a 50 to 75 \u03a9 pad asked for 0.1 dB, which is held at the 5.72 dB minimum-loss pad, into a 75 \u03a9 line and receiver; and a 6 dB pad in front of a 30 \u03a9 section on a lossy line, which hides that mismatch by twice its loss.",
+  "author": "TDR Painter validation"
+ }
+}

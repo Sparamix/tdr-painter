@@ -296,6 +296,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
             <button data-add="L"><b>L</b> Series L</button>
             <button data-add="R"><b>R</b> Series R</button>
             <button data-add="stub" title="An open stub; switch its far end to Shorted in the editor"><b>S</b> Stub</button>
+            <button data-add="pad" title="A resistive T pad: matched to Zin on the Tx side and Zout on the Rx side, with the loss you set"><b>A</b> Attenuator</button>
           </div>
           <span class="note label-sm" style="text-transform:none;letter-spacing:0;font-weight:400">Drag chips along the strip under the plot</span>
         </div>
@@ -343,6 +344,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       <li>Labels on short painted bumps use the TDR area method: <code>L = 2Z₀∫ρ dt</code>, <code>C = −(2/Z₀)∫ρ dt</code> over round-trip time. Long excursions show average impedance and length instead.</li>
       <li>ILD is dB(S21) minus a least-squares fit of a0 + a1√f + a2·f + a4·f² over the whole sweep.</li>
       <li>Privacy: the page makes no network requests and keeps nothing, not even in browser storage. Save writes a .tdrp file to your computer (a ZIP holding project.json, with a CRC-32 that Open verifies) and Open reads it back; Export JSON writes the same project as readable text. The standalone build adds a Content-Security-Policy that blocks every outgoing connection, so the browser itself enforces this.</li>
+      <li>Attenuator: an ideal resistive T pad with image impedances Zin (Tx side) and Zout (Rx side). With K = 10^(dB/10), the shunt resistor is <code>2√(K·Zin·Zout)/(K−1)</code> and each series resistor <code>Z(K+1)/(K−1)</code> minus it. When Zin ≠ Zout the loss can't go below the minimum-loss pad, <code>20·log₁₀(√r + √(r−1))</code> with r the impedance ratio.</li>
       <li>Nothing radiates and nothing couples. Power that is neither reflected nor transmitted is absorbed in the line or in series R.</li>
       <li>Experimental impedance range (gear menu): 1 mΩ is a short and 1 MΩ an open, for the ports, the profile, stubs and series R. The S-parameters stay referenced to Tx and Rx, so with Rx shorted S21 is tiny by definition; the TDR is the useful view. A painted 1 mΩ section keeps the same loss per inch as any other cell. Stubs can be open or shorted at the far end: a 1 mΩ shorted stub is a short to ground at its position, DC included, while a 1 mΩ open stub is a nanofarad capacitor that is open at DC.</li>
       </ul></details>
@@ -497,6 +499,20 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   }
 
   /* Build the ordered cascade: runs of equal-Z cells and lumped elements (expanded by count/pitch). */
+  /** The least loss a resistive pad can have between z1 and z2 (a minimum-loss L pad); 0 dB when they are equal. */
+  function padMinLoss(z1, z2) {
+    const r = Math.max(z1, z2) / Math.min(z1, z2);
+    return 20 * Math.log10(Math.sqrt(r) + Math.sqrt(r - 1));
+  }
+  /** Resistive T pad with image impedances z1 (Tx side) and z2 (Rx side) and loss dB (raised to the minimum
+   *  if needed): series r1, shunt r3, series r2. With K = 10^(dB/10):
+   *  r3 = 2 sqrt(K z1 z2) / (K - 1), r1 = z1 (K + 1) / (K - 1) - r3, r2 = z2 (K + 1) / (K - 1) - r3. */
+  function padResistors(z1, z2, dB) {
+    const a = Math.max(dB, padMinLoss(z1, z2), 1e-6);
+    const K = Math.pow(10, a / 10);
+    const r3 = 2 * Math.sqrt(K * z1 * z2) / (K - 1);
+    return { r1: Math.max(0, z1 * (K + 1) / (K - 1) - r3), r2: Math.max(0, z2 * (K + 1) / (K - 1) - r3), r3, dB: a };
+  }
   function buildCascade(prof, elems, P) {
     const ns = prof.length;
     const dx = P.lenIn / ns;
@@ -538,6 +554,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       if (!stubKey.has(key)) { stubKey.set(key, stubs.length); stubs.push({ Z: t.e.stubZ, lenM: t.e.stubLen * 1e-3 * IN, short }); }
       t.si = stubKey.get(key);
     }
+    for (const t of items) if (t.kind === 'el' && t.e.type === 'pad') t.pad = padResistors(t.e.zIn, t.e.zOut, t.e.value);
     return { items, ms, stubs, dxM: dx * IN };
   }
 
@@ -627,6 +644,14 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
           ar = nar; ai = nai; br = nbr; bi = nbi; cr = ncr; ci = nci; dr = ndr; di = ndi;
         } else {
           const e = it.e;
+          if (e.type === 'pad') {
+            // resistive T pad: series r1, shunt 1/r3, series r2 (frequency independent, so DC too)
+            const p = it.pad, g = 1 / p.r3;
+            br += ar * p.r1; bi += ai * p.r1; dr += cr * p.r1; di += ci * p.r1;
+            ar += br * g; ai += bi * g; cr += dr * g; ci += di * g;
+            br += ar * p.r2; bi += ai * p.r2; dr += cr * p.r2; di += ci * p.r2;
+            continue;
+          }
           let sZr = 0, sZi = 0, sYr = 0, sYi = 0, series = false;
           if (e.type === 'R') { series = true; sZr = e.value; }
           else if (e.type === 'L') { series = true; sZi = w * e.value * 1e-9; }
@@ -759,7 +784,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     return out;
   }
 
-  const api = { C0, IN, makeDS, prepare, buildCascade, solve, tdr, riseTime, ildFit, excursions, fft, besselI0 };
+  const api = { C0, IN, makeDS, prepare, buildCascade, solve, tdr, riseTime, ildFit, excursions, fft, besselI0, padMinLoss, padResistors };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.TDREngine = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -948,8 +973,9 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   // impedance and series R may go from 1 mohm (a short) to 1 Mohm (an open).
   const WIDE = [0.001, 1e6];
   const ELEMENT = {
-    types: ['C', 'L', 'R', 'stub'],
-    value: { C: [0.005, 1], L: [0.01, 2], R: [0.01, 25] },     // pF, nH, ohm
+    types: ['C', 'L', 'R', 'stub', 'pad'],
+    value: { C: [0.005, 1], L: [0.01, 2], R: [0.01, 25], pad: [0.1, 60] },     // pF, nH, ohm, dB
+    padZ: [5, 500],                                                         // attenuator image impedances, ohm
     stubZ: [20, 90], stubLen: [2, 250], count: [1, 30], pitch: [0.02, 1],
   };
   const CATEGORIES = ['Basics', 'Discontinuities', 'TDR artifacts', 'Realistic channels', 'Community'];
@@ -1018,6 +1044,11 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
         o.stubZ = num(e.stubZ, lim.stubZ[0], lim.stubZ[1], 45);
         o.stubLen = Math.round(num(e.stubLen, ELEMENT.stubLen[0], ELEMENT.stubLen[1], 60) * 100) / 100;   // 0.01 mil steps
         o.end = e.end === 'short' ? 'short' : 'open';
+      } else if (e.type === 'pad') {
+        // resistive attenuator: Zin faces Tx, Zout faces Rx; the engine raises the loss to the minimum-loss pad if needed
+        o.value = num(e.value, ELEMENT.value.pad[0], ELEMENT.value.pad[1], 6);
+        o.zIn = num(e.zIn, ELEMENT.padZ[0], ELEMENT.padZ[1], 50);
+        o.zOut = num(e.zOut, ELEMENT.padZ[0], ELEMENT.padZ[1], 50);
       } else {
         const r = e.type === 'R' ? lim.R : ELEMENT.value[e.type];
         o.value = num(e.value, r[0], r[1], r[0]);
@@ -1143,7 +1174,8 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     }
   }
   function el(type, x, extra) {
-    const base = { C: { value: 0.15 }, L: { value: 0.3 }, R: { value: 2 }, stub: { value: 0, stubZ: 45, stubLen: 60, end: 'open' } }[type];
+    const base = { C: { value: 0.15 }, L: { value: 0.3 }, R: { value: 2 }, stub: { value: 0, stubZ: 45, stubLen: 60, end: 'open' },
+      pad: { value: 6, zIn: 50, zOut: 50 } }[type];
     return { id: state.nextId++, type, x, count: 1, pitch: 0.15, locked: false, enabled: true, ...base, ...extra };
   }
 
@@ -1511,7 +1543,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     }
     if (!state.elems.length) {
       ctx.fillStyle = TK['fg-3']; ctx.font = FONT_DATA; ctx.textAlign = 'left';
-      ctx.fillText('Use “Drop in” to add a shunt C, series L, series R or a stub', F.x0 + 10, (ly0 + ly1) / 2);
+      ctx.fillText('Use “Drop in” to add a shunt C, series L, series R, a stub or an attenuator', F.x0 + 10, (ly0 + ly1) / 2);
     }
   }
   function drawLock(ctx, x, y, color) {
@@ -1526,6 +1558,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     if (e.type === 'C') return 'C ' + trimNum(e.value) + 'p' + tag;
     if (e.type === 'L') return 'L ' + trimNum(e.value) + 'n' + tag;
     if (e.type === 'R') return 'R ' + (e.value >= 0.01 && e.value < 1e3 ? trimNum(e.value) : tickZ(e.value)) + 'Ω' + tag;
+    if (e.type === 'pad') return 'A ' + trimNum(+E.padResistors(e.zIn, e.zOut, e.value).dB.toFixed(2)) + 'dB' + (e.zIn !== e.zOut ? ' ' + trimNum(e.zIn) + '→' + trimNum(e.zOut) : '') + tag;
     // the stub's impedance shows only when it is outside the normal range (a short or an open stub)
     const zs = e.stubZ < PJ.ELEMENT.stubZ[0] || e.stubZ > PJ.ELEMENT.stubZ[1] ? ' ' + tickZ(e.stubZ) + 'Ω' : '';
     return 'S ' + smallTxt(e.stubLen / 1000, '') + zs + (e.end === 'short' ? ' gnd' : '') + tag;
@@ -1763,6 +1796,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     L: { name: 'Series inductance', glyph: 'L', v: { label: 'Inductance', unit: 'nH', min: 0.01, max: 2, step: 0.01 } },
     R: { name: 'Series resistance', glyph: 'R', v: { label: 'Resistance', unit: 'Ω', min: 0.01, max: 25, step: 0.01 } },
     stub: { name: 'Open stub (via stub)', glyph: 'S' },
+    pad: { name: 'Attenuator (resistive T pad)', glyph: 'A', v: { label: 'Attenuation', unit: 'dB', min: 0.1, max: 60, step: 0.1 } },
   };
   // log: the slider moves in decades (for ranges like 1 mohm to 1 Mohm); the number box still takes ohms
   function pairHTML(id, label, unit, min, max, step, log, tip) {
@@ -1817,6 +1851,9 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
         `<div class="pair"><label id="edEndL">Far end</label><div class="seg" role="group" aria-labelledby="edEndL">` +
         `<button data-end="open" aria-pressed="${e.end !== 'short'}" title="Open at the far end, like a via stub">Open</button>` +
         `<button data-end="short" aria-pressed="${e.end === 'short'}" title="Shorted to ground at the far end: a short at DC, an open at the quarter-wave">Shorted</button></div></div>`;
+    } else if (e.type === 'pad') {
+      html += pairHTML('edVal', sp.v.label, sp.v.unit, sp.v.min, sp.v.max, sp.v.step) +
+        pairHTML('edZin', 'Zin (Tx side)', 'Ω', PJ.ELEMENT.padZ[0], PJ.ELEMENT.padZ[1], 0.5) + pairHTML('edZout', 'Zout (Rx side)', 'Ω', PJ.ELEMENT.padZ[0], PJ.ELEMENT.padZ[1], 0.5);
     } else if (e.type === 'R' && wide) html += pairHTML('edVal', sp.v.label, sp.v.unit, lim.R[0], lim.R[1], 0.01, true);
     else html += pairHTML('edVal', sp.v.label, sp.v.unit, sp.v.min, sp.v.max, sp.v.step);
     const lf = LU().f, lu = LU().u, mm = metric();
@@ -1833,6 +1870,12 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
         pushUndo(); e.end = b.dataset.end; renderEditor(); schedule();
         const nb = box.querySelector(`[data-end="${b.dataset.end}"]`); if (nb) nb.focus();
       }));
+    } else if (e.type === 'pad') {
+      // hold the loss at or above the minimum-loss pad for Zin and Zout, so the file says what is simulated
+      const floor = () => { e.value = Math.max(e.value, Math.ceil(E.padMinLoss(e.zIn, e.zOut) * 100) / 100); };
+      editorShows.push(bindPair('edVal', () => e.value, (v) => { e.value = v; floor(); }));
+      editorShows.push(bindPair('edZin', () => e.zIn, (v) => { e.zIn = v; floor(); }));
+      editorShows.push(bindPair('edZout', () => e.zOut, (v) => { e.zOut = v; floor(); }));
     } else editorShows.push(bindPair('edVal', () => e.value, (v) => e.value = v));
     editorShows.push(bindPair('edX', () => e.x * lf, (v) => e.x = v / lf));
     editorShows.push(bindPair('edCnt', () => e.count, (v) => e.count = Math.round(v)));
@@ -1895,6 +1938,13 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       else hint = e.stubZ < 1 ? `A ${fmtZ(e.stubZ)} open stub is a ${fmtC(lenM / vm / e.stubZ)} capacitor, not a short: it is open at DC, so after it the TDR reads high and creeps up (the 1001-point sweep can't resolve so slow a charge). For a short to ground, set the far end to Shorted.`
         : e.stubZ > 1e3 ? `A ${fmtZ(e.stubZ)} open stub draws almost no current: it is nearly invisible.`
         : `Quarter-wave notch in S21 near v/(4ℓ) = ${fq} GHz; the TDR only shows a modest dip.`;
+    }
+    if (e.type === 'pad') {
+      const pr = E.padResistors(e.zIn, e.zOut, e.value), amin = E.padMinLoss(e.zIn, e.zOut);
+      const r = (x) => x < 0.005 ? '0' : (+x.toPrecision(4)) + ' Ω';
+      hint = `T pad: ${r(pr.r1)} in series on the Tx side, ${r(pr.r3)} to ground, ${r(pr.r2)} in series on the Rx side. ` +
+        (amin > 0.005 ? `Between ${trimNum(e.zIn)} and ${trimNum(e.zOut)} Ω no resistive pad can lose less than ${amin.toFixed(2)} dB (a minimum-loss L pad). ` : '') +
+        `Seen through it, a mismatch behind the pad returns ${(2 * pr.dB).toFixed(1)} dB weaker.`;
     }
     if (e.count > 1) hint += ` Periodic: first stopband near v/(2p) = ${(v / (2 * e.pitch) / 1e9).toFixed(1)} GHz.`;
     $('#edHint').textContent = hint;
@@ -2196,6 +2246,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       profile: { cells: NS, runs: PJ.encodeProfile(state.prof) },
       elements: state.elems.map(e => e.type === 'stub'
         ? { type: e.type, x: e.x, stubZ: e.stubZ, stubLen: e.stubLen, end: e.end === 'short' ? 'short' : 'open', count: e.count, pitch: e.pitch, locked: !!e.locked, enabled: e.enabled !== false }
+        : e.type === 'pad' ? { type: e.type, x: e.x, value: e.value, zIn: e.zIn, zOut: e.zOut, count: e.count, pitch: e.pitch, locked: !!e.locked, enabled: e.enabled !== false }
         : { type: e.type, x: e.x, value: e.value, count: e.count, pitch: e.pitch, locked: !!e.locked, enabled: e.enabled !== false }),
       view: { zMin: state.zMin, zMax: state.zMax, log: !!state.zLog, units: state.units },
     };

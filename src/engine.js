@@ -141,6 +141,20 @@
   }
 
   /* Build the ordered cascade: runs of equal-Z cells and lumped elements (expanded by count/pitch). */
+  /** The least loss a resistive pad can have between z1 and z2 (a minimum-loss L pad); 0 dB when they are equal. */
+  function padMinLoss(z1, z2) {
+    const r = Math.max(z1, z2) / Math.min(z1, z2);
+    return 20 * Math.log10(Math.sqrt(r) + Math.sqrt(r - 1));
+  }
+  /** Resistive T pad with image impedances z1 (Tx side) and z2 (Rx side) and loss dB (raised to the minimum
+   *  if needed): series r1, shunt r3, series r2. With K = 10^(dB/10):
+   *  r3 = 2 sqrt(K z1 z2) / (K - 1), r1 = z1 (K + 1) / (K - 1) - r3, r2 = z2 (K + 1) / (K - 1) - r3. */
+  function padResistors(z1, z2, dB) {
+    const a = Math.max(dB, padMinLoss(z1, z2), 1e-6);
+    const K = Math.pow(10, a / 10);
+    const r3 = 2 * Math.sqrt(K * z1 * z2) / (K - 1);
+    return { r1: Math.max(0, z1 * (K + 1) / (K - 1) - r3), r2: Math.max(0, z2 * (K + 1) / (K - 1) - r3), r3, dB: a };
+  }
   function buildCascade(prof, elems, P) {
     const ns = prof.length;
     const dx = P.lenIn / ns;
@@ -182,6 +196,7 @@
       if (!stubKey.has(key)) { stubKey.set(key, stubs.length); stubs.push({ Z: t.e.stubZ, lenM: t.e.stubLen * 1e-3 * IN, short }); }
       t.si = stubKey.get(key);
     }
+    for (const t of items) if (t.kind === 'el' && t.e.type === 'pad') t.pad = padResistors(t.e.zIn, t.e.zOut, t.e.value);
     return { items, ms, stubs, dxM: dx * IN };
   }
 
@@ -271,6 +286,14 @@
           ar = nar; ai = nai; br = nbr; bi = nbi; cr = ncr; ci = nci; dr = ndr; di = ndi;
         } else {
           const e = it.e;
+          if (e.type === 'pad') {
+            // resistive T pad: series r1, shunt 1/r3, series r2 (frequency independent, so DC too)
+            const p = it.pad, g = 1 / p.r3;
+            br += ar * p.r1; bi += ai * p.r1; dr += cr * p.r1; di += ci * p.r1;
+            ar += br * g; ai += bi * g; cr += dr * g; ci += di * g;
+            br += ar * p.r2; bi += ai * p.r2; dr += cr * p.r2; di += ci * p.r2;
+            continue;
+          }
           let sZr = 0, sZi = 0, sYr = 0, sYi = 0, series = false;
           if (e.type === 'R') { series = true; sZr = e.value; }
           else if (e.type === 'L') { series = true; sZi = w * e.value * 1e-9; }
@@ -403,7 +426,7 @@
     return out;
   }
 
-  const api = { C0, IN, makeDS, prepare, buildCascade, solve, tdr, riseTime, ildFit, excursions, fft, besselI0 };
+  const api = { C0, IN, makeDS, prepare, buildCascade, solve, tdr, riseTime, ildFit, excursions, fft, besselI0, padMinLoss, padResistors };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.TDREngine = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -289,6 +289,28 @@ const db = (r, i) => 20 * Math.log10(mag(r, i));
   check('stub length keeps 0.01 mil', pv(null, [{ type: 'stub', x: 1, stubZ: 45, stubLen: 39.3701 }]).elements[0].stubLen, 39.37, 1e-12);
 }
 
+// 11f) Attenuator: a resistive T pad is matched both ways and loses exactly its dB (lossless line)
+{
+  const sq = (s, k) => Math.hypot(s.s11r[k], s.s11i[k]), s21 = (s, k) => Math.hypot(s.s21r[k], s.s21i[k]);
+  const run = (zIn, zOut, dB) => {
+    const P = { ...base, lossless: true, zTx: zIn, zRx: zOut };
+    const prof = Float64Array.from({ length: 500 }, (_, i) => i < 250 ? zIn : zOut);
+    const prep = E.prepare(P);
+    return E.solve(prep, E.buildCascade(prof, [{ id: 1, type: 'pad', x: 1, value: dB, zIn, zOut, count: 1, pitch: 0 }], P));
+  };
+  for (const [zi, zo, dB] of [[50, 50, 10], [50, 75, 10], [75, 50, 3], [50, 75, 0.1]]) {
+    const s = run(zi, zo, dB), want = Math.max(dB, E.padMinLoss(zi, zo));
+    let worstS11 = 0, worstS21 = 0;
+    for (const k of [0, 100, 500, 1000]) { worstS11 = Math.max(worstS11, sq(s, k)); worstS21 = Math.max(worstS21, Math.abs(20 * Math.log10(s21(s, k)) + want)); }
+    check(`pad ${zi}->${zo} ohm, ${dB} dB: matched (max |S11|)`, worstS11, 0, 1e-12);
+    check(`pad ${zi}->${zo} ohm, ${dB} dB: |S21| = -${want.toFixed(3)} dB`, worstS21, 0, 1e-9);
+  }
+  check('min-loss pad 50 -> 75 ohm is 5.72 dB', E.padMinLoss(50, 75), 5.719, 1e-3);
+  const r = E.padResistors(50, 50, 6);
+  check('6 dB, 50 ohm T pad: series 16.61 ohm', r.r1, 16.61, 0.01);
+  check('6 dB, 50 ohm T pad: shunt 66.93 ohm', r.r3, 66.93, 0.01);
+}
+
 // 12) Timing
 {
   const P = { ...base };

@@ -9,7 +9,7 @@ Everything runs in the browser from one HTML file. There is no backend; a full s
 Open `dist/index.html` in a browser, or serve the `dist/` folder with GitHub Pages.
 
 - **Paint** the profile with Draw, Push / pull, Plateau, Smooth and Erase. Short bumps are labeled with their equivalent lumped L or C.
-- **Drop in** a shunt C, series L, series R or a stub, open (a via stub) or shorted to ground. Drag the chips in the strip under the plot, set copies and pitch for periodic loading.
+- **Drop in** a shunt C, series L, series R, a stub (open, like a via stub, or shorted to ground) or a resistive attenuator (a T pad between Zin and Zout). Each element has an Enabled check for quick comparisons. Drag the chips in the strip under the plot, set copies and pitch for periodic loading.
 - **Lock** an element so it can't be dragged by accident, or **Clone** it to get a copy beside it that you can drag into place.
 - **Compare** with Data → Memory, as on a VNA: the stored curves stay on every plot as dots in the same color while solid lines follow your edits; Show/Hide memory and Clear memory sit next to it. Untick an element's Enabled check for a quick before and after. Export the current S-parameters as Touchstone text.
 - **TDR plot range** at the top of the side panel: type a range, Autoscale, or switch to a logarithmic axis. Conductor and dielectric loss can each be switched off.

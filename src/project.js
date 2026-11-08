@@ -31,8 +31,9 @@
   // impedance and series R may go from 1 mohm (a short) to 1 Mohm (an open).
   const WIDE = [0.001, 1e6];
   const ELEMENT = {
-    types: ['C', 'L', 'R', 'stub'],
-    value: { C: [0.005, 1], L: [0.01, 2], R: [0.01, 25] },     // pF, nH, ohm
+    types: ['C', 'L', 'R', 'stub', 'pad'],
+    value: { C: [0.005, 1], L: [0.01, 2], R: [0.01, 25], pad: [0.1, 60] },     // pF, nH, ohm, dB
+    padZ: [5, 500],                                                         // attenuator image impedances, ohm
     stubZ: [20, 90], stubLen: [2, 250], count: [1, 30], pitch: [0.02, 1],
   };
   const CATEGORIES = ['Basics', 'Discontinuities', 'TDR artifacts', 'Realistic channels', 'Community'];
@@ -101,6 +102,11 @@
         o.stubZ = num(e.stubZ, lim.stubZ[0], lim.stubZ[1], 45);
         o.stubLen = Math.round(num(e.stubLen, ELEMENT.stubLen[0], ELEMENT.stubLen[1], 60) * 100) / 100;   // 0.01 mil steps
         o.end = e.end === 'short' ? 'short' : 'open';
+      } else if (e.type === 'pad') {
+        // resistive attenuator: Zin faces Tx, Zout faces Rx; the engine raises the loss to the minimum-loss pad if needed
+        o.value = num(e.value, ELEMENT.value.pad[0], ELEMENT.value.pad[1], 6);
+        o.zIn = num(e.zIn, ELEMENT.padZ[0], ELEMENT.padZ[1], 50);
+        o.zOut = num(e.zOut, ELEMENT.padZ[0], ELEMENT.padZ[1], 50);
       } else {
         const r = e.type === 'R' ? lim.R : ELEMENT.value[e.type];
         o.value = num(e.value, r[0], r[1], r[0]);

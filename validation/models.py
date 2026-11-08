@@ -111,6 +111,8 @@ class Structure:
                  'enabled': e.get('enabled', True) is not False}
             if e['type'] == 'stub':
                 o.update(stubZ=e['stubZ'], stubLen=e['stubLen'], value=0, end=e.get('end', 'open'))
+            elif e['type'] == 'pad':
+                o.update(value=e['value'], zIn=e['zIn'], zOut=e['zOut'])
             else:
                 o['value'] = e['value']
             elements.append(o)
@@ -211,6 +213,9 @@ class Structure:
             return lumped.inductor(e['value'] * 1e-9)
         if t == 'R':
             return lumped.resistor(e['value'])
+        if t == 'pad':
+            r1, r3, r2, _ = pad_resistors(e['zIn'], e['zOut'], e['value'])
+            return rf.network.cascade_list([lumped.resistor(r1), lumped.shunt_resistor(r3), lumped.resistor(r2)])
         if t == 'stub':
             if e.get('end') == 'short':
                 return med(e['stubZ']).shunt_delay_short(e['stubLen'] * MIL, 'm')
@@ -243,6 +248,9 @@ class Structure:
                 e = events[ei][1]
                 if e['type'] == 'R':
                     series(e['value'])
+                elif e['type'] == 'pad':
+                    r1, r3, r2, _ = pad_resistors(e['zIn'], e['zOut'], e['value'])
+                    series(r1); shunt(1 / r3); series(r2)
                 elif e['type'] == 'stub' and e.get('end') == 'short':
                     shunt(1.0 / max(e['stubZ'] * rdcn / IN * (e['stubLen'] * MIL), 1e-15))
                 ei += 1
@@ -251,6 +259,21 @@ class Structure:
         z1, z2 = P['zTx'], P['zRx']
         den = A * z2 + B + C * z1 * z2 + D * z1
         return (A * z2 + B - C * z1 * z2 - D * z1) / den, 2 * math.sqrt(z1 * z2) / den
+
+
+def pad_min_loss(z1, z2):
+    """Least loss of a resistive pad between z1 and z2 (minimum-loss L pad), dB."""
+    r = max(z1, z2) / min(z1, z2)
+    return 20 * math.log10(math.sqrt(r) + math.sqrt(r - 1))
+
+
+def pad_resistors(z1, z2, db):
+    """Resistive T pad with image impedances z1 (Tx side), z2 (Rx side): series r1, shunt r3, series r2.
+    Written from the textbook formulas, independently of the engine's code."""
+    a = max(db, pad_min_loss(z1, z2), 1e-6)
+    k = 10 ** (a / 10)
+    r3 = 2 * math.sqrt(k * z1 * z2) / (k - 1)
+    return max(0.0, z1 * (k + 1) / (k - 1) - r3), r3, max(0.0, z2 * (k + 1) / (k - 1) - r3), a
 
 
 def quant_z(z):

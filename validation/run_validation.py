@@ -34,7 +34,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
-from models import (C0, IN, MIL, NS, Structure, frequency, paint_from_tdr,  # noqa: E402
+from models import (C0, IN, MIL, NS, Structure, frequency, pad_min_loss, paint_from_tdr,  # noqa: E402
                     profile_project, skrf_tdr)
 import microstrip  # noqa: E402
 
@@ -80,6 +80,10 @@ def cases():
                           dict(type='L', x=1.4, value=0.12), dict(type='R', x=1.4, value=0.02)])
     taper = Structure(dict(lenIn=10.0), [(2, 50), (2, 50, 40), (2, 40), (2, 40, 50), (2, 50)])
 
+    def pad_case(z_in, z_out, db):
+        return Structure(dict(lenIn=2.0, lossless=True, zTx=z_in, zRx=z_out), [(1.0, z_in), (1.0, z_out)],
+                         [dict(type='pad', x=1.0, value=db, zIn=z_in, zOut=z_out)])
+
     def on_short(r_contact, z_rx=0.001, lossless=True, stub=False):
         """A GSG probe on the short of a cal substrate, seen from the calibrated tips (experimental range):
         0.5 in of 50 ohm lead, 20 pH of tip and strip inductance, the contact resistance, then the short:
@@ -120,6 +124,15 @@ def cases():
              what='Two 2 in linear tapers around a 2 in, 40 Ω section on a 10 in line. Exercises the loss model, '
                   'the TDR on a long lossy line, and how well 500 painted cells approximate a continuous taper.',
              variants=[('lossy', taper), ('lossless', lossless(taper))], analytic=None, fine=True),
+        dict(slug='attenuator', title='Resistive attenuator pads',
+             what='Ideal resistive T pads on a 2 in line: a matched 10 dB, 50 Ω pad; a 50 to 75 Ω pad asked for 0.1 dB, '
+                  'which is held at the 5.72 dB minimum-loss pad, into a 75 Ω line and receiver; and a 6 dB pad in front '
+                  'of a 30 Ω section on a lossy line, which hides that mismatch by twice its loss.',
+             variants=[('matched 10 dB, 50 Ω, lossless', pad_case(50, 50, 10)),
+                       ('minimum-loss 50 → 75 Ω, lossless', pad_case(50, 75, 0.1)),
+                       ('lossy, 6 dB pad ahead of a 30 Ω section', Structure(dict(lenIn=2.0), [(0.8, 50), (0.4, 30), (0.8, 50)],
+                                                                          [dict(type='pad', x=0.4, value=6, zIn=50, zOut=50)]))],
+             analytic=check_pad, show=2),
         dict(slug='probe-on-short', title='GSG probe on a short standard: contact diagnosis',
              what='The experimental impedance range: 0.5 in of 50 Ω lead, 20 pH of probe-tip and strip inductance, the '
                   'contact resistance, and a short (a painted 1 mΩ section into a 1 mΩ receiver). Good contact (30 mΩ), '
@@ -238,6 +251,16 @@ def check_beatty(st, r):
             check(f'peak |S11| = 2|Γ|/(1+Γ²) = 0.6 (first peak {f_peak/1e9:.2f} GHz)', abs(peak - 0.6), 1e-3, fmt='{:.1e}', tier='X')]
 
 
+def check_pad(st, r):
+    """A resistive pad between matched lines: S11 = 0 and |S21| = its loss (raised to the minimum-loss pad)."""
+    if not st.params['lossless']:
+        return []
+    e = st.elements[0]
+    want = max(e['value'], pad_min_loss(e['zIn'], e['zOut']))
+    return [check('pad is matched: max |S11|', float(np.abs(r['s11']).max()), 1e-12, tier='X'),
+            check(f'|S21| equals the pad loss, {want:.3f} dB: max |error| (dB)', float(np.abs(db(r['s21']) + want).max()), 1e-9, tier='X')]
+
+
 def check_short(st, r):
     """On a lossless line, the TDR after the short settles at the contact resistance plus the 1 mohm short
     (a lifted probe reads as an open)."""
@@ -333,7 +356,7 @@ def run_case(case, quick):
                             max(abs(r['s11'][0] - s11dc), abs(r['s21'][0] - s21dc)), LIM['dc'], tier='P'))
         checks.append(check('passivity: max singular value of S − 1', sigma_max(r['s11'], r['s21'], r['s22']).max() - 1,
                             LIM['passive'], tier='P'))
-        has_r = any(e['type'] == 'R' for e in st.elements)
+        has_r = any(e['type'] in ('R', 'pad') for e in st.elements)   # resistors and pads dissipate
         if P['lossless'] and not has_r:
             e1 = np.abs(np.abs(r['s11']) ** 2 + np.abs(r['s21']) ** 2 - 1).max()
             e2 = np.abs(np.abs(r['s22']) ** 2 + np.abs(r['s21']) ** 2 - 1).max()
@@ -717,6 +740,11 @@ NOTES = {
                       'short with quarter-wave resonances the real contact does not have. The traced profile also '
                       'cannot say where the resistance sits in the loop (signal or ground tips), or show the 20 pH of '
                       'tip inductance, which moves the falling edge by only about L/Z₀ ≈ 0.4 ps.',
+    'attenuator': 'Shown and painted here: the 6 dB pad ahead of the 30 Ω section. The pad itself is invisible in the '
+                  'TDR, because it is matched, and the 30 Ω section behind it shows as a dip to only about 45 Ω: its '
+                  'reflection (Γ = −0.25) comes back through the pad twice, 12 dB weaker. Painting that TDR gives a '
+                  'plain line with a shallow 45 Ω dip, so the painted model has neither the pad’s 6 dB of loss nor the '
+                  'real mismatch. A pad is the clearest case of what a TDR cannot see: loss that does not reflect.',
     'lossy-taper': 'Long, smooth tapers are where painting works best: the features are far wider than the TDR’s '
                    'spatial resolution. The remaining error comes from the conductor-loss creep on the 10 in line, '
                    'which the painted profile takes for a slowly rising impedance.',

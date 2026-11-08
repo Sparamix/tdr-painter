@@ -84,15 +84,8 @@
        "tier": "B"
       },
       {
-       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 on a 10\u00d7 finer frequency grid|",
-       "value": 0.0003377508119278838,
-       "limit": 0.003,
-       "ok": true,
-       "tier": "B"
-      },
-      {
        "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
-       "text": "max |\u0394\u03c1| vs engine 4.1e-03; on the 10\u00d7 finer grid, scikit-rf\u2019s step_response is off by 4.4e-03",
+       "text": "max |\u0394\u03c1| vs engine 4.1e-03",
        "ok": null,
        "tier": "B"
       }
@@ -274,15 +267,8 @@
        "tier": "B"
       },
       {
-       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 on a 10\u00d7 finer frequency grid|",
-       "value": 0.0007768603637144378,
-       "limit": 0.003,
-       "ok": true,
-       "tier": "B"
-      },
-      {
        "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
-       "text": "max |\u0394\u03c1| vs engine 3.1e-04; on the 10\u00d7 finer grid, scikit-rf\u2019s step_response is off by 1.0e-03",
+       "text": "max |\u0394\u03c1| vs engine 3.1e-04",
        "ok": null,
        "tier": "B"
       }
@@ -457,15 +443,8 @@
        "tier": "B"
       },
       {
-       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 on a 10\u00d7 finer frequency grid|",
-       "value": 0.0004439681935908286,
-       "limit": 0.003,
-       "ok": true,
-       "tier": "B"
-      },
-      {
        "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
-       "text": "max |\u0394\u03c1| vs engine 8.7e-04; on the 10\u00d7 finer grid, scikit-rf\u2019s step_response is off by 7.5e-04",
+       "text": "max |\u0394\u03c1| vs engine 8.7e-04",
        "ok": null,
        "tier": "B"
       }
@@ -647,15 +626,8 @@
        "tier": "B"
       },
       {
-       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 on a 10\u00d7 finer frequency grid|",
-       "value": 0.0004725098653751772,
-       "limit": 0.003,
-       "ok": true,
-       "tier": "B"
-      },
-      {
        "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
-       "text": "max |\u0394\u03c1| vs engine 4.2e-04; on the 10\u00d7 finer grid, scikit-rf\u2019s step_response is off by 8.3e-04",
+       "text": "max |\u0394\u03c1| vs engine 4.2e-04",
        "ok": null,
        "tier": "B"
       }
@@ -721,15 +693,8 @@
        "tier": "B"
       },
       {
-       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 on a 10\u00d7 finer frequency grid|",
-       "value": 0.00042216959868171533,
-       "limit": 0.003,
-       "ok": true,
-       "tier": "B"
-      },
-      {
        "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
-       "text": "max |\u0394\u03c1| vs engine 2.8e-04; on the 10\u00d7 finer grid, scikit-rf\u2019s step_response is off by 4.1e-04",
+       "text": "max |\u0394\u03c1| vs engine 2.8e-04",
        "ok": null,
        "tier": "B"
       }
@@ -795,15 +760,8 @@
        "tier": "B"
       },
       {
-       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 on a 10\u00d7 finer frequency grid|",
-       "value": 0.00040823663387782455,
-       "limit": 0.003,
-       "ok": true,
-       "tier": "B"
-      },
-      {
        "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
-       "text": "max |\u0394\u03c1| vs engine 2.9e-04; on the 10\u00d7 finer grid, scikit-rf\u2019s step_response is off by 4.5e-04",
+       "text": "max |\u0394\u03c1| vs engine 2.9e-04",
        "ok": null,
        "tier": "B"
       }
@@ -911,15 +869,8 @@
        "tier": "B"
       },
       {
-       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 on a 10\u00d7 finer frequency grid|",
-       "value": 0.0020351007649492547,
-       "limit": 0.003,
-       "ok": true,
-       "tier": "B"
-      },
-      {
        "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
-       "text": "max |\u0394\u03c1| vs engine 5.0e-03; on the 10\u00d7 finer grid, scikit-rf\u2019s step_response is off by 5.9e-03",
+       "text": "max |\u0394\u03c1| vs engine 5.0e-03",
        "ok": null,
        "tier": "B"
       }
@@ -1019,6 +970,263 @@
      "dc_s21_db": [
       -0.16269811286317035,
       -0.1583678129119809
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "attenuator",
+   "title": "Resistive attenuator pads",
+   "variants": [
+    {
+     "variant": "matched 10 dB, 50 \u03a9, lossless",
+     "checks": [
+      {
+       "name": "S11: max |engine \u2212 scikit-rf|",
+       "value": 8.58623536303297e-14,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S21: max |engine \u2212 scikit-rf|",
+       "value": 1.0672894787750999e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S22: max |engine \u2212 scikit-rf|",
+       "value": 1.8758361452897126e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "scikit-rf reference is reciprocal: max |S12 \u2212 S21|",
+       "value": 5.848519882641728e-14,
+       "limit": 1e-10,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "DC: |S11(0) \u2212 closed form|, |S21(0) \u2212 closed form|",
+       "value": 0.0,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "passivity: max singular value of S \u2212 1",
+       "value": -0.6837722339831618,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "causality: S21 impulse before the light-speed front / peak",
+       "value": 2.697126786887115e-05,
+       "limit": 0.0003,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "pad is matched: max |S11|",
+       "value": 2.7015812212674275e-16,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "X"
+      },
+      {
+       "name": "|S21| equals the pad loss, 10.000 dB: max |error| (dB)",
+       "value": 7.105427357601002e-15,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "X"
+      },
+      {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 scikit-rf| (exact DC, same integration start)",
+       "value": 4.366692367426432e-16,
+       "limit": 0.001,
+       "ok": true,
+       "tier": "B"
+      },
+      {
+       "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
+       "text": "max |\u0394\u03c1| vs engine 2.1e-15",
+       "ok": null,
+       "tier": "B"
+      }
+     ]
+    },
+    {
+     "variant": "minimum-loss 50 \u2192 75 \u03a9, lossless",
+     "checks": [
+      {
+       "name": "S11: max |engine \u2212 scikit-rf|",
+       "value": 8.556564776602212e-14,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S21: max |engine \u2212 scikit-rf|",
+       "value": 3.748711924401254e-14,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S22: max |engine \u2212 scikit-rf|",
+       "value": 5.181018634834149e-14,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "scikit-rf reference is reciprocal: max |S12 \u2212 S21|",
+       "value": 1.7685878046281193e-14,
+       "limit": 1e-10,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "DC: |S11(0) \u2212 closed form|, |S21(0) \u2212 closed form|",
+       "value": 0.0,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "passivity: max singular value of S \u2212 1",
+       "value": -0.4823619097949581,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "causality: S21 impulse before the light-speed front / peak",
+       "value": 2.697126786886326e-05,
+       "limit": 0.0003,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "pad is matched: max |S11|",
+       "value": 5.407677616774701e-16,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "X"
+      },
+      {
+       "name": "|S21| equals the pad loss, 5.719 dB: max |error| (dB)",
+       "value": 7.993605777301127e-15,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "X"
+      },
+      {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 scikit-rf| (exact DC, same integration start)",
+       "value": 3.0873346511865953e-16,
+       "limit": 0.001,
+       "ok": true,
+       "tier": "B"
+      },
+      {
+       "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
+       "text": "max |\u0394\u03c1| vs engine 1.1e-15",
+       "ok": null,
+       "tier": "B"
+      }
+     ]
+    },
+    {
+     "variant": "lossy, 6 dB pad ahead of a 30 \u03a9 section",
+     "checks": [
+      {
+       "name": "S11: max |engine \u2212 scikit-rf|",
+       "value": 1.4268985193423664e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S21: max |engine \u2212 scikit-rf|",
+       "value": 3.507086342169473e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "S22: max |engine \u2212 scikit-rf|",
+       "value": 3.132260179769553e-13,
+       "limit": 1e-09,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "scikit-rf reference is reciprocal: max |S12 \u2212 S21|",
+       "value": 5.4486534948315775e-15,
+       "limit": 1e-10,
+       "ok": true,
+       "tier": "A"
+      },
+      {
+       "name": "DC: |S11(0) \u2212 closed form|, |S21(0) \u2212 closed form|",
+       "value": 3.9968028886505635e-15,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "passivity: max singular value of S \u2212 1",
+       "value": -0.34074545728134653,
+       "limit": 1e-12,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "causality: S21 impulse before the light-speed front / peak",
+       "value": 2.448405936903302e-05,
+       "limit": 0.0003,
+       "ok": true,
+       "tier": "P"
+      },
+      {
+       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 scikit-rf| (exact DC, same integration start)",
+       "value": 8.955064045042434e-06,
+       "limit": 0.001,
+       "ok": true,
+       "tier": "B"
+      },
+      {
+       "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
+       "text": "max |\u0394\u03c1| vs engine 1.1e-04",
+       "ok": null,
+       "tier": "B"
+      }
+     ]
+    }
+   ],
+   "paint_round_trip": [
+    {
+     "source": "50 GHz TDR",
+     "agree_to": 100000000.0,
+     "max_ds21_db_10g": 7.031203134268858,
+     "max_ds21_db": 7.031203134268858,
+     "dc_s21_db": [
+      -0.034257434212675054,
+      -6.031920334337988
+     ]
+    },
+    {
+     "source": "110 GHz TDR",
+     "agree_to": 100000000.0,
+     "max_ds21_db_10g": 7.0294069687767395,
+     "max_ds21_db": 7.0294069687767395,
+     "dc_s21_db": [
+      -0.03421493557564677,
+      -6.031920334337988
      ]
     }
    ]
@@ -1321,15 +1529,8 @@
        "tier": "B"
       },
       {
-       "name": "TDR: max |\u03c1 engine \u2212 \u03c1 on a 10\u00d7 finer frequency grid|",
-       "value": 0.0008832684661578272,
-       "limit": 0.003,
-       "ok": true,
-       "tier": "B"
-      },
-      {
        "name": "TDR: scikit-rf step_response as a user runs it (linear DC extrapolation)",
-       "text": "max |\u0394\u03c1| vs engine 3.6e-04; on the 10\u00d7 finer grid, scikit-rf\u2019s step_response is off by 1.0e-03",
+       "text": "max |\u0394\u03c1| vs engine 3.6e-04",
        "ok": null,
        "tier": "B"
       }

@@ -45,6 +45,7 @@
    "count": 1,
    "pitch": 0.15,
    "locked": false,
+   "enabled": true,
    "value": 0.02
   },
   {
@@ -53,6 +54,7 @@
    "count": 1,
    "pitch": 0.15,
    "locked": false,
+   "enabled": true,
    "value": 0.5
   }
  ],
