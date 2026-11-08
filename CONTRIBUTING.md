@@ -18,7 +18,7 @@ The easiest way to help is a new **example**: a small channel that teaches one S
 
    `category` is one of `Basics`, `Discontinuities`, `TDR artifacts`, `Realistic channels` or `Community`. The note shows above the plot when the example loads, so write it for the person looking at the screen: name the feature, say where it is, and suggest one thing to change. Keep it under 600 characters.
 4. Save it as `examples/NN-short-slug.json`. The two-digit prefix sets the order in the menu; pick a free number in your category's range (10s Basics, 20s Discontinuities, 30s TDR artifacts, 40s Realistic channels, 50s and up Community).
-5. Run `npm test` (Node 18 or later, no installs). `test/examples.test.js` opens your file with the page's own parser and fails if any value is out of range, the note is missing, or the simulated S-parameters are not passive. Then open a [pull request](https://github.com/Sparamix/tdr-painter/pulls).
+5. Run `npm test` (Node 20.12 or later, no installs). `test/examples.test.js` opens your file with the page's own parser and fails if any value is out of range, the note is missing, or the simulated S-parameters are not passive. Then open a [pull request](https://github.com/Sparamix/tdr-painter/pulls).
 
 ## Ground rules for examples
 

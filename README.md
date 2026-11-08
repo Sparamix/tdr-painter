@@ -154,7 +154,7 @@ A full solve plus TDR takes milliseconds, so every plot follows the mouse as you
 
 ```sh
 npm run build                    # src/ + fonts/ -> dist/index.html and dist/tdr-painter.artifact.html
-npm test                         # build, engine, .tdrp container, examples and privacy checks (Node 18+, no dependencies)
+npm test                         # build, engine, .tdrp container, examples and privacy checks (Node 20.12+, no dependencies)
 python test/ui_smoke.py          # optional: drives the page in Chromium (needs Playwright)
 python test/skrf_crosscheck.py   # optional: quick cross-check against scikit-rf
 npm run validate                 # optional: the validation suite and report (pip install -r validation/requirements.txt)

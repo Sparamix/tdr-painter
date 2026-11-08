@@ -20,6 +20,9 @@
     "url": "https://github.com/Sparamix/tdr-painter/issues"
   },
   "private": true,
+  "engines": {
+    "node": ">=20.12"
+  },
   "scripts": {
     "build": "node build.js",
     "test": "node build.js && node test/engine.test.js && node test/tdrp.test.js && node test/examples.test.js && node test/privacy.test.js",
