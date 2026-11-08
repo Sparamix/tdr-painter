@@ -68,6 +68,9 @@ async def main():
         await drag(x, y, 120)
         check("locked chip does not drag", abs(await st("__tdrState.elems[0].x") - x1) < 1e-9)
         check("locked chip still selects", await st("__tdrState.selId") == first)
+        check("lock freezes every value and Remove, but not Enabled or Clone",
+              await pg.is_disabled("#edValN") and await pg.is_disabled("#edXN") and await pg.is_disabled("#edCntN")
+              and await pg.is_disabled("#edDel") and not await pg.is_disabled("#edEn") and not await pg.is_disabled("#edClone"))
         # clone: new unlocked copy beside the source, selected, same values
         n_before = await st("__tdrState.elems.length")
         await pg.click("#edClone")

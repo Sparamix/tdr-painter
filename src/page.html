@@ -1082,8 +1082,8 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     const sp = SPEC[e.type];
     const L = state.P.lenIn;
     const lockBtn = e.locked
-      ? `<button id="edLock" aria-pressed="true" title="Position is locked. Unlock to move this element.">${ICON.locked}Unlock</button>`
-      : `<button id="edLock" aria-pressed="false" title="Lock the position so it can't be dragged by accident">${ICON.unlocked}Lock</button>`;
+      ? `<button id="edLock" aria-pressed="true" title="Locked: values and position can't change. Unlock to edit or move this element.">${ICON.locked}Unlock</button>`
+      : `<button id="edLock" aria-pressed="false" title="Lock every value and the position, so nothing changes by accident">${ICON.unlocked}Lock</button>`;
     const title = e.type === 'stub' && e.end === 'short' ? 'Shorted stub (to ground)' : sp.name;
     const on = e.enabled !== false;
     let html = `<div class="ed-head${on ? '' : ' off'}" id="edHead">` +
@@ -1169,10 +1169,15 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   function syncEditor() {
     const e = state.elems.find(e => e.id === state.selId); if (!e) return;
     editorShows.forEach(f => f());
+    // Lock freezes every value and the position; Enabled, Clone and Unlock stay available
+    const box = $('#editor');
+    box.querySelectorAll('.ed-grid input, .ed-grid [data-end]').forEach(inp => {
+      inp.disabled = !!e.locked; inp.title = e.locked ? 'Locked: unlock to change' : '';
+    });
+    const del = $('#edDel');
+    if (del) { del.disabled = !!e.locked; del.title = e.locked ? 'Locked: unlock to remove' : ''; }
     const pitch = $('#edPitch'), pitchN = $('#edPitchN');
-    if (pitch) { pitch.disabled = pitchN.disabled = e.count <= 1; }
-    const xr = $('#edX'), xn = $('#edXN');
-    if (xr) { xr.disabled = xn.disabled = !!e.locked; xr.title = xn.title = e.locked ? 'Unlock to move' : ''; }
+    if (pitch && e.count <= 1) { pitch.disabled = pitchN.disabled = true; }
     const v = (C0 / Math.sqrt(state.P.Dk)) / IN; // in/s
     const z0 = state.P.z0;
     let hint = '';
