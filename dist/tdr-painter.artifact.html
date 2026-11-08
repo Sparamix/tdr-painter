@@ -160,6 +160,7 @@ button.nudge { animation: nudge 0.22s ease-in-out 2; }
 .exnote-by { font-size: 12px; color: var(--fg-3); }
 .exnote p { margin: 0; color: var(--fg-2); max-width: 110ch; }
 .foot { color: var(--fg-3); font-size: 12px; font-family: var(--font-data); }
+.ed-common { display: flex; flex-direction: column; gap: 6px; border-top: 1px dashed var(--line); padding-top: 8px; }
 .ed-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px 18px; }
 .pair { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; }
 .pair label { font-size: 12.5px; color: var(--fg-2); grid-column: 1 / -1; }
@@ -1868,9 +1869,11 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     } else if (e.type === 'R' && wide) html += pairHTML('edVal', sp.v.label + EXP_MARK, sp.v.unit, lim.R[0], lim.R[1], 0.01, true);
     else html += pairHTML('edVal', sp.v.label, sp.v.unit, sp.v.min, sp.v.max, sp.v.step);
     const lf = LU().f, lu = LU().u, mm = metric();
-    html += pairHTML('edX', 'Position', lu, 0, +(L * lf).toFixed(3), mm ? 0.1 : 0.005) + pairHTML('edCnt', 'Copies #', '', 1, 30, 1) +
+    // placement settings every element shares: always the same row, in the same order
+    html += '</div><div class="ed-common"><span class="label-sm">Placement</span><div class="ed-grid">' +
+      pairHTML('edX', 'Position', lu, 0, +(L * lf).toFixed(3), mm ? 0.1 : 0.005) + pairHTML('edCnt', 'Copies #', '', 1, 30, 1) +
       pairHTML('edPitch', 'Copies pitch', lu, +(0.02 * lf).toFixed(3), +(1 * lf).toFixed(3), mm ? 0.1 : 0.005);
-    html += '</div>';
+    html += '</div></div>';
     if (wide && (e.type === 'R' || e.type === 'stub')) html += '<p class="note exp-note"><span class="exp">* Experimental range: 1 mΩ to 1 MΩ.</span></p>';
     box.innerHTML = html;
     if (e.type === 'stub') {
