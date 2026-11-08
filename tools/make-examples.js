@@ -65,7 +65,7 @@ example({
 });
 example({
   slug: 'painted-taper', order: 12, category: 'Basics', name: 'Painted taper 50 → 40 → 50 Ω',
-  note: 'Gradual transitions reflect much less at high frequency than abrupt ones. Pin reference, then use Plateau with a narrow Width to paint the same 40 Ω dip with sharp edges, and compare S11 above a few GHz.',
+  note: 'Gradual transitions reflect much less at high frequency than abrupt ones. Store it with Data → Memory, then use Plateau with a small Brush size to paint the same 40 Ω dip with sharp edges, and compare S11 above a few GHz.',
   paint: (t) => t.plateau(0.4, 1.6, 40, 0.4),
 });
 example({
@@ -87,7 +87,7 @@ example({
 });
 example({
   slug: 'compensated-pad', order: 22, category: 'Discontinuities', name: 'Pad compensated with series L',
-  note: 'A 0.15 pF pad flanked by two 0.19 nH sections behaves like a short 50 Ω line, because √(L/C) ≈ Z₀. Pin reference, then remove both L chips to see how much the compensation buys in return loss.',
+  note: 'A 0.15 pF pad flanked by two 0.19 nH sections behaves like a short 50 Ω line, because √(L/C) ≈ Z₀. Store it with Data → Memory, then untick Enabled on both L chips to see how much the compensation buys in return loss.',
   elements: [L(0.98, 0.19), C(1.0, 0.15), L(1.02, 0.19)],
 });
 example({
@@ -152,7 +152,7 @@ const onShort = (rContact) => ({
 });
 example({
   slug: 'probe-short-good', order: 44, category: 'Realistic channels', name: 'GSG probe on a short, good contact',
-  note: 'A probe landed on the short of a cal substrate, seen from the calibrated tips: a lossless 50 Ω lead, 20 pH of tip and strip inductance, a 30 mΩ contact, and the short (a 1 mΩ section into a 1 mΩ Rx). On the log axis the TDR drops from 50 Ω to about 30 mΩ and stays there; on a linear axis it is just zero. Kaiser β 6 keeps the window ringing near ±4 mΩ. Pin this, then open the bad-contact example. Uses the experimental impedance range (gear menu).',
+  note: 'A probe landed on the short of a cal substrate, seen from the calibrated tips: a lossless 50 Ω lead, 20 pH of tip and strip inductance, a 30 mΩ contact, and the short (a 1 mΩ section into a 1 mΩ Rx). On the log axis the TDR drops from 50 Ω to about 30 mΩ and stays there; on a linear axis it is just zero. Kaiser β 6 keeps the window ringing near ±4 mΩ. Store it with Data → Memory, then open the bad-contact example. Uses the experimental impedance range (gear menu).',
   ...onShort(0.03),
 });
 example({

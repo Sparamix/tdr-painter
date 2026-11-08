@@ -64,7 +64,7 @@
  "example": {
   "category": "Realistic channels",
   "order": 44,
-  "note": "A probe landed on the short of a cal substrate, seen from the calibrated tips: a lossless 50 Ω lead, 20 pH of tip and strip inductance, a 30 mΩ contact, and the short (a 1 mΩ section into a 1 mΩ Rx). On the log axis the TDR drops from 50 Ω to about 30 mΩ and stays there; on a linear axis it is just zero. Kaiser β 6 keeps the window ringing near ±4 mΩ. Pin this, then open the bad-contact example. Uses the experimental impedance range (gear menu).",
+  "note": "A probe landed on the short of a cal substrate, seen from the calibrated tips: a lossless 50 Ω lead, 20 pH of tip and strip inductance, a 30 mΩ contact, and the short (a 1 mΩ section into a 1 mΩ Rx). On the log axis the TDR drops from 50 Ω to about 30 mΩ and stays there; on a linear axis it is just zero. Kaiser β 6 keeps the window ringing near ±4 mΩ. Store it with Data → Memory, then open the bad-contact example. Uses the experimental impedance range (gear menu).",
   "author": "TDR Painter"
  }
 }

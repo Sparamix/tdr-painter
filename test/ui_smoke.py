@@ -176,6 +176,19 @@ async def main():
         check("out-of-range values are clamped", clamped == {"Dk": 6, "len": 0.25, "zTx": 50, "el": [["C", 0.25, 1, 30]]}, clamped)
         tmp.unlink()
 
+        # ---- memory traces: Data → Memory, Hide/Show, Clear ----
+        await pg.select_option("#preset", label="Clean 50 Ω line")
+        check("memory buttons start disabled", await pg.is_disabled("#memShow") and await pg.is_disabled("#unpin"))
+        await pg.click("#pin")
+        check("Data → Memory stores and shows the memory traces",
+              await st("!!__tdrState.ref && __tdrState.memShow") and await pg.is_visible("#lgRefT") and not await pg.is_disabled("#unpin"))
+        await pg.click("#memShow")
+        check("Hide memory hides them and offers Show memory",
+              not await pg.is_visible("#lgRefT") and (await pg.inner_text("#memShow")).strip() == "Show memory" and await st("!!__tdrState.ref"))
+        await pg.click("#memShow")
+        await pg.click("#unpin")
+        check("Clear memory discards them", await st("__tdrState.ref") is None and await pg.is_disabled("#memShow"))
+
         # ---- conductor and dielectric loss switch separately ----
         await pg.select_option("#preset", label="Clean 50 Ω line")
         await pg.check("#p_condLossless")

@@ -846,7 +846,7 @@
  "example": {
   "category": "Basics",
   "order": 12,
-  "note": "Gradual transitions reflect much less at high frequency than abrupt ones. Pin reference, then use Plateau with a narrow Width to paint the same 40 Ω dip with sharp edges, and compare S11 above a few GHz.",
+  "note": "Gradual transitions reflect much less at high frequency than abrupt ones. Store it with Data → Memory, then use Plateau with a small Brush size to paint the same 40 Ω dip with sharp edges, and compare S11 above a few GHz.",
   "author": "TDR Painter"
  }
 }

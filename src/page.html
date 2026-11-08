@@ -205,8 +205,11 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       </div>
       <label class="label-sm" for="preset">Example</label>
       <select id="preset" aria-label="Load an example"></select>
-      <button id="pin" title="Keep the current curves as a dotted reference">Pin reference</button>
-      <button id="unpin" class="ghost" disabled>Clear reference</button>
+      <div class="seg" role="group" aria-label="Memory trace">
+        <button id="pin" title="Store the current curves in memory; they stay on every plot as dots, like Data→Memory on a VNA">Data → Memory</button>
+        <button id="memShow" class="ghost" disabled title="Show or hide the memory traces">Hide memory</button>
+        <button id="unpin" class="ghost" disabled title="Discard the memory traces">Clear memory</button>
+      </div>
       <button id="gear" class="gear" aria-haspopup="dialog" aria-expanded="false" aria-controls="gearPanel" aria-label="Settings" title="Settings: experimental options"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-dasharray="2.16 2.16"/><circle cx="8" cy="8" r="4.1" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/></svg><span class="dot" id="gearDot" hidden></span></button>
     </div>
   </header>
@@ -264,7 +267,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
         <div class="legend">
           <span><i style="background:var(--ink)"></i>Painted profile Z(x)</span>
           <span><i style="background:var(--refl)"></i>TDR a scope would show (from S11)</span>
-          <span id="lgRefT" hidden><i class="dots" style="--dc:var(--refl)"></i>Pinned TDR</span>
+          <span id="lgRefT" hidden><i class="dots" style="--dc:var(--refl)"></i>Memory TDR</span>
         </div>
         <div class="readout" id="tread"></div>
         <div class="editor" id="editor"></div>
@@ -274,12 +277,12 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
         <div class="card">
           <h3>Return loss <small>dB(S11), dB(S22)</small></h3>
           <canvas id="cRL" aria-label="Return loss versus frequency"></canvas>
-          <div class="legend"><span><i style="background:var(--refl)"></i>S11 (Tx side)</span><span><i class="dash" style="--dc:var(--port2)"></i>S22 (Rx side, dashed)</span><span class="lgRef" hidden><i class="dots" style="--dc:var(--refl)"></i>Pinned S11</span></div>
+          <div class="legend"><span><i style="background:var(--refl)"></i>S11 (Tx side)</span><span><i class="dash" style="--dc:var(--port2)"></i>S22 (Rx side, dashed)</span><span class="lgRef" hidden><i class="dots" style="--dc:var(--refl)"></i>Memory S11</span></div>
         </div>
         <div class="card">
           <h3>Insertion loss <small>dB(S21) and its fit</small></h3>
           <canvas id="cIL" aria-label="Insertion loss versus frequency"></canvas>
-          <div class="legend"><span><i style="background:var(--trans)"></i>S21</span><span><i class="dash" style="--dc:var(--fg-3)"></i>Fit a0 + a1√f + a2·f + a4·f²</span><span class="lgRef" hidden><i class="dots" style="--dc:var(--trans)"></i>Pinned S21</span></div>
+          <div class="legend"><span><i style="background:var(--trans)"></i>S21</span><span><i class="dash" style="--dc:var(--fg-3)"></i>Fit a0 + a1√f + a2·f + a4·f²</span><span class="lgRef" hidden><i class="dots" style="--dc:var(--trans)"></i>Memory S21</span></div>
         </div>
         <div class="card">
           <h3>Where the power goes <small>|S21|² + |S11|² + absorbed = 1</small></h3>
@@ -289,7 +292,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
         <div class="card">
           <h3>Insertion loss deviation <small>dB(S21) minus fit</small></h3>
           <canvas id="cILD" aria-label="Insertion loss deviation versus frequency"></canvas>
-          <div class="legend"><span><i style="background:var(--trans)"></i>ILD (extra loss points down)</span><span class="lgRef" hidden><i class="dots" style="--dc:var(--trans)"></i>Pinned ILD</span></div>
+          <div class="legend"><span><i style="background:var(--trans)"></i>ILD (extra loss points down)</span><span class="lgRef" hidden><i class="dots" style="--dc:var(--trans)"></i>Memory ILD</span></div>
         </div>
       </div>
       <div class="readout" id="fread"></div>
@@ -335,7 +338,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     elems: [], nextId: 1, selId: null,
     tool: 'draw', brushMil: 60,
     zMin: 30, zMax: 70, zLog: false, fitNext: false,
-    ref: null, undo: [],
+    ref: null, memShow: true, undo: [],
     cursorF: null, hover: null,
     drag: null, plateau: null, projectName: '',
   };
@@ -647,7 +650,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     }
     ctx.restore();
     // reference TDR
-    if (state.ref) pinned(ctx, F, state.ref.tx, state.ref.tz, TK.refl);
+    if (state.ref && state.memShow) pinned(ctx, F, state.ref.tx, state.ref.tz, TK.refl);
     // painted fill + line
     ctx.save();
     ctx.beginPath(); ctx.rect(F.x0, F.y0, F.x1 - F.x0, F.y1 - F.y0); ctx.clip();
@@ -803,7 +806,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   function drawFreq() {
     if (!R) return;
     const fG = Array.from(R.f, v => v / 1e9);
-    const ref = state.ref;
+    const ref = state.memShow ? state.ref : null;
     // return loss
     let [lo] = minmax(R.s11db, 1); const [lo2] = minmax(R.s22db, 1); lo = Math.min(lo, lo2);
     if (ref) lo = Math.min(lo, minmax(ref.s11db, 1)[0]);
@@ -1187,16 +1190,20 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     }
   }
   sel.addEventListener('change', () => loadExample(+sel.value));
+  // memory traces, as on a VNA: Data → Memory stores, Show memory toggles, Clear memory discards
+  function syncMem() {
+    const has = !!state.ref, show = has && state.memShow;
+    $('#unpin').disabled = !has; $('#memShow').disabled = !has;
+    $('#memShow').textContent = state.memShow ? 'Hide memory' : 'Show memory';
+    $('#lgRefT').hidden = !show; document.querySelectorAll('.lgRef').forEach(x => x.hidden = !show);
+  }
   $('#pin').addEventListener('click', () => {
     if (!R) return;
     state.ref = { f: Array.from(R.f, v => v / 1e9), s11db: R.s11db.slice(), s21db: R.s21db.slice(), ild: R.ild.slice(), tx: R.tx.slice(), tz: R.tz.slice() };
-    $('#unpin').disabled = false; $('#lgRefT').hidden = false; document.querySelectorAll('.lgRef').forEach(x => x.hidden = false);
-    schedule(true);
+    state.memShow = true; syncMem(); schedule(true);
   });
-  $('#unpin').addEventListener('click', () => {
-    state.ref = null; $('#unpin').disabled = true; $('#lgRefT').hidden = true; document.querySelectorAll('.lgRef').forEach(x => x.hidden = true);
-    schedule(true);
-  });
+  $('#memShow').addEventListener('click', () => { state.memShow = !state.memShow; syncMem(); schedule(true); });
+  $('#unpin').addEventListener('click', () => { state.ref = null; state.memShow = true; syncMem(); schedule(true); });
 
   /* ---------- setup rail ---------- */
   const GROUPS = [
