@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.1 (2026-11-07)
+
+- Element editor: Remove has a trash icon; the Enabled check sits before the element's symbol and greys it out when off; Lock now freezes every value and Remove, not only the position (Enabled and Clone stay available); Position, Copies # and Copies pitch sit in a shared Placement row, in the same place for every element.
+- Shift-click a side-panel arrow to send that panel to the top or the bottom.
+- The memory buttons moved from the header to just above the TDR panel, right-aligned.
+- `ROADMAP.md` lists future features, starting with a design for a TDR rise-time setting.
+
 ## 0.8.0 (2026-11-07)
 
 - **Attenuator** drop-in: an ideal resistive T pad with Zin (Tx side), Zout (Rx side) and loss in dB, held at or above the minimum-loss pad when Zin and Zout differ. Validated against scikit-rf resistors and the closed form.
