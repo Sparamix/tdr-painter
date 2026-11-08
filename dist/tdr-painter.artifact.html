@@ -1697,9 +1697,9 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     stub: { name: 'Open stub (via stub)', glyph: 'S' },
   };
   // log: the slider moves in decades (for ranges like 1 mohm to 1 Mohm); the number box still takes ohms
-  function pairHTML(id, label, unit, min, max, step, log) {
+  function pairHTML(id, label, unit, min, max, step, log, tip) {
     const rr = log ? `min="${Math.log10(min)}" max="${Math.log10(max)}" step="0.01" data-log="1"` : `min="${min}" max="${max}" step="${step}"`;
-    return `<div class="pair"><label for="${id}">${label}</label><input type="range" id="${id}" ${rr}>` +
+    return `<div class="pair"><label for="${id}"${tip ? ` title="${tip}"` : ''}>${label}</label><input type="range" id="${id}" ${rr}>` +
       `<span class="num"><input type="number" id="${id}N" min="${min}" max="${max}" step="${log ? 'any' : step}" aria-label="${label}"><span class="unit">${unit}</span></span></div>`;
   }
   function bindPair(id, get, set, opts) {
@@ -1878,9 +1878,9 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
 
   /* ---------- setup rail ---------- */
   const GROUPS = [
-    { title: 'Line', items: [
+    { title: 'Transmission line', master: true, items: [
       { k: 'lenIn', label: 'Length', unit: 'in', min: 0.25, max: 10, step: 0.05 },
-      { k: 'z0', label: 'Line impedance (Flatten and Erase level)', unit: 'Ω', min: 20, max: 120, step: 0.5 },
+      { k: 'z0', label: 'Line Z₀', tip: 'The impedance Reset profile and Erase paint back to, and the line the loss settings describe', unit: 'Ω', min: 20, max: 120, step: 0.5 },
     ] },
     { title: 'Dielectric, Djordjevic-Sarkar', loss: { k: 'dielLossless', label: 'Lossless dielectric (Df = 0)' }, note: 'Defaults: Megtron 6 R-5775(N) datasheet point, Dk 3.35 and Df 0.004 at 12 GHz.', items: [
       { k: 'Dk', label: 'Dk at f_ref', unit: '', min: 1, max: 6, step: 0.01 },
@@ -1920,8 +1920,9 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       if (g.note) html += `<p class="note">${g.note}${g.title === 'Ports' && wide ? ' <span class="exp">Experimental range: 1 mΩ to 1 MΩ.</span>' : ''}</p>`;
       g.items.forEach(it => {
         html += wide && isPort(it.k) ? pairHTML('p_' + it.k, it.label, it.unit, portLim[0], portLim[1], it.step, true)
-          : pairHTML('p_' + it.k, it.label, it.unit, it.min, it.max, it.step);
+          : pairHTML('p_' + it.k, it.label, it.unit, it.min, it.max, it.step, false, it.tip);
       });
+      if (g.master) html += `<label class="check"><input type="checkbox" id="p_lossless"> Lossless transmission line (no conductor or dielectric loss)</label>`;
       if (g.title === 'Ports' && wide) html += `<div class="inline quick" role="group" aria-label="Set the Rx termination"><span class="note">Rx</span>` +
         `<button id="rxShort" title="Rx = 1 mΩ: a short, like a probe landed on the short standard">Short</button>` +
         `<button id="rxOpen" title="Rx = 1 MΩ: an open, like a lifted probe">Open</button>` +
@@ -1946,6 +1947,11 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       const cb = $('#p_' + g.loss.k);
       cb.addEventListener('change', () => { state.P[g.loss.k] = cb.checked; state.P.lossless = !!(state.P.condLossless && state.P.dielLossless); syncLoss(); schedule(); });
     });
+    $('#p_lossless').addEventListener('change', (ev) => {
+      const on = ev.target.checked;
+      state.P.condLossless = state.P.dielLossless = state.P.lossless = on;
+      syncLoss(); schedule();
+    });
     $('#optLog').addEventListener('change', (ev) => { pushUndo(true); state.zLog = ev.target.checked; autoRange(false); schedule(); });
     syncLoss();
     $('#zMin').addEventListener('change', (ev) => { const v = +ev.target.value; if (rangeOk(v, state.zMax)) state.zMin = v; syncRange(); schedule(true); });
@@ -1962,6 +1968,10 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   }
   // the loss checks, and dim the sliders they switch off
   function syncLoss() {
+    // the master check: ticked when both parts are off, half-ticked when only one is
+    const ml = $('#p_lossless');
+    ml.checked = !!(state.P.condLossless && state.P.dielLossless);
+    ml.indeterminate = !!state.P.condLossless !== !!state.P.dielLossless;
     GROUPS.forEach((g, gi) => {
       if (!g.loss) return;
       const on = !!state.P[g.loss.k];

@@ -185,7 +185,14 @@ async def main():
         await pg.check("#p_dielLossless")
         check("both checks make the line lossless", await st("__tdrState.P.lossless") is True and await pg.is_disabled("#p_DfN")
               and not await pg.is_disabled("#p_DkN"))
-        await pg.uncheck("#p_condLossless"); await pg.uncheck("#p_dielLossless")
+        check("the transmission-line master check follows both", await pg.is_checked("#p_lossless"))
+        await pg.uncheck("#p_lossless")
+        check("unticking the master turns both losses back on",
+              await st("[__tdrState.P.condLossless, __tdrState.P.dielLossless, __tdrState.P.lossless]") == [False, False, False]
+              and not await pg.is_checked("#p_condLossless"))
+        await pg.check("#p_dielLossless")
+        check("one part alone half-ticks the master", await pg.evaluate("document.querySelector('#p_lossless').indeterminate"))
+        await pg.uncheck("#p_dielLossless")
         legacy = dict(doc, params={k: v for k, v in doc["params"].items() if k not in ("condLossless", "dielLossless")})
         legacy["params"]["lossless"] = True
         tmp.write_text(json.dumps(legacy))
