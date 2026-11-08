@@ -1847,8 +1847,8 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     } else if (e.type === 'R' && wide) html += pairHTML('edVal', sp.v.label, sp.v.unit, lim.R[0], lim.R[1], 0.01, true);
     else html += pairHTML('edVal', sp.v.label, sp.v.unit, sp.v.min, sp.v.max, sp.v.step);
     const lf = LU().f, lu = LU().u, mm = metric();
-    html += pairHTML('edX', 'Position', lu, 0, +(L * lf).toFixed(3), mm ? 0.1 : 0.005) + pairHTML('edCnt', 'Copies', '', 1, 30, 1) +
-      pairHTML('edPitch', 'Pitch', lu, +(0.02 * lf).toFixed(3), +(1 * lf).toFixed(3), mm ? 0.1 : 0.005);
+    html += pairHTML('edX', 'Position', lu, 0, +(L * lf).toFixed(3), mm ? 0.1 : 0.005) + pairHTML('edCnt', 'Copies #', '', 1, 30, 1) +
+      pairHTML('edPitch', 'Copies pitch', lu, +(0.02 * lf).toFixed(3), +(1 * lf).toFixed(3), mm ? 0.1 : 0.005);
     html += '</div>';
     box.innerHTML = html;
     if (e.type === 'stub') {
