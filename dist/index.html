@@ -1857,7 +1857,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     const title = e.type === 'stub' && e.end === 'short' ? 'Shorted stub (to ground)' : sp.name;
     let html = `<div class="ed-head"><span class="glyph">${sp.glyph}</span><strong>${title}</strong><span class="ed-hint" id="edHint"></span>` +
       `<div class="ed-actions"><label class="check en" title="Untick to take this element out of the circuit and compare"><input type="checkbox" id="edEn"${e.enabled !== false ? ' checked' : ''}> Enabled</label>${lockBtn}<button id="edClone" title="Duplicate this element next to it, then drag the copy into place">${ICON.clone}Clone</button>` +
-      `<button id="edDel" class="ghost">Remove</button></div></div><div class="ed-grid">`;
+      `<button id="edDel" class="ghost">${ICON.trash}Remove</button></div></div><div class="ed-grid">`;
     const wide = !!state.P.extremeZ, lim = zlim();
     if (e.type === 'stub') {
       html += (metric() ? pairHTML('edLen', 'Stub length', 'mm', 0.06, 6.35, 0.01) : pairHTML('edLen', 'Stub length', 'mil', 2, 250, 1)) +
@@ -1913,6 +1913,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   const ICON = {
     locked: '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.5" fill="currentColor"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
     unlocked: '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.5" fill="currentColor"/><path d="M5.5 7V4.5a2.5 2.5 0 0 1 5 0v0.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+    trash: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.2h11M6.2 4.2V2.6h3.6v1.6M4 4.2l.8 9.3h6.4l.8-9.3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/><path d="M6.9 6.8v4.4M9.1 6.8v4.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
     clone: '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 10.5v-7a1 1 0 0 1 1-1h7" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>',
   };
   // Nearest open spot beside x (right first, then left), spaced by the on-screen chip width
