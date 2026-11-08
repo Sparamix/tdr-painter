@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300" role="img" aria-label="TDR Painter">
+  <title>TDR Painter</title>
+  <!-- TDR Painter icon, in the style of Sparamix octave-rf: a two-port block with a TDR trace painted through it. GPL-3.0-or-later -->
+  <line x1="22" y1="100" x2="52" y2="100" stroke="#000046" stroke-width="6"/><circle cx="22" cy="100" r="8" fill="#000046"/><line x1="248" y1="100" x2="278" y2="100" stroke="#000046" stroke-width="6"/><circle cx="278" cy="100" r="8" fill="#000046"/><line x1="22" y1="200" x2="52" y2="200" stroke="#000046" stroke-width="6"/><circle cx="22" cy="200" r="8" fill="#000046"/><line x1="248" y1="200" x2="278" y2="200" stroke="#000046" stroke-width="6"/><circle cx="278" cy="200" r="8" fill="#000046"/>
+  <rect x="52" y="52" width="196" height="196" fill="#FFFFFF" stroke="#000046" stroke-width="6"/>
+  <path d="M 60 158 L 92 158 C 104 158, 106 196, 120 196 C 134 196, 134 158, 146 158 L 150 158 C 160 158, 162 104, 176 104 C 190 104, 190 158, 202 158 L 240 158" fill="none" stroke="#AACCFF" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 60 158 L 92 158 C 104 158, 106 196, 120 196 C 134 196, 134 158, 146 158 L 150 158 C 160 158, 162 104, 176 104 C 190 104, 190 158, 202 158 L 240 158" fill="none" stroke="#000046" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

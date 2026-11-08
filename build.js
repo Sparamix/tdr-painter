@@ -32,6 +32,9 @@ const page = rd('src/page.html')
   .replace('[/*EXAMPLES*/]', () => '[\n' + examplesJs + '\n]')
   .replace(/__VERSION__/g, pkg.version);
 
+// Favicon: the icon from doc/icon.svg as a data: URI, with a light frame in dark browser chrome
+const FAVICON = "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 300%22%3E%3Cstyle%3E.f%7Bstroke:#000046;fill:#000046%7D.b%7Bstroke:#000046;fill:#fff%7D%40media (prefers-color-scheme:dark)%7B.f%7Bstroke:#C9D6FF;fill:#C9D6FF%7D.b%7Bstroke:#C9D6FF%7D%7D%3C/style%3E%3Cline class=%22f%22 x1=%2222%22 y1=%22100%22 x2=%2252%22 y2=%22100%22 stroke-width=%2210%22/%3E%3Ccircle class=%22f%22 cx=%2222%22 cy=%22100%22 r=%2212%22/%3E%3Cline class=%22f%22 x1=%22248%22 y1=%22100%22 x2=%22278%22 y2=%22100%22 stroke-width=%2210%22/%3E%3Ccircle class=%22f%22 cx=%22278%22 cy=%22100%22 r=%2212%22/%3E%3Cline class=%22f%22 x1=%2222%22 y1=%22200%22 x2=%2252%22 y2=%22200%22 stroke-width=%2210%22/%3E%3Ccircle class=%22f%22 cx=%2222%22 cy=%22200%22 r=%2212%22/%3E%3Cline class=%22f%22 x1=%22248%22 y1=%22200%22 x2=%22278%22 y2=%22200%22 stroke-width=%2210%22/%3E%3Ccircle class=%22f%22 cx=%22278%22 cy=%22200%22 r=%2212%22/%3E%3Crect class=%22b%22 x=%2252%22 y=%2252%22 width=%22196%22 height=%22196%22 stroke-width=%2210%22/%3E%3Cpath d=%22M 60 158 L 92 158 C 104 158, 106 196, 120 196 C 134 196, 134 158, 146 158 L 150 158 C 160 158, 162 104, 176 104 C 190 104, 190 158, 202 158 L 240 158%22 fill=%22none%22 stroke=%22#AACCFF%22 stroke-width=%2234%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3Cpath d=%22M 60 158 L 92 158 C 104 158, 106 196, 120 196 C 134 196, 134 158, 146 158 L 150 158 C 160 158, 162 104, 176 104 C 190 104, 190 158, 202 158 L 240 158%22 fill=%22none%22 stroke=%22#000046%22 stroke-width=%229%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E";
+
 // License notice at the top of both builds: the page is its own complete source.
 const NOTICE = `<!--
   TDR Painter v${pkg.version}, part of Sparamix. Copyright (C) 2026 Giorgi Maghlakelidze.
@@ -70,7 +73,7 @@ ${NOTICE}<html lang="en">
 <meta http-equiv="Content-Security-Policy" content="${CSP}">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<link rel="icon" href="data:,">
+<link rel="icon" type="image/svg+xml" href="${FAVICON}">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 ${head}
 </head>

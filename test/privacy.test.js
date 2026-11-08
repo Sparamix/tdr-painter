@@ -23,7 +23,9 @@ const FORBIDDEN = [
 for (const file of ['index.html', 'tdr-painter.artifact.html']) {
   const html = fs.readFileSync(path.join(dist, file), 'utf8');
   for (const re of FORBIDDEN) check(`${file}: no ${re.source}`, !re.test(html));
-  const urls = (html.match(/(?:https?:)?\/\/[a-z0-9.-]+\.[a-z]{2,}[^\s"')<>]*/gi) || []);
+  // The SVG namespace name inside the favicon's data: URI is an identifier, never fetched; nothing else may appear.
+  const urls = (html.match(/(?:https?:)?\/\/[a-z0-9.-]+\.[a-z]{2,}[^\s"')<>]*/gi) || [])
+    .filter(u => !/^http:\/\/www\.w3\.org\/2000\/svg(%22)?$/.test(u));
   check(`${file}: no external URLs`, urls.length === 0, urls.slice(0, 5).join(' '));
   check(`${file}: no external src/href`, !/\b(?:src|href)\s*=\s*["']?(?!data:|#|blob:)[a-z]+:/i.test(html));
 }

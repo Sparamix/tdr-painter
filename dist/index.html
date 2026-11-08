@@ -13,7 +13,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; font-src data:; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<link rel="icon" href="data:,">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 300%22%3E%3Cstyle%3E.f%7Bstroke:#000046;fill:#000046%7D.b%7Bstroke:#000046;fill:#fff%7D%40media (prefers-color-scheme:dark)%7B.f%7Bstroke:#C9D6FF;fill:#C9D6FF%7D.b%7Bstroke:#C9D6FF%7D%7D%3C/style%3E%3Cline class=%22f%22 x1=%2222%22 y1=%22100%22 x2=%2252%22 y2=%22100%22 stroke-width=%2210%22/%3E%3Ccircle class=%22f%22 cx=%2222%22 cy=%22100%22 r=%2212%22/%3E%3Cline class=%22f%22 x1=%22248%22 y1=%22100%22 x2=%22278%22 y2=%22100%22 stroke-width=%2210%22/%3E%3Ccircle class=%22f%22 cx=%22278%22 cy=%22100%22 r=%2212%22/%3E%3Cline class=%22f%22 x1=%2222%22 y1=%22200%22 x2=%2252%22 y2=%22200%22 stroke-width=%2210%22/%3E%3Ccircle class=%22f%22 cx=%2222%22 cy=%22200%22 r=%2212%22/%3E%3Cline class=%22f%22 x1=%22248%22 y1=%22200%22 x2=%22278%22 y2=%22200%22 stroke-width=%2210%22/%3E%3Ccircle class=%22f%22 cx=%22278%22 cy=%22200%22 r=%2212%22/%3E%3Crect class=%22b%22 x=%2252%22 y=%2252%22 width=%22196%22 height=%22196%22 stroke-width=%2210%22/%3E%3Cpath d=%22M 60 158 L 92 158 C 104 158, 106 196, 120 196 C 134 196, 134 158, 146 158 L 150 158 C 160 158, 162 104, 176 104 C 190 104, 190 158, 202 158 L 240 158%22 fill=%22none%22 stroke=%22#AACCFF%22 stroke-width=%2234%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3Cpath d=%22M 60 158 L 92 158 C 104 158, 106 196, 120 196 C 134 196, 134 158, 146 158 L 150 158 C 160 158, 162 104, 176 104 C 190 104, 190 158, 202 158 L 240 158%22 fill=%22none%22 stroke=%22#000046%22 stroke-width=%229%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>TDR Painter</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -96,6 +96,12 @@ h1 {
   text-wrap: balance;
 }
 h1 span { color: var(--ink); }
+h1 .h1t { color: var(--fg); }
+h1 { display: flex; align-items: center; gap: 12px; }
+h1 .mark { width: 1.15em; height: 1.15em; flex: none; margin-left: -0.12em; }
+:root { --mark-frame: #000046; --mark-tile: #FFFFFF; --mark-trace: #000046; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --mark-frame: #C9D6FF; } }
+:root[data-theme="dark"] { --mark-frame: #C9D6FF; }
 .dek { color: var(--fg-2); margin: 0; max-width: 62ch; }
 .top-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 select, input[type=number], input[type=text] {
@@ -242,7 +248,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <h1>TDR <span>Painter</span></h1>
+      <h1><svg class="mark" viewBox="0 0 300 300" aria-hidden="true"><line x1="22" y1="100" x2="52" y2="100" style="stroke:var(--mark-frame)" stroke-width="6"/><circle cx="22" cy="100" r="8" style="fill:var(--mark-frame)"/><line x1="248" y1="100" x2="278" y2="100" style="stroke:var(--mark-frame)" stroke-width="6"/><circle cx="278" cy="100" r="8" style="fill:var(--mark-frame)"/><line x1="22" y1="200" x2="52" y2="200" style="stroke:var(--mark-frame)" stroke-width="6"/><circle cx="22" cy="200" r="8" style="fill:var(--mark-frame)"/><line x1="248" y1="200" x2="278" y2="200" style="stroke:var(--mark-frame)" stroke-width="6"/><circle cx="278" cy="200" r="8" style="fill:var(--mark-frame)"/><rect x="52" y="52" width="196" height="196" style="fill:var(--mark-tile);stroke:var(--mark-frame)" stroke-width="6"/><path d="M 60 158 L 92 158 C 104 158, 106 196, 120 196 C 134 196, 134 158, 146 158 L 150 158 C 160 158, 162 104, 176 104 C 190 104, 190 158, 202 158 L 240 158" fill="none" stroke="#AACCFF" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/><path d="M 60 158 L 92 158 C 104 158, 106 196, 120 196 C 134 196, 134 158, 146 158 L 150 158 C 160 158, 162 104, 176 104 C 190 104, 190 158, 202 158 L 240 158" fill="none" style="stroke:var(--mark-trace)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="h1t">TDR <span>Painter</span></span></h1>
       <p class="dek">Paint an impedance profile, drop in parasitics, and watch return loss, insertion loss and ILD respond. Every cell of the profile is a short lossy line; the frequency views are the exact cascade.</p>
     </div>
     <div class="top-actions">
