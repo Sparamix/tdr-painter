@@ -27,7 +27,10 @@ the [changelog](CHANGELOG.md) and the [roadmap](ROADMAP.md).
 **[Open TDR Painter](https://sparamix.github.io/tdr-painter/)** in your browser, or download `index.html` from a
 release (or [`dist/index.html`](dist/index.html) here) and open it from disk. It works offline.
 
-![TDR Painter with the "Board launch + via stub" example: painted profile and the TDR a scope would show, return loss, insertion loss with the stub notch near 27 GHz, the power balance and ILD](doc/screenshot.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="doc/screenshot-dark.png">
+  <img src="doc/screenshot.png" alt="TDR Painter with the &quot;Board launch + via stub&quot; example: painted profile and the TDR a scope would show, return loss, insertion loss with the stub notch near 27 GHz, the power balance and ILD">
+</picture>
 
 
 ## Who is this for?
@@ -58,8 +61,8 @@ If something looks wrong or could teach better, please
 - **Tune** the line (length, Z₀), a Djordjevic-Sarkar dielectric (defaults: MEGTRON 6 datasheet point), skin-effect
   and DC conductor loss, port impedances, sweep range and the TDR window. Conductor and dielectric loss can each be
   switched off.
-- **Arrange** the side panel with the arrows on each group (Shift+click moves to the top or bottom). Imperial or
-  metric units and the experimental wide impedance range are in Settings (the gear).
+- **Arrange** the side panel with the arrows on each group (Shift+click moves to the top or bottom). Light or dark
+  theme, imperial or metric units and the experimental wide impedance range are in Settings (the gear).
 - **Save** a project as a `.tdrp` file and **Open** it later, or drop it onto the page. **Export JSON** writes the
   same project as readable text; **Copy .s2p text** exports the current S-parameters as Touchstone.
   See [doc/FILE_FORMAT.md](doc/FILE_FORMAT.md).
@@ -171,7 +174,7 @@ npm run validate                 # optional: the validation suite and report (pi
 | `fonts/` | Self-hosted Archivo, Instrument Sans and JetBrains Mono, with their licenses |
 | `test/` | Engine, container, example and privacy tests, scikit-rf cross-check, browser smoke test |
 | `validation/` | Verification against scikit-rf, textbook results and published data, with its report |
-| `doc/` | Icons, screenshot and the [project file format](doc/FILE_FORMAT.md) |
+| `doc/` | Icons, light and dark screenshots and the [project file format](doc/FILE_FORMAT.md) |
 
 
 ## Future features
