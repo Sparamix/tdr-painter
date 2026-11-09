@@ -1,6 +1,6 @@
 # TDR Painter verification report
 
-Generated 2026-11-08 by `validation/run_validation.py` with TDR Painter 0.8.4, scikit-rf 2.2.0, NumPy 2.5.3, SciPy 1.18.1, Python 3.13.18 and Node v22.23.4. Rerun the script to regenerate this file; do not edit it by hand.
+Generated 2026-11-09 by `validation/run_validation.py` with TDR Painter 0.8.4, scikit-rf 2.2.0, NumPy 2.5.3, SciPy 1.18.1, Python 3.13.18 and Node v22.23.4. Rerun the script to regenerate this file; do not edit it by hand.
 
 **Result: all pass/fail checks passed** (178 passed).
 
@@ -24,7 +24,7 @@ TDR Painter computes S-parameters from the painted impedance profile and the lum
 | [Beatty standard: 25 Ω section in a 50 Ω line](#beatty-standard-25-ω-section-in-a-50-ω-line) | 8e-13 | 1e-04 | 9/9 pass | agrees to 1.4 GHz | agrees to 1.4 GHz |
 | [Via transition with a 60 mil open stub](#via-transition-with-a-60-mil-open-stub) | 6e-13 | 6e-05 | 8/8 pass | agrees to 6.8 GHz | agrees to 7.2 GHz |
 | [Periodic shunt capacitance: 10 × 0.1 pF at 0.32 in](#periodic-shunt-capacitance-10--01-pf-at-032-in) | 2e-12 | 2e-04 | 9/9 pass | agrees to 7.3 GHz | agrees to 7.3 GHz |
-| [Probe launch: series R and L, pad C, 42 Ω stripline](#probe-launch-series-r-and-l-pad-c-42-ω-stripline) | 7e-13 | 7e-05 | 9/9 pass | agrees to 5.5 GHz | agrees to 5.5 GHz |
+| [Probe launch: series R and L, pad C, 42 Ω line](#probe-launch-series-r-and-l-pad-c-42-ω-line) | 7e-13 | 7e-05 | 9/9 pass | agrees to 5.5 GHz | agrees to 5.5 GHz |
 | [10 in lossy line with a 50 → 40 → 50 Ω linear taper](#10-in-lossy-line-with-a-50--40--50-ω-linear-taper) | 1e-11 | 2e-06 | 7/7 pass | agrees to whole band | agrees to whole band |
 | [Resistive attenuator pads](#resistive-attenuator-pads) | 4e-13 | 9e-06 | 13/13 pass | agrees to 0.1 GHz | agrees to 0.1 GHz |
 | [GSG probe on a short standard: contact diagnosis](#gsg-probe-on-a-short-standard-contact-diagnosis) | 4e-11 | 2e-04 | 15/15 pass | agrees to 0.7 GHz | agrees to 0.7 GHz |
@@ -198,11 +198,11 @@ Project files: [`cases/periodic-c.json`](../cases/periodic-c.json) (opens in TDR
 
 At 50 GHz each 0.1 pF capacitor shows up as a dip about as wide as the rise time, and the dips shrink along the line. Painted that way, the first S11 peak stays near v/(2p) ≈ 10 GHz, but it is weaker, S21 barely dips there, and the higher stopbands are gone: a blurred dip has lost the high-frequency content a point capacitor scatters. Lumped elements belong in the element tools, not in the paint.
 
-## Probe launch: series R and L, pad C, 42 Ω stripline
+## Probe launch: series R and L, pad C, 42 Ω line
 
-50 Ω coax, a probe tip (contact R plus 0.12 nH), a 0.06 pF pad, 0.76 in of 42 Ω stripline, and the mirror image. Good contact (0.02 Ω), bad Tx contact (3 Ω), and the bad contact into a 75 Ω receiver to exercise unequal port impedances.
+50 Ω coax, a probe tip (contact R plus 0.12 nH), a 0.06 pF pad, 0.76 in of 42 Ω line, and the mirror image. Good contact (0.02 Ω), bad Tx contact (3 Ω), and the bad contact into a 75 Ω receiver to exercise unequal port impedances.
 
-![Probe launch: series R and L, pad C, 42 Ω stripline](figures/probe-launch.png)
+![Probe launch: series R and L, pad C, 42 Ω line](figures/probe-launch.png)
 
 Project files: [`cases/probe-launch.json`](../cases/probe-launch.json) (opens in TDR Painter), plus one per variant. scikit-rf reference (first variant, referenced to 50 Ω): [`reference/probe-launch.s2p`](../reference/probe-launch.s2p).
 

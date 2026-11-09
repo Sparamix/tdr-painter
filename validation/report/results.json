@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-08",
+ "generated": "2026-11-09",
  "versions": {
   "tdr-painter": "0.8.4",
   "scikit-rf": "2.2.0",
@@ -585,7 +585,7 @@
   },
   {
    "slug": "probe-launch",
-   "title": "Probe launch: series R and L, pad C, 42 \u03a9 stripline",
+   "title": "Probe launch: series R and L, pad C, 42 \u03a9 line",
    "variants": [
     {
      "variant": "good contact",

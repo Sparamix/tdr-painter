@@ -2,7 +2,7 @@
  "format": "tdr-painter-project",
  "formatVersion": 1,
  "app": "validation",
- "name": "Probe launch: series R and L, pad C, 42 \u03a9 stripline",
+ "name": "Probe launch: series R and L, pad C, 42 \u03a9 line",
  "savedAt": "2026-11-07T00:00:00.000Z",
  "params": {
   "lenIn": 2.0,
@@ -100,7 +100,7 @@
  ],
  "example": {
   "category": "Community",
-  "note": "50 \u03a9 coax, a probe tip (contact R plus 0.12 nH), a 0.06 pF pad, 0.76 in of 42 \u03a9 stripline, and the mirror image. Good contact (0.02 \u03a9), bad Tx contact (3 \u03a9), and the bad contact into a 75 \u03a9 receiver to exercise unequal port impedances.",
+  "note": "50 \u03a9 coax, a probe tip (contact R plus 0.12 nH), a 0.06 pF pad, 0.76 in of 42 \u03a9 line, and the mirror image. Good contact (0.02 \u03a9), bad Tx contact (3 \u03a9), and the bad contact into a 75 \u03a9 receiver to exercise unequal port impedances.",
   "author": "TDR Painter validation"
  }
 }

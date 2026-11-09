@@ -116,8 +116,8 @@ def cases():
              what='A 4 in, 50 Ω line loaded with ten 0.1 pF shunt capacitors every 0.32 in, like vias or '
                   'connector pins along a bus. Periodic loading opens a stopband near v/(2p).',
              variants=[('lossy', periodic), ('lossless', lossless(periodic))], analytic=check_bloch),
-        dict(slug='probe-launch', title='Probe launch: series R and L, pad C, 42 Ω stripline',
-             what='50 Ω coax, a probe tip (contact R plus 0.12 nH), a 0.06 pF pad, 0.76 in of 42 Ω stripline, '
+        dict(slug='probe-launch', title='Probe launch: series R and L, pad C, 42 Ω line',
+             what='50 Ω coax, a probe tip (contact R plus 0.12 nH), a 0.06 pF pad, 0.76 in of 42 Ω line, '
                   'and the mirror image. Good contact (0.02 Ω), bad Tx contact (3 Ω), and the bad contact into a '
                   '75 Ω receiver to exercise unequal port impedances.',
              variants=[('good contact', probe(0.02)), ('bad contact, 3 Ω', probe(3.0)),
