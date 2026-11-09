@@ -1,7 +1,7 @@
 {
  "format": "tdr-painter-project",
  "formatVersion": 1,
- "app": "0.8.4",
+ "app": "0.8.5",
  "name": "Resolution: two pads 40 mil apart",
  "savedAt": "2026-11-01T00:00:00.000Z",
  "params": {

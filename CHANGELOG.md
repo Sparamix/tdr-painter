@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.5 (2026-11-09)
+
+- **Probing**, a new group in the Example menu: a GSG probe on a cal short and on a 42 Ω microstrip, each with a good landing (30 mΩ), a bad signal contact (2 Ω) and a lifted ground tip (50 pH more loop inductance). They replace the two "Probes on 42 Ω stripline" examples (a probe cannot land on a stripline: it is buried) and the two cal-short examples. The notes give the sources for the contact and inductance values, and say where the tool cannot show the effect: a lifted ground on a short changes only the phase of S11, which the tool does not plot yet.
+- The validation's probe-launch case is now described as a 42 Ω line, not a stripline. Its results are unchanged.
+- The header no longer scrolls sideways on phones; the smoke test checks 320 and 390 px.
+
 ## 0.8.4 (2026-11-08)
 
 - Light and dark mode moved out of Settings to a sun/moon button beside the gear. The icon shows the mode a click switches to, and its tooltip says so. Switching back to what your system shows removes the override, so later system changes apply again. Nothing is saved.
