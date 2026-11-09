@@ -66,7 +66,10 @@ h1 .mark { width: 1.15em; height: 1.15em; flex: none; margin-left: -0.12em; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --mark-frame: #C9D6FF; } }
 :root[data-theme="dark"] { --mark-frame: #C9D6FF; }
 .dek { color: var(--fg-2); margin: 0; max-width: 62ch; }
-.top-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-width: 0; max-width: 100%; }
+.top-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; max-width: 100%; }
+.toprow, .exrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-width: 0; max-width: 100%; }
+.toprow .label-sm, .exrow .label-sm { min-width: 66px; }
+.exrow { gap: 6px; }   /* same gap as the project bar */   /* the project field and the example menu line up */
 select, input[type=number], input[type=text] {
   font: inherit; color: var(--fg); background: var(--panel); border: 1px solid var(--line);
   border-radius: 8px; padding: 6px 8px; min-height: 34px;
@@ -134,7 +137,7 @@ input[type=range] { accent-color: var(--ink); width: 120px; }
 button.nudge { animation: nudge 0.22s ease-in-out 2; }
 @media (prefers-reduced-motion: reduce) { button.nudge { animation: none; outline: 2px solid var(--refl); outline-offset: 2px; } }
 .projbar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding-right: 10px; border-right: 1px solid var(--line); }
-.projbar input[type=text] { width: 200px; max-width: 100%; }
+.projbar input[type=text] { width: 360px; max-width: 100%; }
 @media (max-width: 640px) { .projbar { border-right: 0; padding-right: 0; width: 100%; } .projbar input[type=text] { flex: 1 1 140px; width: auto; min-width: 0; } }
 .pstatus { font-size: 12.5px; color: var(--fg-2); overflow-wrap: anywhere; }
 .pstatus:empty { display: none; }
@@ -217,17 +220,22 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       <p class="dek">Paint an impedance profile, drop in parasitics, and watch return loss, insertion loss and ILD respond. Each cell of the profile is a short lossy line, and the S-parameters come from cascading them.</p>
     </div>
     <div class="top-actions">
-      <div class="projbar" role="group" aria-label="Project file">
-        <input type="text" id="projName" maxlength="80" placeholder="Untitled project" autocomplete="off" aria-label="Project name, used as the file name">
-        <button id="projOpen" title="Open a .tdrp or .json project from your computer (Ctrl/⌘ O). You can also drop the file on the page.">Open…</button>
-        <button id="projSave" class="primary" title="Save as a .tdrp project file: compressed, with a checksum (Ctrl/⌘ S)">Save</button>
-        <button id="projJson" class="ghost" title="Export as readable JSON, for git or hand edits (Ctrl/⌘ Shift S)">Export JSON</button>
-        <input type="file" id="projFile" hidden>
+      <div class="toprow">
+        <div class="projbar" role="group" aria-label="Project file">
+          <label class="label-sm" for="projName">Project</label>
+          <input type="text" id="projName" maxlength="80" placeholder="Untitled project" autocomplete="off" aria-label="Project name, used as the file name">
+          <button id="projOpen" class="gear" aria-label="Open a project" title="Open a .tdrp or .json project from your computer (Ctrl/⌘ O). You can also drop the file on the page."><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.75 12.75V3.25h4l1.5 1.5h5.5v2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M1.75 12.75l1.9-5.5h11l-1.9 5.5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
+          <button id="projSave" class="gear primary" aria-label="Save the project" title="Save as a .tdrp project file: compressed, with a checksum (Ctrl/⌘ S)"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.25 2.25h9l2.5 2.5v9h-11.5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M5 2.25v3.5h5.5v-3.5M4.75 13.75v-4.5h6.5v4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
+          <button id="projJson" class="ghost" title="Export as readable JSON, for git or hand edits (Ctrl/⌘ Shift S)">Export JSON</button>
+          <input type="file" id="projFile" hidden>
+        </div>
+        <button id="themeBtn" class="gear themebtn" type="button" aria-label="Switch to dark mode" title="Switch to dark mode"><svg class="ic-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.4 10.2A5.6 5.6 0 0 1 5.8 2.6a5.6 5.6 0 1 0 7.6 7.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><svg class="ic-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.2v1.6M8 13.2v1.6M1.2 8h1.6M13.2 8h1.6M3.2 3.2l1.1 1.1M11.7 11.7l1.1 1.1M3.2 12.8l1.1-1.1M11.7 4.3l1.1-1.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+        <button id="gear" class="gear" aria-haspopup="dialog" aria-expanded="false" aria-controls="gearPanel" aria-label="Settings" title="Settings: units, experimental options"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-dasharray="2.16 2.16"/><circle cx="8" cy="8" r="4.1" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/></svg><span class="dot" id="gearDot" hidden></span></button>
       </div>
-      <label class="label-sm" for="preset">Example</label>
-      <select id="preset" aria-label="Load an example"></select>
-      <button id="themeBtn" class="gear themebtn" type="button" aria-label="Switch to dark mode" title="Switch to dark mode"><svg class="ic-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.4 10.2A5.6 5.6 0 0 1 5.8 2.6a5.6 5.6 0 1 0 7.6 7.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><svg class="ic-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.2v1.6M8 13.2v1.6M1.2 8h1.6M13.2 8h1.6M3.2 3.2l1.1 1.1M11.7 11.7l1.1 1.1M3.2 12.8l1.1-1.1M11.7 4.3l1.1-1.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
-      <button id="gear" class="gear" aria-haspopup="dialog" aria-expanded="false" aria-controls="gearPanel" aria-label="Settings" title="Settings: units, experimental options"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-dasharray="2.16 2.16"/><circle cx="8" cy="8" r="4.1" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/></svg><span class="dot" id="gearDot" hidden></span></button>
+      <div class="exrow">
+        <label class="label-sm" for="preset">Example</label>
+        <select id="preset" aria-label="Load an example"></select>
+      </div>
     </div>
   </header>
 

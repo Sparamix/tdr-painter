@@ -399,6 +399,12 @@ async def themes():
         pg = await browser.new_page(color_scheme="light")
         await pg.goto((ROOT / "dist" / "index.html").as_uri())
         await pg.wait_for_timeout(200)
+        check("header: project row holds the name, Open and Save icons, Export JSON, theme and settings; Example has its own row",
+              await pg.evaluate("[...document.querySelectorAll('.toprow button, .toprow input[type=text]')].map(e => e.id)") == ["projName", "projOpen", "projSave", "projJson", "themeBtn", "gear"]
+              and await pg.evaluate("!!document.querySelector('.exrow #preset')")
+              and await pg.evaluate("[document.querySelector('#projOpen').getAttribute('aria-label'), document.querySelector('#projSave').getAttribute('aria-label')]") == ["Open a project", "Save the project"])
+        check("project field and example menu line up",
+              await pg.evaluate("Math.abs(document.querySelector('#projName').getBoundingClientRect().left - document.querySelector('#preset').getBoundingClientRect().left)") < 1)
         check("theme button sits right before the gear",
               await pg.evaluate("document.querySelector('#themeBtn').nextElementSibling.id") == "gear")
         check("system light: light palette, moon, 'Switch to dark mode'", await pg.evaluate(theme) == [None, light] + to_dark, await pg.evaluate(theme))
