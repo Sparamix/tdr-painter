@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.4 (2026-11-08)
+
+- Light and dark mode moved out of Settings to a sun/moon button beside the gear. The icon shows the mode a click switches to, and its tooltip says so. Switching back to what your system shows removes the override, so later system changes apply again. Nothing is saved.
+
 ## 0.8.3 (2026-11-08)
 
 - Settings has a Theme switch: Auto (follows the system), Light or Dark. It is not saved, so each visit starts on Auto; inside claude.ai, Auto follows the host's theme.

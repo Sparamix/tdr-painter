@@ -1,6 +1,6 @@
 {
   "name": "tdr-painter",
-  "version": "0.8.3",
+  "version": "0.8.4",
   "description": "Paint a TDR impedance profile, drop in parasitics, and see S11, S21, ILD and the power balance update live.",
   "keywords": [
     "signal integrity",
