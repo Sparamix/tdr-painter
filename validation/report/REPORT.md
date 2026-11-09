@@ -1,6 +1,6 @@
 # TDR Painter verification report
 
-Generated 2026-11-09 by `validation/run_validation.py` with TDR Painter 0.8.7, scikit-rf 2.2.0, NumPy 2.5.3, SciPy 1.18.1, Python 3.13.18 and Node v22.23.4. Rerun the script to regenerate this file; do not edit it by hand.
+Generated 2026-11-09 by `validation/run_validation.py` with TDR Painter 0.8.8, scikit-rf 2.2.0, NumPy 2.5.3, SciPy 1.18.1, Python 3.13.18 and Node v22.23.4. Rerun the script to regenerate this file; do not edit it by hand.
 
 **Result: all pass/fail checks passed** (178 passed).
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.8 (2026-11-09)
+
+- Export JSON is now a floppy icon with the word JSON, and Undo an undo arrow. Reset profile keeps its words and turns red, since it is the destructive one; Undo still brings the profile back.
+- Settings has a Compact layout for laptop screens: tighter spacing and shorter plots, so the TDR, return loss and insertion loss fit a 730 px tall window. It is on by default in windows under 900 px tall; nothing is saved.
+
 ## 0.8.7 (2026-11-09)
 
 - The cal-short lifted-ground example now uses 70 pH, like the microstrip one. Its note gives the new numbers: the TDR edge moves by about 3 ps, and the S11 phase turns by about 20° at 20 GHz and 61° at 67 GHz.
