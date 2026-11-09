@@ -461,6 +461,37 @@ async def narrow():
 asyncio.run(main())
 asyncio.run(claude_host())
 asyncio.run(themes())
+async def compact_layout():
+    """Compact layout: on by default under 900 px of window height, follows the window until the user picks."""
+    probe = ("[document.documentElement.classList.contains('compact'), document.querySelector('#optCompact').checked, "
+             "Math.round(document.querySelector('#tdr').getBoundingClientRect().height), Math.round(document.querySelector('#cIL').getBoundingClientRect().height), "
+             "Math.round(document.querySelector('#cIL').getBoundingClientRect().bottom - document.querySelector('.memrow').getBoundingClientRect().top)]")
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(executable_path=os.environ.get("CHROME") or None, args=["--no-sandbox"])
+        pg = await browser.new_page(viewport={"width": 1440, "height": 800})
+        await pg.goto((ROOT / "dist" / "index.html").as_uri())
+        await pg.wait_for_timeout(200)
+        v = await pg.evaluate(probe)
+        check("800 px tall window: compact by default, TDR 290 px, plots 160 px", v[:4] == [True, True, 290, 160], v)
+        check("compact: memory buttons to the bottom of the insertion-loss plot fit in 730 px", v[4] <= 730, v[4])
+        await pg.click("#gear"); await pg.click("#optCompact")
+        v = await pg.evaluate(probe)
+        check("unticking Compact layout restores the normal sizes", v[:4] == [False, False, 340, 190], v)
+        await pg.set_viewport_size({"width": 1440, "height": 700})
+        await pg.wait_for_timeout(100)
+        check("after the user picks, a window resize does not override it", (await pg.evaluate(probe))[0] is False)
+        await pg.close()
+        pg = await browser.new_page(viewport={"width": 1440, "height": 1000})
+        await pg.goto((ROOT / "dist" / "index.html").as_uri())
+        await pg.wait_for_timeout(200)
+        check("1000 px tall window: normal layout by default", (await pg.evaluate(probe))[:3] == [False, False, 340])
+        await pg.set_viewport_size({"width": 1440, "height": 780})
+        await pg.wait_for_timeout(100)
+        check("until the user picks, shrinking the window turns compact on", (await pg.evaluate(probe))[:3] == [True, True, 290])
+        await browser.close()
+
+
 asyncio.run(narrow())
+asyncio.run(compact_layout())
 print("\nALL PASS" if not fails else f"\n{len(fails)} FAILED")
 sys.exit(1 if fails else 0)

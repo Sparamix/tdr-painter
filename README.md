@@ -62,8 +62,8 @@ If something looks wrong or could teach better, please
   and DC conductor loss, port impedances, sweep range and the TDR window. Conductor and dielectric loss can each be
   switched off.
 - **Arrange** the side panel with the arrows on each group (Shift+click moves to the top or bottom). The sun/moon
-  button beside the gear switches light and dark; imperial or metric units and the experimental wide impedance range
-  are in Settings (the gear).
+  button beside the gear switches light and dark. Settings (the gear) holds imperial or metric units, a compact
+  layout for laptop screens (on by default in short windows) and the experimental wide impedance range.
 - **Save** a project as a `.tdrp` file and **Open** it later, or drop it onto the page. **Export JSON** writes the
   same project as readable text; **Copy .s2p text** exports the current S-parameters as Touchstone.
   See [doc/FILE_FORMAT.md](doc/FILE_FORMAT.md).

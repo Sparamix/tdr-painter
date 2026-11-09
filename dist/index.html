@@ -254,6 +254,30 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
 .quick button { padding: 4px 9px; min-height: 30px; font-size: 13px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 
+/* Compact layout (Settings): about 10 % less vertical space in spacing and controls, and shorter plots (TDR 340 to
+   290 px, the four small plots 190 to 160 px), so the TDR, return loss and insertion loss fit a laptop window. */
+html.compact body { padding-block: 12px 28px; }
+html.compact .wrap { gap: 12px; }
+html.compact header.top { gap: 10px 24px; }
+html.compact h1 { font-size: clamp(24px, 3.2vw, 32px); }
+html.compact .top-actions { gap: 6px; }
+html.compact button { padding: 4px 10px; min-height: 30px; }
+html.compact .seg button { padding: 4px 9px; }
+html.compact .gear, html.compact .seg button.gear { width: 30px; padding: 0; }
+html.compact select, html.compact input[type=number], html.compact input[type=text] { padding: 4px 8px; min-height: 30px; }
+html.compact .exnote { padding: 7px 12px; gap: 2px; }
+html.compact .memrow { margin-bottom: -6px; }
+html.compact .app { gap: 14px; }
+html.compact .bench { padding: 9px; gap: 7px; }
+html.compact .toolrow { gap: 6px 12px; }
+html.compact #tdr { height: 290px; }
+html.compact .freq-grid { gap: 10px; }
+html.compact .card { padding: 8px 10px 6px; gap: 4px; }
+html.compact .card canvas { height: 160px; }
+html.compact aside.rail { gap: 8px; }
+html.compact .group { padding: 9px; gap: 7px; }
+html.compact .gearpanel { gap: 9px; }
+@media (max-width: 640px) { html.compact #tdr { height: 250px; } }
 </style>
 </head>
 <body>
@@ -291,6 +315,11 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
         <button data-units="metric" aria-pressed="false">Metric: mm</button>
       </div>
       <p class="note">Lengths, positions, stubs and the brush in inches and mil, or millimeters; conductor loss and DC resistance per inch or per centimeter. Saved with the project; the file itself always stores inches.</p>
+    </section>
+    <section>
+      <h2>Layout</h2>
+      <label class="check"><input type="checkbox" id="optCompact"> Compact layout</label>
+      <p class="note">Tighter spacing and shorter plots, so the TDR, return loss and insertion loss fit on a laptop screen. On by default when the window is less than 900 px tall. Not saved: the page keeps nothing in your browser.</p>
     </section>
     <section>
       <h2 class="exp">Experimental</h2>
@@ -2301,7 +2330,19 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     if (v !== ownTheme) { hostTheme = ownTheme = v; syncThemeBtn(); }
   }).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
   syncThemeBtn();
+  // Compact layout: on by default in windows under 900 px tall (laptops), following the window until the user picks.
+  const shortWin = window.matchMedia ? window.matchMedia('(max-height: 899px)') : { matches: false };
+  let compactPicked = false;
+  function setCompact(on) {
+    document.documentElement.classList.toggle('compact', on);
+    $('#optCompact').checked = on;
+    schedule(true);
+  }
+  $('#optCompact').addEventListener('change', (ev) => { compactPicked = true; setCompact(ev.target.checked); });
+  if (shortWin.addEventListener) shortWin.addEventListener('change', () => { if (!compactPicked) setCompact(shortWin.matches); });
+  setCompact(shortWin.matches);
   function syncGear() {
+    $('#optCompact').checked = document.documentElement.classList.contains('compact');
     document.querySelectorAll('[data-units]').forEach(b => b.setAttribute('aria-pressed', b.dataset.units === state.units ? 'true' : 'false'));
     $('#optWide').checked = !!state.P.extremeZ;
     $('#gearDot').hidden = !state.P.extremeZ;
