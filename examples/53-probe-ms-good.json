@@ -12,17 +12,17 @@
   "frefGHz": 12,
   "dsLowHz": 1000,
   "dsHighHz": 1000000000000,
-  "condLoss": 0.4,
+  "condLoss": 0.2,
   "condRefGHz": 10,
-  "rdc": 0.2,
+  "rdc": 0.1,
   "fmaxGHz": 67,
   "nf": 1001,
   "zTx": 50,
   "zRx": 50,
   "beta": 4.2,
-  "lossless": true,
-  "condLossless": true,
-  "dielLossless": true,
+  "lossless": false,
+  "condLossless": false,
+  "dielLossless": false,
   "extremeZ": false
  },
  "profile": {
@@ -68,7 +68,7 @@
  "example": {
   "category": "Probing",
   "order": 53,
-  "note": "Two GSG probes on 0.5 in of 42 Ω microstrip, seen from the calibrated tips; the 50 Ω sections stand for the probes. A microstrip, not a stripline: a probe needs the trace on the surface. Its field is partly in air, so Dk is the effective 2.70 of a 42 Ω microstrip on Dk 3.35. Both contacts are 30 mΩ and loss is off, so the TDR shows 50, 42, 50 Ω and nothing else. Pads and ground vias are left out; add a C chip at the tip to see how a launch pad changes the picture.",
+  "note": "Two GSG probes on 0.5 in of 42 Ω microstrip, seen from the calibrated tips; the 50 Ω sections stand for the probes. A microstrip, not a stripline: a probe needs the trace on the surface. Its field is partly in air, so Dk is the effective 2.70 of a 42 Ω microstrip on Dk 3.35. Both contacts are 30 mΩ. The lines have some loss (0.2 dB/in at 10 GHz, 0.1 Ω/in at DC), so the TDR creeps up a little: the 42 Ω line reads about 42.7 Ω. Pads and ground vias are left out; add a C chip at the tip to see how a launch pad changes the picture. Store it with Data → Memory before opening the next two.",
   "author": "TDR Painter"
  }
 }

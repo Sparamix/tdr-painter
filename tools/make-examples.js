@@ -19,7 +19,7 @@ const L = (x, nH, extra) => ({ type: 'L', x, value: nH, count: 1, pitch: 0.15, l
 const R = (x, ohm, extra) => ({ type: 'R', x, value: ohm, count: 1, pitch: 0.15, locked: false, ...extra });
 const STUB = (x, mil, z, extra) => ({ type: 'stub', x, stubZ: z, stubLen: mil, end: 'open', count: 1, pitch: 0.15, locked: false, ...extra });
 
-function example({ slug, order, category, name, note, params = {}, paint, elements = [], view = null, isDefault = false }) {
+function example({ slug, order, category, name, note, params = {}, paint, elements = [], view = null, isDefault = false, author = 'TDR Painter' }) {
   const P = PJ.normalizeLoss({ ...PJ.DEFAULTS, ...params });
   const prof = new Float64Array(NS).fill(P.z0);
   const cellX = (i) => (i + 0.5) / NS * P.lenIn;
@@ -46,7 +46,7 @@ function example({ slug, order, category, name, note, params = {}, paint, elemen
     profile: { cells: NS, runs: PJ.encodeProfile(prof) },
     elements,
     ...(view ? { view } : {}),
-    example: { category, order, note, author: 'TDR Painter', ...(isDefault ? { default: true } : {}) },
+    example: { category, order, note, author, ...(isDefault ? { default: true } : {}) },
   };
   const file = path.join(OUT, `${String(order).padStart(2, '0')}-${slug}.json`);
   fs.writeFileSync(file, JSON.stringify(obj, null, 1) + '\n');
@@ -165,24 +165,29 @@ example({
   note: 'One ground tip lifted, as with a probe that is not planarized: the return current takes the other ground alone, which adds loop inductance. This example adds 50 pH, an estimate: FormFactor reports about four times the common-mode inductance for GS probes as for GSG, and published short models for Cascade probes are about 50 pH (GS) and 2 pH (GSG). On a short it hides: |S11| stays at 0 dB and the TDR edge moves by about 2 ps. It shows in the phase of S11, about 14° at 20 GHz and 46° at 67 GHz, which this tool does not plot yet.',
   ...onShort(0.03, GND_LIFT),
 });
-const onMicrostrip = (rSig, lGnd) => ({
-  params: { lenIn: 1.5, Dk: 2.7, Df: 0.0036, lossless: true, condLossless: true, dielLossless: true, fmaxGHz: 67 },
+// The microstrip lines carry modest loss so they are not ideal: 0.2 dB/in of conductor loss at 10 GHz, 0.1 Ω/in at DC,
+// and the effective Df. These are the values of the lifted-ground case below, set up by Giorgi Maghlakelidze.
+const onMicrostrip = (elements) => ({
+  params: { lenIn: 1.5, Dk: 2.7, Df: 0.0036, condLoss: 0.2, rdc: 0.1, lossless: false, condLossless: false, dielLossless: false, fmaxGHz: 67 },
   paint: (t) => t.plateau(0.5, 1.0, 42, 0),
-  elements: [...(lGnd ? [L(0.5, lGnd)] : []), R(0.5, rSig), R(1.0, 0.03)],
+  elements,
   view: { zMin: 36, zMax: 54, log: false },
 });
 example({
   slug: 'probe-ms-good', order: 53, category: 'Probing', name: 'GSG on 42 Ω microstrip: good SIG contact (30 mΩ)',
-  note: 'Two GSG probes on 0.5 in of 42 Ω microstrip, seen from the calibrated tips; the 50 Ω sections stand for the probes. A microstrip, not a stripline: a probe needs the trace on the surface. Its field is partly in air, so Dk is the effective 2.70 of a 42 Ω microstrip on Dk 3.35. Both contacts are 30 mΩ and loss is off, so the TDR shows 50, 42, 50 Ω and nothing else. Pads and ground vias are left out; add a C chip at the tip to see how a launch pad changes the picture.',
-  ...onMicrostrip(0.03, 0),
+  note: 'Two GSG probes on 0.5 in of 42 Ω microstrip, seen from the calibrated tips; the 50 Ω sections stand for the probes. A microstrip, not a stripline: a probe needs the trace on the surface. Its field is partly in air, so Dk is the effective 2.70 of a 42 Ω microstrip on Dk 3.35. Both contacts are 30 mΩ. The lines have some loss (0.2 dB/in at 10 GHz, 0.1 Ω/in at DC), so the TDR creeps up a little: the 42 Ω line reads about 42.7 Ω. Pads and ground vias are left out; add a C chip at the tip to see how a launch pad changes the picture. Store it with Data → Memory before opening the next two.',
+  ...onMicrostrip([R(0.5, 0.03), R(1.0, 0.03)]),
 });
 example({
   slug: 'probe-ms-bad-sig', order: 54, category: 'Probing', name: 'GSG on 42 Ω microstrip: bad SIG contact (2 Ω)',
-  note: 'The Tx signal tip lands with 2 Ω. The TDR steps up by 2 Ω at the tip and stays up, so the 42 Ω line reads 44 Ω: a bad contact quietly shifts every impedance behind it. |S11| even improves by about 1.3 dB, because 44 Ω is closer to 50 Ω, so a better return loss is no proof of a good landing. S11 and S22 no longer agree.',
-  ...onMicrostrip(2, 0),
+  note: 'The Tx signal tip lands with 2 Ω. The TDR steps up by 2 Ω at the tip and stays up, so the line reads about 44.6 Ω instead of 42.7 Ω: a bad contact quietly shifts every impedance behind it. |S11| even improves by about 1.5 dB, because the line now looks closer to 50 Ω, so a better return loss is no proof of a good landing. S11 and S22 no longer agree.',
+  ...onMicrostrip([R(0.5, 2), R(1.0, 0.03)]),
 });
+// Set up by Giorgi Maghlakelidze to match a TDR he measured with a lifted ground tip: a peak in the middle of the
+// 50 to 42 Ω transition. 70 pH placed 35 mil past the tip reproduces it.
 example({
   slug: 'probe-ms-bad-gnd', order: 55, category: 'Probing', name: 'GSG on 42 Ω microstrip: bad GND contact (G lifted)',
-  note: 'One Tx ground tip lifted: 50 pH more loop inductance at the tip (the cal-short example says where the number comes from). On a line it shows: an inductive bump of about 1.5 Ω right at the tip, the line behind it back at 42 Ω, and |S11| about 3 dB worse. A real lifted ground also excites unwanted modes and radiates, which this 1-D model leaves out.',
-  ...onMicrostrip(0.03, GND_LIFT),
+  author: 'Giorgi Maghlakelidze',
+  note: 'Set up by Giorgi Maghlakelidze to match a TDR he measured with a lifted ground tip: a peak in the middle of the 50 to 42 Ω transition. Here 70 pH, 35 mil past the tip, reproduces it. The edge levels off near 47 Ω, peaks at about 48.3 Ω where a good landing already reads 43 Ω, then drops to the line. |S11| is about 0.7 dB worse at 20 GHz and 11 dB worse at 67 GHz. Drag the L chip along the line to see the peak follow it. A real lifted ground also excites unwanted modes and radiates, which this 1-D model leaves out.',
+  ...onMicrostrip([L(0.535, 0.07), R(0.5, 0.03), R(1.0, 0.03)]),
 });
