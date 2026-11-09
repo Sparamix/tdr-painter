@@ -187,6 +187,8 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
 #s2pbox { width: 100%; height: 120px; font-family: var(--font-data); font-size: 11px; background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; }
 .gear { display: inline-grid; place-items: center; width: 34px; padding: 0; position: relative; }
 .gear svg { width: 17px; height: 17px; }
+.themebtn .ic-sun, .themebtn[data-shown="dark"] .ic-moon { display: none; }   /* the icon is the mode a click switches to */
+.themebtn[data-shown="dark"] .ic-sun { display: block; }
 .gear[aria-expanded="true"] { background: var(--ink-soft); border-color: var(--ink); }
 .gear .dot { position: absolute; top: 4px; right: 4px; width: 7px; height: 7px; border-radius: 50%; background: var(--refl); box-shadow: 0 0 0 2px var(--panel); }
 .gearpanel {
@@ -223,20 +225,12 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
       </div>
       <label class="label-sm" for="preset">Example</label>
       <select id="preset" aria-label="Load an example"></select>
-      <button id="gear" class="gear" aria-haspopup="dialog" aria-expanded="false" aria-controls="gearPanel" aria-label="Settings" title="Settings: theme, units, experimental options"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-dasharray="2.16 2.16"/><circle cx="8" cy="8" r="4.1" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/></svg><span class="dot" id="gearDot" hidden></span></button>
+      <button id="themeBtn" class="gear themebtn" type="button" aria-label="Switch to dark mode" title="Switch to dark mode"><svg class="ic-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.4 10.2A5.6 5.6 0 0 1 5.8 2.6a5.6 5.6 0 1 0 7.6 7.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><svg class="ic-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.2v1.6M8 13.2v1.6M1.2 8h1.6M13.2 8h1.6M3.2 3.2l1.1 1.1M11.7 11.7l1.1 1.1M3.2 12.8l1.1-1.1M11.7 4.3l1.1-1.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+      <button id="gear" class="gear" aria-haspopup="dialog" aria-expanded="false" aria-controls="gearPanel" aria-label="Settings" title="Settings: units, experimental options"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-dasharray="2.16 2.16"/><circle cx="8" cy="8" r="4.1" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/></svg><span class="dot" id="gearDot" hidden></span></button>
     </div>
   </header>
 
   <div class="gearpanel" id="gearPanel" role="dialog" aria-label="Settings" hidden>
-    <section>
-      <h2>Theme</h2>
-      <div class="seg" role="group" aria-label="Theme" id="themeSeg">
-        <button data-theme-pick="auto" aria-pressed="true">Auto</button>
-        <button data-theme-pick="light" aria-pressed="false">Light</button>
-        <button data-theme-pick="dark" aria-pressed="false">Dark</button>
-      </div>
-      <p class="note">Auto follows your system setting. Not saved: the page keeps nothing in your browser, so it opens on Auto each time.</p>
-    </section>
     <section>
       <h2>Units</h2>
       <div class="seg" role="group" aria-label="Units" id="unitSeg">
@@ -1467,7 +1461,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
   function openGear(open) {
     gearPanel.hidden = !open;
     gearBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    if (open) { syncGear(); placeGear(); $('#themeSeg [aria-pressed="true"]').focus(); }
+    if (open) { syncGear(); placeGear(); $('#optWide').focus(); }
   }
   function setUnits(u) {
     if (u === state.units) return;
@@ -1475,31 +1469,38 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
     buildRail(); renderEditor(); syncBrushOut(); syncGear(); schedule(true);
   }
   document.querySelectorAll('[data-units]').forEach(b => b.addEventListener('click', () => setUnits(b.dataset.units)));
-  // Theme. The palette keys off data-theme on <html>; without it, prefers-color-scheme decides. An embedding host
-  // (claude.ai) may set data-theme itself: Auto restores whatever the host set, and a later change by the host wins.
-  // Nothing is stored, so every visit starts on Auto.
-  const root = document.documentElement;
-  let hostTheme = root.getAttribute('data-theme'), ownTheme = hostTheme, themePick = 'auto';
-  function setTheme(t) {
-    themePick = t;
-    ownTheme = t === 'auto' ? hostTheme : t;
+  // Theme button (sun/moon beside the gear). The palette keys off data-theme on <html>; without it,
+  // prefers-color-scheme decides. An embedding host (claude.ai) may set data-theme itself. A click flips light and
+  // dark; flipping back to what the system (or host) shows anyway removes the override, so there is no stuck state
+  // and later system changes apply again. A host change wins. Nothing is stored: every visit starts from the system.
+  const root = document.documentElement, themeBtn = $('#themeBtn');
+  const sysDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : { matches: false };
+  let hostTheme = root.getAttribute('data-theme'), ownTheme = hostTheme;
+  const baseTheme = () => hostTheme || (sysDark.matches ? 'dark' : 'light');
+  const shownTheme = () => root.getAttribute('data-theme') || (sysDark.matches ? 'dark' : 'light');
+  function syncThemeBtn() {
+    const dark = shownTheme() === 'dark', label = dark ? 'Switch to light mode' : 'Switch to dark mode';
+    themeBtn.dataset.shown = dark ? 'dark' : 'light';
+    themeBtn.title = label;
+    themeBtn.setAttribute('aria-label', label);
+  }
+  themeBtn.addEventListener('click', () => {
+    const next = shownTheme() === 'dark' ? 'light' : 'dark';
+    ownTheme = next === baseTheme() ? hostTheme : next;
     if (ownTheme) root.setAttribute('data-theme', ownTheme); else root.removeAttribute('data-theme');
-    syncTheme();
-  }
-  function syncTheme() {
-    document.querySelectorAll('[data-theme-pick]').forEach(b => b.setAttribute('aria-pressed', b.dataset.themePick === themePick ? 'true' : 'false'));
-  }
-  document.querySelectorAll('[data-theme-pick]').forEach(b => b.addEventListener('click', () => setTheme(b.dataset.themePick)));
+    syncThemeBtn();
+  });
+  if (sysDark.addEventListener) sysDark.addEventListener('change', syncThemeBtn);
   new MutationObserver(() => {
     const v = root.getAttribute('data-theme');
-    if (v !== ownTheme) { hostTheme = ownTheme = v; themePick = 'auto'; syncTheme(); }
+    if (v !== ownTheme) { hostTheme = ownTheme = v; syncThemeBtn(); }
   }).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+  syncThemeBtn();
   function syncGear() {
-    syncTheme();
     document.querySelectorAll('[data-units]').forEach(b => b.setAttribute('aria-pressed', b.dataset.units === state.units ? 'true' : 'false'));
     $('#optWide').checked = !!state.P.extremeZ;
     $('#gearDot').hidden = !state.P.extremeZ;
-    gearBtn.title = state.P.extremeZ ? 'Settings (experimental impedance range is on)' : 'Settings: theme, units, experimental options';
+    gearBtn.title = state.P.extremeZ ? 'Settings (experimental impedance range is on)' : 'Settings: units, experimental options';
   }
   gearBtn.addEventListener('click', () => openGear(gearPanel.hidden));
   document.addEventListener('pointerdown', (ev) => { if (!gearPanel.hidden && !gearPanel.contains(ev.target) && !gearBtn.contains(ev.target)) openGear(false); });

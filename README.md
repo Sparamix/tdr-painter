@@ -61,8 +61,9 @@ If something looks wrong or could teach better, please
 - **Tune** the line (length, Z₀), a Djordjevic-Sarkar dielectric (defaults: MEGTRON 6 datasheet point), skin-effect
   and DC conductor loss, port impedances, sweep range and the TDR window. Conductor and dielectric loss can each be
   switched off.
-- **Arrange** the side panel with the arrows on each group (Shift+click moves to the top or bottom). Light or dark
-  theme, imperial or metric units and the experimental wide impedance range are in Settings (the gear).
+- **Arrange** the side panel with the arrows on each group (Shift+click moves to the top or bottom). The sun/moon
+  button beside the gear switches light and dark; imperial or metric units and the experimental wide impedance range
+  are in Settings (the gear).
 - **Save** a project as a `.tdrp` file and **Open** it later, or drop it onto the page. **Export JSON** writes the
   same project as readable text; **Copy .s2p text** exports the current S-parameters as Touchstone.
   See [doc/FILE_FORMAT.md](doc/FILE_FORMAT.md).

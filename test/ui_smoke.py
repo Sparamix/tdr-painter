@@ -284,16 +284,7 @@ async def main():
         await pg.select_option("#preset", label="Clean 50 Ω line")
         await pg.click("#gear")
         check("gear opens the settings panel", await pg.is_visible("#gearPanel") and await pg.get_attribute("#gear", "aria-expanded") == "true")
-        theme = "[document.documentElement.getAttribute('data-theme'), getComputedStyle(document.body).backgroundColor, document.querySelector('[data-theme-pick][aria-pressed=true]').dataset.themePick]"
-        check("theme starts on Auto (no override) and the panel focuses it",
-              await pg.evaluate(theme) == [None, "rgb(242, 244, 247)", "auto"] and await pg.evaluate("document.activeElement.dataset.themePick") == "auto",
-              await pg.evaluate(theme))
-        await pg.click("[data-theme-pick=dark]")
-        check("Dark sets data-theme and the dark palette", await pg.evaluate(theme) == ["dark", "rgb(14, 17, 22)", "dark"], await pg.evaluate(theme))
-        await pg.click("[data-theme-pick=light]")
-        check("Light sets the light palette", await pg.evaluate(theme) == ["light", "rgb(242, 244, 247)", "light"], await pg.evaluate(theme))
-        await pg.click("[data-theme-pick=auto]")
-        check("Auto removes the override", await pg.evaluate(theme) == [None, "rgb(242, 244, 247)", "auto"], await pg.evaluate(theme))
+        check("the settings panel no longer holds a theme group", await pg.locator("[data-theme-pick]").count() == 0)
         await pg.check("#optWide")
         check("wide range on: flag set, Rx Short/Open shown, Rx box takes 1 mohm",
               await st("__tdrState.P.extremeZ") is True and await pg.is_visible("#rxShort") and await pg.get_attribute("#p_zRxN", "min") == "0.001")
@@ -394,19 +385,33 @@ async def claude_host():
 
 
 async def themes():
-    """Theme switch against a dark system setting, and alongside a host page that sets data-theme itself."""
-    theme = "[document.documentElement.getAttribute('data-theme'), getComputedStyle(document.body).backgroundColor, document.querySelector('[data-theme-pick][aria-pressed=true]').dataset.themePick]"
+    """Sun/moon button beside the gear: light and dark systems, a system change, and a host page that sets data-theme."""
+    theme = ("[document.documentElement.getAttribute('data-theme'), getComputedStyle(document.body).backgroundColor, "
+             "document.querySelector('#themeBtn').getAttribute('aria-label'), document.querySelector('#themeBtn').title, "
+             "getComputedStyle(document.querySelector('#themeBtn .ic-sun')).display !== 'none', "
+             "getComputedStyle(document.querySelector('#themeBtn .ic-moon')).display !== 'none']")
     light, dark = "rgb(242, 244, 247)", "rgb(14, 17, 22)"
+    to_dark = ["Switch to dark mode", "Switch to dark mode", False, True]     # light shown: moon, "Switch to dark mode"
+    to_light = ["Switch to light mode", "Switch to light mode", True, False]  # dark shown: sun, "Switch to light mode"
     async with async_playwright() as p:
         browser = await p.chromium.launch(executable_path=os.environ.get("CHROME") or None, args=["--no-sandbox"])
-        pg = await browser.new_page(color_scheme="dark")
+
+        pg = await browser.new_page(color_scheme="light")
         await pg.goto((ROOT / "dist" / "index.html").as_uri())
         await pg.wait_for_timeout(200)
-        check("system dark: Auto shows the dark palette", await pg.evaluate(theme) == [None, dark, "auto"], await pg.evaluate(theme))
-        await pg.click("#gear"); await pg.click("[data-theme-pick=light]")
-        check("system dark: Light overrides it", await pg.evaluate(theme) == ["light", light, "light"], await pg.evaluate(theme))
-        await pg.click("[data-theme-pick=auto]")
-        check("system dark: Auto goes back to dark", await pg.evaluate(theme) == [None, dark, "auto"], await pg.evaluate(theme))
+        check("theme button sits right before the gear",
+              await pg.evaluate("document.querySelector('#themeBtn').nextElementSibling.id") == "gear")
+        check("system light: light palette, moon, 'Switch to dark mode'", await pg.evaluate(theme) == [None, light] + to_dark, await pg.evaluate(theme))
+        await pg.click("#themeBtn")
+        check("click: dark palette, sun, 'Switch to light mode'", await pg.evaluate(theme) == ["dark", dark] + to_light, await pg.evaluate(theme))
+        await pg.click("#themeBtn")
+        check("click back to the system's light removes the override", await pg.evaluate(theme) == [None, light] + to_dark, await pg.evaluate(theme))
+        await pg.emulate_media(color_scheme="dark")
+        await pg.wait_for_timeout(50)
+        check("with no override, a system switch to dark is followed (palette and icon)",
+              await pg.evaluate(theme) == [None, dark] + to_light, await pg.evaluate(theme))
+        await pg.focus("#themeBtn"); await pg.keyboard.press("Enter")
+        check("keyboard: Enter on the button switches to light", await pg.evaluate(theme) == ["light", light] + to_dark, await pg.evaluate(theme))
         await pg.close()
 
         frag = (ROOT / "dist" / "tdr-painter.artifact.html").read_text()
@@ -415,15 +420,15 @@ async def themes():
         pg = await browser.new_page(color_scheme="light")
         await pg.goto(page_file.as_uri())
         await pg.wait_for_timeout(200)
-        check("host dark: Auto keeps the host's theme", await pg.evaluate(theme) == ["dark", dark, "auto"], await pg.evaluate(theme))
-        await pg.click("#gear"); await pg.click("[data-theme-pick=light]")
-        check("host dark: Light overrides it", await pg.evaluate(theme) == ["light", light, "light"], await pg.evaluate(theme))
-        await pg.click("[data-theme-pick=auto]")
-        check("host dark: Auto restores the host's dark", await pg.evaluate(theme) == ["dark", dark, "auto"], await pg.evaluate(theme))
-        await pg.click("[data-theme-pick=light]")
+        check("host dark: the button follows the host", await pg.evaluate(theme) == ["dark", dark] + to_light, await pg.evaluate(theme))
+        await pg.click("#themeBtn")
+        check("host dark: click gives light", await pg.evaluate(theme) == ["light", light] + to_dark, await pg.evaluate(theme))
+        await pg.click("#themeBtn")
+        check("host dark: click back restores the host's dark", await pg.evaluate(theme) == ["dark", dark] + to_light, await pg.evaluate(theme))
+        await pg.click("#themeBtn")
         await pg.evaluate("document.documentElement.setAttribute('data-theme', 'dark')")
         await pg.wait_for_timeout(50)
-        check("host switching theme takes over and the switch shows Auto", await pg.evaluate(theme) == ["dark", dark, "auto"], await pg.evaluate(theme))
+        check("a later host change wins and the button follows", await pg.evaluate(theme) == ["dark", dark] + to_light, await pg.evaluate(theme))
         page_file.unlink()
         await browser.close()
 
