@@ -403,6 +403,9 @@ async def themes():
               await pg.evaluate("[...document.querySelectorAll('.toprow button, .toprow input[type=text]')].map(e => e.id)") == ["projName", "projOpen", "projSave", "projJson", "themeBtn", "gear"]
               and await pg.evaluate("!!document.querySelector('.exrow #preset')")
               and await pg.evaluate("[document.querySelector('#projOpen').getAttribute('aria-label'), document.querySelector('#projSave').getAttribute('aria-label')]") == ["Open a project", "Save the project"])
+        check("JSON export: floppy icon and the word JSON; Undo: an arrow icon; Reset profile: red (danger)",
+              await pg.evaluate("[document.querySelector('#projJson').textContent.trim(), !!document.querySelector('#projJson svg'), document.querySelector('#projJson').getAttribute('aria-label'), !!document.querySelector('#undo svg'), document.querySelector('#undo').getAttribute('aria-label'), document.querySelector('#resetProf').classList.contains('danger')]")
+              == ["JSON", True, "Export JSON", True, "Undo", True])
         check("project field and example menu line up",
               await pg.evaluate("Math.abs(document.querySelector('#projName').getBoundingClientRect().left - document.querySelector('#preset').getBoundingClientRect().left)") < 1)
         check("theme button sits right before the gear",

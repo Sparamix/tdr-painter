@@ -106,7 +106,7 @@ h1 .mark { width: 1.15em; height: 1.15em; flex: none; margin-left: -0.12em; }
 .top-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; max-width: 100%; }
 .toprow, .exrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-width: 0; max-width: 100%; }
 .toprow .label-sm, .exrow .label-sm { min-width: 66px; }
-.exrow { gap: 6px; }   /* same gap as the project bar */   /* the project field and the example menu line up */
+.exrow { gap: 6px; }   /* same gap as the project bar, so the project field and the example menu line up */
 select, input[type=number], input[type=text] {
   font: inherit; color: var(--fg); background: var(--panel); border: 1px solid var(--line);
   border-radius: 8px; padding: 6px 8px; min-height: 34px;
@@ -123,6 +123,11 @@ button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-v
 button.primary { background: var(--ink); color: var(--ink-on); border-color: var(--ink); }
 button[aria-pressed="true"] { background: var(--ink); color: var(--ink-on); border-color: var(--ink); }
 button.ghost { background: transparent; }
+button.withicon { display: inline-flex; align-items: center; gap: 6px; }
+button.withicon svg { width: 16px; height: 16px; flex: none; }
+.seg button.gear { padding: 0; }
+button.danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); }
+button.danger:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
 button:disabled { opacity: 0.45; cursor: default; }
 
 .app { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 20px; align-items: start; }
@@ -248,6 +253,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
 .quick { gap: 6px; }
 .quick button { padding: 4px 9px; min-height: 30px; font-size: 13px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
 </style>
 </head>
 <body>
@@ -264,7 +270,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
           <input type="text" id="projName" maxlength="80" placeholder="Untitled project" autocomplete="off" aria-label="Project name, used as the file name">
           <button id="projOpen" class="gear" aria-label="Open a project" title="Open a .tdrp or .json project from your computer (Ctrl/⌘ O). You can also drop the file on the page."><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.75 12.75V3.25h4l1.5 1.5h5.5v2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M1.75 12.75l1.9-5.5h11l-1.9 5.5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
           <button id="projSave" class="gear primary" aria-label="Save the project" title="Save as a .tdrp project file: compressed, with a checksum (Ctrl/⌘ S)"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.25 2.25h9l2.5 2.5v9h-11.5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M5 2.25v3.5h5.5v-3.5M4.75 13.75v-4.5h6.5v4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
-          <button id="projJson" class="ghost" title="Export as readable JSON, for git or hand edits (Ctrl/⌘ Shift S)">Export JSON</button>
+          <button id="projJson" class="ghost withicon" aria-label="Export JSON" title="Export as readable JSON, for git or hand edits (Ctrl/⌘ Shift S)"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.25 2.25h9l2.5 2.5v9h-11.5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M5 2.25v3.5h5.5v-3.5M4.75 13.75v-4.5h6.5v4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>JSON</button>
           <input type="file" id="projFile" hidden>
         </div>
         <button id="themeBtn" class="gear themebtn" type="button" aria-label="Switch to dark mode" title="Switch to dark mode"><svg class="ic-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.4 10.2A5.6 5.6 0 0 1 5.8 2.6a5.6 5.6 0 1 0 7.6 7.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><svg class="ic-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.2v1.6M8 13.2v1.6M1.2 8h1.6M13.2 8h1.6M3.2 3.2l1.1 1.1M11.7 11.7l1.1 1.1M3.2 12.8l1.1-1.1M11.7 4.3l1.1-1.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
@@ -327,7 +333,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
             <output id="brushOut">60 mil</output>
           </div>
           <span class="spacer"></span>
-          <div class="seg"><button id="undo" class="ghost">Undo</button><button id="resetProf" class="ghost" title="Set the whole profile back to Line Z₀; drop-in elements stay">Reset profile</button></div>
+          <div class="seg"><button id="undo" class="ghost gear" aria-label="Undo" title="Undo (Ctrl/⌘ Z)"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3 2.5 6l3 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.75 6h6.5a4 4 0 0 1 0 8H6.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button><button id="resetProf" class="ghost danger" title="Set the whole profile back to Line Z₀; drop-in elements stay. Undo brings it back.">Reset profile</button></div>
         </div>
         <div class="toolrow addrow">
           <span class="label-sm">Drop in</span>
