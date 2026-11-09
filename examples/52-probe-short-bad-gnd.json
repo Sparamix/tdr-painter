@@ -42,7 +42,7 @@
   {
    "type": "L",
    "x": 0.5,
-   "value": 0.05,
+   "value": 0.07,
    "count": 1,
    "pitch": 0.15,
    "locked": false
@@ -64,7 +64,7 @@
  "example": {
   "category": "Probing",
   "order": 52,
-  "note": "One ground tip lifted, as with a probe that is not planarized: the return current takes the other ground alone, which adds loop inductance. This example adds 50 pH, an estimate: FormFactor reports about four times the common-mode inductance for GS probes as for GSG, and published short models for Cascade probes are about 50 pH (GS) and 2 pH (GSG). On a short it hides: |S11| stays at 0 dB and the TDR edge moves by about 2 ps. It shows in the phase of S11, about 14° at 20 GHz and 46° at 67 GHz, which this tool does not plot yet.",
+  "note": "One ground tip lifted, as with a probe that is not planarized: the return current takes the other ground alone, adding loop inductance. 70 pH reproduces a lifted-ground TDR Giorgi Maghlakelidze measured (the microstrip case), the same order as published short models for Cascade probes: about 50 pH for GS against 2 pH for GSG. On a short it hides: |S11| stays at 0 dB and the TDR edge moves by about 3 ps. It shows in the phase of S11, about 20° at 20 GHz and 61° at 67 GHz, which this tool does not plot yet.",
   "author": "TDR Painter"
  }
 }

@@ -134,16 +134,18 @@ example({
  * A GSG probe seen from its calibrated tips, landed on the short of a cal substrate or on a 42 Ω microstrip.
  * Contact values: 30 mΩ is a good landing (FormFactor, InfinityXT data sheet INFINITYXT-DS-0820: typical contact
  * resistance < 0.05 Ω on Al pads, < 0.02 Ω on Au); 2 Ω is a bad one. A lifted ground tip (an unplanarized probe)
- * leaves the return current one ground, which adds loop inductance. 50 pH is an estimate: FormFactor reports about
- * four times the common-mode inductance for SG/GS probes as for GSG (InfLayoutRule-AN-1115, p. 2), and published
- * short models for Cascade probes are 49.8 pH (ACP, GS) and 2.4 pH (HPC, GSG) (Baureis, "Probe tip characterization
- * using self-calibration", FH Würzburg, 2008, slide 10). The 1-D model shows only that loop inductance; the odd modes
+ * leaves the return current one ground, which adds loop inductance. 70 pH is the value Giorgi Maghlakelidze matched
+ * to a TDR he measured with a lifted ground (the microstrip case below). It is the same order as published figures:
+ * FormFactor reports about four times the common-mode inductance for SG/GS probes as for GSG (InfLayoutRule-AN-1115,
+ * p. 2), and published short models for Cascade probes are 49.8 pH (ACP, GS) and 2.4 pH (HPC, GSG) (Baureis, "Probe
+ * tip characterization using self-calibration", FH Würzburg, 2008, slide 10). The 1-D model shows only that loop
+ * inductance; the odd modes
  * and radiation a lifted ground also causes are out of its reach.
  * Microstrip: probes need the trace on the surface, so a microstrip, not a stripline. Its field is partly in air:
  * Dk is the quasi-static effective value of a 42 Ω microstrip on Dk 3.35 (Hammerstad's formulas: W/h = 3.04,
  * eps_eff = 2.70), and Df is scaled by the dielectric filling factor (q = 0.90).
  */
-const GND_LIFT = 0.05;   // nH, see above
+const GND_LIFT = 0.07;   // nH, see above
 const onShort = (rSig, lGnd) => ({
   params: { lenIn: 1, lossless: true, condLossless: true, dielLossless: true, extremeZ: true, zRx: 0.001, fmaxGHz: 67, beta: 6 },
   paint: (t) => t.plateau(0.5, 1.0, 0.001, 0),
@@ -162,7 +164,7 @@ example({
 });
 example({
   slug: 'probe-short-bad-gnd', order: 52, category: 'Probing', name: 'GSG on cal short: bad GND contact (G lifted)',
-  note: 'One ground tip lifted, as with a probe that is not planarized: the return current takes the other ground alone, which adds loop inductance. This example adds 50 pH, an estimate: FormFactor reports about four times the common-mode inductance for GS probes as for GSG, and published short models for Cascade probes are about 50 pH (GS) and 2 pH (GSG). On a short it hides: |S11| stays at 0 dB and the TDR edge moves by about 2 ps. It shows in the phase of S11, about 14° at 20 GHz and 46° at 67 GHz, which this tool does not plot yet.',
+  note: 'One ground tip lifted, as with a probe that is not planarized: the return current takes the other ground alone, adding loop inductance. 70 pH reproduces a lifted-ground TDR Giorgi Maghlakelidze measured (the microstrip case), the same order as published short models for Cascade probes: about 50 pH for GS against 2 pH for GSG. On a short it hides: |S11| stays at 0 dB and the TDR edge moves by about 3 ps. It shows in the phase of S11, about 20° at 20 GHz and 61° at 67 GHz, which this tool does not plot yet.',
   ...onShort(0.03, GND_LIFT),
 });
 // The microstrip lines carry modest loss so they are not ideal: 0.2 dB/in of conductor loss at 10 GHz, 0.1 Ω/in at DC,
