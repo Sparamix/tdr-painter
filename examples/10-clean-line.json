@@ -1,7 +1,7 @@
 {
  "format": "tdr-painter-project",
  "formatVersion": 1,
- "app": "0.8.5",
+ "app": "0.8.6",
  "name": "Clean 50 Ω line",
  "savedAt": "2026-11-01T00:00:00.000Z",
  "params": {

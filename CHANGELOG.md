@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.6 (2026-11-09)
+
+- Header: the project name has a Project label and a wider field; Open and Save are icon buttons (an open folder and a floppy disk) with the same tooltips; Example has its own row, lined up under the project field. Theme and Settings stay at the end of the first row.
+- The lifted-ground microstrip example is now Giorgi Maghlakelidze's setup, matched to a TDR he measured: a peak in the middle of the 50 to 42 Ω transition. All three microstrip examples now have some line loss, so they are not ideal.
+
 ## 0.8.5 (2026-11-09)
 
 - **Probing**, a new group in the Example menu: a GSG probe on a cal short and on a 42 Ω microstrip, each with a good landing (30 mΩ), a bad signal contact (2 Ω) and a lifted ground tip (50 pH more loop inductance). They replace the two "Probes on 42 Ω stripline" examples (a probe cannot land on a stripline: it is buried) and the two cal-short examples. The notes give the sources for the contact and inductance values, and say where the tool cannot show the effect: a lifted ground on a short changes only the phase of S11, which the tool does not plot yet.
