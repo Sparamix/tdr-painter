@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.7 (2026-11-09)
+
+- The cal-short lifted-ground example now uses 70 pH, like the microstrip one. Its note gives the new numbers: the TDR edge moves by about 3 ps, and the S11 phase turns by about 20° at 20 GHz and 61° at 67 GHz.
+
 ## 0.8.6 (2026-11-09)
 
 - Header: the project name has a Project label and a wider field; Open and Save are icon buttons (an open folder and a floppy disk) with the same tooltips; Example has its own row, lined up under the project field. Theme and Settings stay at the end of the first row.

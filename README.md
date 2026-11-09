@@ -21,7 +21,7 @@
 A teaching tool for signal and power integrity: it shows how the shapes you see on a TDR become return loss and
 insertion loss, and where that picture stops being enough.
 
-**Current release: v0.8.6.** TDR Painter is pre-1.0 and still changing; see [Releases](https://github.com/Sparamix/tdr-painter/releases),
+**Current release: v0.8.7.** TDR Painter is pre-1.0 and still changing; see [Releases](https://github.com/Sparamix/tdr-painter/releases),
 the [changelog](CHANGELOG.md) and the [roadmap](ROADMAP.md).
 
 **[Open TDR Painter](https://sparamix.github.io/tdr-painter/)** in your browser, or download `index.html` from a
@@ -203,7 +203,7 @@ Using TDR Painter in a course, a talk or a paper? *We'd love to hear about it!*
 
 Click **"Cite this repository"** in the GitHub sidebar (it reads [`CITATION.cff`](CITATION.cff)), or use:
 
-> G. Maghlakelidze, "TDR Painter: an in-browser TDR and S-parameter teaching tool," version 0.8.6, 2026.
+> G. Maghlakelidze, "TDR Painter: an in-browser TDR and S-parameter teaching tool," version 0.8.7, 2026.
 > [Online]. Available: <https://github.com/Sparamix/tdr-painter>
 
 ```bibtex
@@ -211,7 +211,7 @@ Click **"Cite this repository"** in the GitHub sidebar (it reads [`CITATION.cff`
   author  = {Maghlakelidze, Giorgi},
   title   = {{TDR Painter}: an in-browser {TDR} and {S}-parameter teaching tool},
   year    = {2026},
-  version = {0.8.6},
+  version = {0.8.7},
   url     = {https://github.com/Sparamix/tdr-painter}
 }
 ```
