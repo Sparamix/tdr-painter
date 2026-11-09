@@ -433,8 +433,25 @@ async def themes():
         await browser.close()
 
 
+async def narrow():
+    """No horizontal scrolling on phones, with the longest example name selected."""
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(executable_path=os.environ.get("CHROME") or None, args=["--no-sandbox"])
+        for w in (320, 390):
+            pg = await browser.new_page(viewport={"width": w, "height": 700})
+            await pg.goto((ROOT / "dist" / "index.html").as_uri())
+            longest = await pg.evaluate("[...document.querySelectorAll('#preset option')].reduce((a, o) => o.textContent.length > a.length ? o.textContent : a, '')")
+            await pg.select_option("#preset", label=longest)
+            await pg.wait_for_timeout(100)
+            sw, cw = await pg.evaluate("[document.documentElement.scrollWidth, document.documentElement.clientWidth]")
+            check(f"{w} px wide: no horizontal scroll", sw <= cw, f"scrollWidth {sw}, clientWidth {cw}, '{longest}'")
+            await pg.close()
+        await browser.close()
+
+
 asyncio.run(main())
 asyncio.run(claude_host())
 asyncio.run(themes())
+asyncio.run(narrow())
 print("\nALL PASS" if not fails else f"\n{len(fails)} FAILED")
 sys.exit(1 if fails else 0)

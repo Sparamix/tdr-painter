@@ -1,0 +1,82 @@
+{
+ "format": "tdr-painter-project",
+ "formatVersion": 1,
+ "app": "0.8.4",
+ "name": "GSG on 42 Ω microstrip: bad GND contact (G lifted)",
+ "savedAt": "2026-11-01T00:00:00.000Z",
+ "params": {
+  "lenIn": 1.5,
+  "z0": 50,
+  "Dk": 2.7,
+  "Df": 0.0036,
+  "frefGHz": 12,
+  "dsLowHz": 1000,
+  "dsHighHz": 1000000000000,
+  "condLoss": 0.4,
+  "condRefGHz": 10,
+  "rdc": 0.2,
+  "fmaxGHz": 67,
+  "nf": 1001,
+  "zTx": 50,
+  "zRx": 50,
+  "beta": 4.2,
+  "lossless": true,
+  "condLossless": true,
+  "dielLossless": true,
+  "extremeZ": false
+ },
+ "profile": {
+  "cells": 500,
+  "runs": [
+   [
+    50,
+    167
+   ],
+   [
+    42,
+    166
+   ],
+   [
+    50,
+    167
+   ]
+  ]
+ },
+ "elements": [
+  {
+   "type": "L",
+   "x": 0.5,
+   "value": 0.05,
+   "count": 1,
+   "pitch": 0.15,
+   "locked": false
+  },
+  {
+   "type": "R",
+   "x": 0.5,
+   "value": 0.03,
+   "count": 1,
+   "pitch": 0.15,
+   "locked": false
+  },
+  {
+   "type": "R",
+   "x": 1,
+   "value": 0.03,
+   "count": 1,
+   "pitch": 0.15,
+   "locked": false
+  }
+ ],
+ "view": {
+  "zMin": 36,
+  "zMax": 54,
+  "log": false
+ },
+ "example": {
+  "category": "Probing",
+  "order": 55,
+  "note": "One Tx ground tip lifted: 50 pH more loop inductance at the tip (the cal-short example says where the number comes from). On a line it shows: an inductive bump of about 1.5 Ω right at the tip, the line behind it back at 42 Ω, and |S11| about 3 dB worse. A real lifted ground also excites unwanted modes and radiates, which this 1-D model leaves out.",
+  "author": "TDR Painter"
+ }
+}

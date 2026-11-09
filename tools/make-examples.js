@@ -124,41 +124,65 @@ example({
   paint: (t, len) => { t.bump(0.07, 0.06, -8); t.bump(0.16, 0.05, 7); t.bump(len - 0.07, 0.06, -8); t.bump(len - 0.16, 0.05, 7); },
   elements: [C(1.0, 0.08), STUB(1.0, 60, 45)],
 });
-const probe = (tipR) => ({
-  params: { lenIn: 1.56 },
-  paint: (t) => t.plateau(0.53, 1.03, 42, 0.004),
-  elements: [R(0.5, tipR), L(0.5, 0.12), C(0.52, 0.06), C(1.04, 0.06), L(1.06, 0.12), R(1.06, 0.02)],
-});
 example({
-  slug: 'probe-good-contact', order: 41, category: 'Realistic channels', name: 'Probes on 42 Ω stripline, good contact',
-  note: '50 Ω coax (the first and last 0.5 in), an inductive probe tip (0.12 nH), a capacitive pad (0.06 pF), 0.5 in of 42 Ω stripline, then the same in reverse. Tip and pad partly cancel; the 42 Ω section sets the low-frequency ripple. Both contacts are 0.02 Ω. Try 0.25 nH tips to see a spring-probe fixture.',
-  ...probe(0.02),
-});
-example({
-  slug: 'probe-bad-contact', order: 42, category: 'Realistic channels', name: 'Probes on 42 Ω stripline, bad Tx contact',
-  note: 'Same fixture, but the Tx probe lands with 3 Ω of contact resistance. The TDR steps up by about 3 Ω at the tip and stays up to DC, so the 42 Ω stripline now reads about 46 Ω instead of 43 Ω: a bad contact quietly corrupts every impedance behind it. S11 also no longer matches S22.',
-  ...probe(3),
-});
-example({
-  slug: 'serpentine-corners', order: 43, category: 'Realistic channels', name: 'Serpentine, 5 in, corner capacitance',
+  slug: 'serpentine-corners', order: 41, category: 'Realistic channels', name: 'Serpentine, 5 in, corner capacitance',
   note: 'A 5 in trace with 13 U-turns, each made of two 90° corners of about 0.012 pF. One corner is negligible, but at a regular 0.3 in pitch they add up near v/(2p) ≈ 11 GHz and its harmonics; look at S11 and ILD there. This 1-D model leaves out coupling between the parallel runs, which in a real serpentine shortens the delay.',
   params: { lenIn: 5 },
   elements: [C(0.6, 0.012, { count: 13, pitch: 0.3 }), C(0.62, 0.012, { count: 13, pitch: 0.3 })],
 });
-// A GSG probe on the short of a cal substrate, from the calibrated tips (experimental impedance range, log axis).
-const onShort = (rContact) => ({
-  params: { lenIn: 1, lossless: true, extremeZ: true, zRx: 0.001, fmaxGHz: 67, beta: 6 },
+/* ---------------- Probing ----------------
+ * A GSG probe seen from its calibrated tips, landed on the short of a cal substrate or on a 42 Ω microstrip.
+ * Contact values: 30 mΩ is a good landing (FormFactor, InfinityXT data sheet INFINITYXT-DS-0820: typical contact
+ * resistance < 0.05 Ω on Al pads, < 0.02 Ω on Au); 2 Ω is a bad one. A lifted ground tip (an unplanarized probe)
+ * leaves the return current one ground, which adds loop inductance. 50 pH is an estimate: FormFactor reports about
+ * four times the common-mode inductance for SG/GS probes as for GSG (InfLayoutRule-AN-1115, p. 2), and published
+ * short models for Cascade probes are 49.8 pH (ACP, GS) and 2.4 pH (HPC, GSG) (Baureis, "Probe tip characterization
+ * using self-calibration", FH Würzburg, 2008, slide 10). The 1-D model shows only that loop inductance; the odd modes
+ * and radiation a lifted ground also causes are out of its reach.
+ * Microstrip: probes need the trace on the surface, so a microstrip, not a stripline. Its field is partly in air:
+ * Dk is the quasi-static effective value of a 42 Ω microstrip on Dk 3.35 (Hammerstad's formulas: W/h = 3.04,
+ * eps_eff = 2.70), and Df is scaled by the dielectric filling factor (q = 0.90).
+ */
+const GND_LIFT = 0.05;   // nH, see above
+const onShort = (rSig, lGnd) => ({
+  params: { lenIn: 1, lossless: true, condLossless: true, dielLossless: true, extremeZ: true, zRx: 0.001, fmaxGHz: 67, beta: 6 },
   paint: (t) => t.plateau(0.5, 1.0, 0.001, 0),
-  elements: [L(0.5, 0.02), R(0.5, rContact)],
+  elements: [...(lGnd ? [L(0.5, lGnd)] : []), R(0.5, rSig)],
   view: { zMin: 0.0005, zMax: 200, log: true },
 });
 example({
-  slug: 'probe-short-good', order: 44, category: 'Realistic channels', name: 'GSG probe on a short, good contact',
-  note: 'A probe landed on the short of a cal substrate, seen from the calibrated tips: a lossless 50 Ω lead, 20 pH of tip and strip inductance, a 30 mΩ contact, and the short (a 1 mΩ section into a 1 mΩ Rx). On the log axis the TDR drops from 50 Ω to about 30 mΩ and stays there; on a linear axis it is just zero. Kaiser β 6 keeps the window ringing near ±4 mΩ. Store it with Data → Memory, then open the bad-contact example. Uses the experimental impedance range (gear menu).',
-  ...onShort(0.03),
+  slug: 'probe-short-good', order: 50, category: 'Probing', name: 'GSG on cal short: good SIG contact (30 mΩ)',
+  note: 'A GSG probe landed on the short of a cal substrate, seen from the calibrated tips: a lossless 50 Ω lead, a 30 mΩ signal contact, and the short (a 1 mΩ section into a 1 mΩ Rx). 30 mΩ is a good landing; FormFactor quotes under 50 mΩ on aluminum pads for its InfinityXT probes. On the log axis the TDR falls from 50 Ω to about 30 mΩ and stays there, and |S11| reads about −0.01 dB. Store it with Data → Memory, then open the next two. Uses the experimental impedance range (Settings).',
+  ...onShort(0.03, 0),
 });
 example({
-  slug: 'probe-short-bad', order: 45, category: 'Realistic channels', name: 'GSG probe on a short, bad contact',
-  note: 'The same short with a 0.5 Ω contact. The TDR after the short sits at 0.5 Ω, more than a decade above a good landing, and |S11| reads about −0.17 dB instead of 0 dB. A bad signal tip and two bad ground tips look alike: both put resistance in the one current loop, so a one-port can’t tell which. One lifted ground mostly adds inductance (the grounds were in parallel); raise the L chip and the edge barely moves. Set R to 1 MΩ for a probe that never landed.',
-  ...onShort(0.5),
+  slug: 'probe-short-bad-sig', order: 51, category: 'Probing', name: 'GSG on cal short: bad SIG contact (2 Ω)',
+  note: 'The same short with 2 Ω at the signal tip. The TDR now settles at 2 Ω, almost two decades above a good landing, and |S11| drops to about −0.7 dB. Two resistive ground tips would look the same: a one-port sees one current loop and can’t tell where in it the resistance sits. Set R to 1 MΩ for a tip that never landed.',
+  ...onShort(2, 0),
+});
+example({
+  slug: 'probe-short-bad-gnd', order: 52, category: 'Probing', name: 'GSG on cal short: bad GND contact (G lifted)',
+  note: 'One ground tip lifted, as with a probe that is not planarized: the return current takes the other ground alone, which adds loop inductance. This example adds 50 pH, an estimate: FormFactor reports about four times the common-mode inductance for GS probes as for GSG, and published short models for Cascade probes are about 50 pH (GS) and 2 pH (GSG). On a short it hides: |S11| stays at 0 dB and the TDR edge moves by about 2 ps. It shows in the phase of S11, about 14° at 20 GHz and 46° at 67 GHz, which this tool does not plot yet.',
+  ...onShort(0.03, GND_LIFT),
+});
+const onMicrostrip = (rSig, lGnd) => ({
+  params: { lenIn: 1.5, Dk: 2.7, Df: 0.0036, lossless: true, condLossless: true, dielLossless: true, fmaxGHz: 67 },
+  paint: (t) => t.plateau(0.5, 1.0, 42, 0),
+  elements: [...(lGnd ? [L(0.5, lGnd)] : []), R(0.5, rSig), R(1.0, 0.03)],
+  view: { zMin: 36, zMax: 54, log: false },
+});
+example({
+  slug: 'probe-ms-good', order: 53, category: 'Probing', name: 'GSG on 42 Ω microstrip: good SIG contact (30 mΩ)',
+  note: 'Two GSG probes on 0.5 in of 42 Ω microstrip, seen from the calibrated tips; the 50 Ω sections stand for the probes. A microstrip, not a stripline: a probe needs the trace on the surface. Its field is partly in air, so Dk is the effective 2.70 of a 42 Ω microstrip on Dk 3.35. Both contacts are 30 mΩ and loss is off, so the TDR shows 50, 42, 50 Ω and nothing else. Pads and ground vias are left out; add a C chip at the tip to see how a launch pad changes the picture.',
+  ...onMicrostrip(0.03, 0),
+});
+example({
+  slug: 'probe-ms-bad-sig', order: 54, category: 'Probing', name: 'GSG on 42 Ω microstrip: bad SIG contact (2 Ω)',
+  note: 'The Tx signal tip lands with 2 Ω. The TDR steps up by 2 Ω at the tip and stays up, so the 42 Ω line reads 44 Ω: a bad contact quietly shifts every impedance behind it. |S11| even improves by about 1.3 dB, because 44 Ω is closer to 50 Ω, so a better return loss is no proof of a good landing. S11 and S22 no longer agree.',
+  ...onMicrostrip(2, 0),
+});
+example({
+  slug: 'probe-ms-bad-gnd', order: 55, category: 'Probing', name: 'GSG on 42 Ω microstrip: bad GND contact (G lifted)',
+  note: 'One Tx ground tip lifted: 50 pH more loop inductance at the tip (the cal-short example says where the number comes from). On a line it shows: an inductive bump of about 1.5 Ω right at the tip, the line behind it back at 42 Ω, and |S11| about 3 dB worse. A real lifted ground also excites unwanted modes and radiates, which this 1-D model leaves out.',
+  ...onMicrostrip(0.03, GND_LIFT),
 });

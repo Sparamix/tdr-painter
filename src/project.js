@@ -40,7 +40,7 @@
   };
   // side-panel groups, top to bottom by default; a project may save its own order (view.panels)
   const PANELS = ['range', 'line', 'diel', 'cond', 'ports', 'sweep', 'export'];
-  const CATEGORIES = ['Basics', 'Discontinuities', 'TDR artifacts', 'Realistic channels', 'Community'];
+  const CATEGORIES = ['Basics', 'Discontinuities', 'TDR artifacts', 'Realistic channels', 'Probing', 'Community'];
 
   /** The impedance limits that apply to a project, by its extremeZ flag. */
   function limits(extremeZ) {

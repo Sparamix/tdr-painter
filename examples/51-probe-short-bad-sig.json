@@ -1,0 +1,62 @@
+{
+ "format": "tdr-painter-project",
+ "formatVersion": 1,
+ "app": "0.8.4",
+ "name": "GSG on cal short: bad SIG contact (2 Ω)",
+ "savedAt": "2026-11-01T00:00:00.000Z",
+ "params": {
+  "lenIn": 1,
+  "z0": 50,
+  "Dk": 3.35,
+  "Df": 0.004,
+  "frefGHz": 12,
+  "dsLowHz": 1000,
+  "dsHighHz": 1000000000000,
+  "condLoss": 0.4,
+  "condRefGHz": 10,
+  "rdc": 0.2,
+  "fmaxGHz": 67,
+  "nf": 1001,
+  "zTx": 50,
+  "zRx": 0.001,
+  "beta": 6,
+  "lossless": true,
+  "condLossless": true,
+  "dielLossless": true,
+  "extremeZ": true
+ },
+ "profile": {
+  "cells": 500,
+  "runs": [
+   [
+    50,
+    250
+   ],
+   [
+    0.001,
+    250
+   ]
+  ]
+ },
+ "elements": [
+  {
+   "type": "R",
+   "x": 0.5,
+   "value": 2,
+   "count": 1,
+   "pitch": 0.15,
+   "locked": false
+  }
+ ],
+ "view": {
+  "zMin": 0.0005,
+  "zMax": 200,
+  "log": true
+ },
+ "example": {
+  "category": "Probing",
+  "order": 51,
+  "note": "The same short with 2 Ω at the signal tip. The TDR now settles at 2 Ω, almost two decades above a good landing, and |S11| drops to about −0.7 dB. Two resistive ground tips would look the same: a one-port sees one current loop and can’t tell where in it the resistance sits. Set R to 1 MΩ for a tip that never landed.",
+  "author": "TDR Painter"
+ }
+}

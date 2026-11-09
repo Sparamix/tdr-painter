@@ -66,7 +66,7 @@ h1 .mark { width: 1.15em; height: 1.15em; flex: none; margin-left: -0.12em; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --mark-frame: #C9D6FF; } }
 :root[data-theme="dark"] { --mark-frame: #C9D6FF; }
 .dek { color: var(--fg-2); margin: 0; max-width: 62ch; }
-.top-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.top-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-width: 0; max-width: 100%; }
 select, input[type=number], input[type=text] {
   font: inherit; color: var(--fg); background: var(--panel); border: 1px solid var(--line);
   border-radius: 8px; padding: 6px 8px; min-height: 34px;
@@ -135,7 +135,7 @@ button.nudge { animation: nudge 0.22s ease-in-out 2; }
 @media (prefers-reduced-motion: reduce) { button.nudge { animation: none; outline: 2px solid var(--refl); outline-offset: 2px; } }
 .projbar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding-right: 10px; border-right: 1px solid var(--line); }
 .projbar input[type=text] { width: 200px; max-width: 100%; }
-@media (max-width: 640px) { .projbar { border-right: 0; padding-right: 0; width: 100%; } .projbar input[type=text] { flex: 1 1 140px; width: auto; } }
+@media (max-width: 640px) { .projbar { border-right: 0; padding-right: 0; width: 100%; } .projbar input[type=text] { flex: 1 1 140px; width: auto; min-width: 0; } }
 .pstatus { font-size: 12.5px; color: var(--fg-2); overflow-wrap: anywhere; }
 .pstatus:empty { display: none; }
 .pstatus.err { color: var(--danger); }
@@ -187,6 +187,7 @@ details.notes code { font-family: var(--font-data); font-size: 12px; }
 #s2pbox { width: 100%; height: 120px; font-family: var(--font-data); font-size: 11px; background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; }
 .gear { display: inline-grid; place-items: center; width: 34px; padding: 0; position: relative; }
 .gear svg { width: 17px; height: 17px; }
+#preset { max-width: 100%; min-width: 0; text-overflow: ellipsis; }   /* long example names shrink on narrow screens */
 .themebtn .ic-sun, .themebtn[data-shown="dark"] .ic-moon { display: none; }   /* the icon is the mode a click switches to */
 .themebtn[data-shown="dark"] .ic-sun { display: block; }
 .gear[aria-expanded="true"] { background: var(--ink-soft); border-color: var(--ink); }

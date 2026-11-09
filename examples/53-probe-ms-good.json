@@ -1,0 +1,74 @@
+{
+ "format": "tdr-painter-project",
+ "formatVersion": 1,
+ "app": "0.8.4",
+ "name": "GSG on 42 Ω microstrip: good SIG contact (30 mΩ)",
+ "savedAt": "2026-11-01T00:00:00.000Z",
+ "params": {
+  "lenIn": 1.5,
+  "z0": 50,
+  "Dk": 2.7,
+  "Df": 0.0036,
+  "frefGHz": 12,
+  "dsLowHz": 1000,
+  "dsHighHz": 1000000000000,
+  "condLoss": 0.4,
+  "condRefGHz": 10,
+  "rdc": 0.2,
+  "fmaxGHz": 67,
+  "nf": 1001,
+  "zTx": 50,
+  "zRx": 50,
+  "beta": 4.2,
+  "lossless": true,
+  "condLossless": true,
+  "dielLossless": true,
+  "extremeZ": false
+ },
+ "profile": {
+  "cells": 500,
+  "runs": [
+   [
+    50,
+    167
+   ],
+   [
+    42,
+    166
+   ],
+   [
+    50,
+    167
+   ]
+  ]
+ },
+ "elements": [
+  {
+   "type": "R",
+   "x": 0.5,
+   "value": 0.03,
+   "count": 1,
+   "pitch": 0.15,
+   "locked": false
+  },
+  {
+   "type": "R",
+   "x": 1,
+   "value": 0.03,
+   "count": 1,
+   "pitch": 0.15,
+   "locked": false
+  }
+ ],
+ "view": {
+  "zMin": 36,
+  "zMax": 54,
+  "log": false
+ },
+ "example": {
+  "category": "Probing",
+  "order": 53,
+  "note": "Two GSG probes on 0.5 in of 42 Ω microstrip, seen from the calibrated tips; the 50 Ω sections stand for the probes. A microstrip, not a stripline: a probe needs the trace on the surface. Its field is partly in air, so Dk is the effective 2.70 of a 42 Ω microstrip on Dk 3.35. Both contacts are 30 mΩ and loss is off, so the TDR shows 50, 42, 50 Ω and nothing else. Pads and ground vias are left out; add a C chip at the tip to see how a launch pad changes the picture.",
+  "author": "TDR Painter"
+ }
+}

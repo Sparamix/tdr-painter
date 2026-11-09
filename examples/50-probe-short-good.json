@@ -2,7 +2,7 @@
  "format": "tdr-painter-project",
  "formatVersion": 1,
  "app": "0.8.4",
- "name": "GSG probe on a short, good contact",
+ "name": "GSG on cal short: good SIG contact (30 mΩ)",
  "savedAt": "2026-11-01T00:00:00.000Z",
  "params": {
   "lenIn": 1,
@@ -40,14 +40,6 @@
  },
  "elements": [
   {
-   "type": "L",
-   "x": 0.5,
-   "value": 0.02,
-   "count": 1,
-   "pitch": 0.15,
-   "locked": false
-  },
-  {
    "type": "R",
    "x": 0.5,
    "value": 0.03,
@@ -62,9 +54,9 @@
   "log": true
  },
  "example": {
-  "category": "Realistic channels",
-  "order": 44,
-  "note": "A probe landed on the short of a cal substrate, seen from the calibrated tips: a lossless 50 Ω lead, 20 pH of tip and strip inductance, a 30 mΩ contact, and the short (a 1 mΩ section into a 1 mΩ Rx). On the log axis the TDR drops from 50 Ω to about 30 mΩ and stays there; on a linear axis it is just zero. Kaiser β 6 keeps the window ringing near ±4 mΩ. Store it with Data → Memory, then open the bad-contact example. Uses the experimental impedance range (gear menu).",
+  "category": "Probing",
+  "order": 50,
+  "note": "A GSG probe landed on the short of a cal substrate, seen from the calibrated tips: a lossless 50 Ω lead, a 30 mΩ signal contact, and the short (a 1 mΩ section into a 1 mΩ Rx). 30 mΩ is a good landing; FormFactor quotes under 50 mΩ on aluminum pads for its InfinityXT probes. On the log axis the TDR falls from 50 Ω to about 30 mΩ and stays there, and |S11| reads about −0.01 dB. Store it with Data → Memory, then open the next two. Uses the experimental impedance range (Settings).",
   "author": "TDR Painter"
  }
 }

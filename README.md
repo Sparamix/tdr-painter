@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <em>17 examples · 178/178 validation checks pass · one HTML file, no install · nothing leaves your browser · GPL-3.0</em>
+  <em>19 examples · 178/178 validation checks pass · one HTML file, no install · nothing leaves your browser · GPL-3.0</em>
 </p>
 
 **Paint a TDR impedance profile, drop in parasitics, and watch S11, S21, ILD and the power balance respond.**
@@ -37,11 +37,11 @@ release (or [`dist/index.html`](dist/index.html) here) and open it from disk. It
 
 - **Students** in SI/PI, microwave and EM courses who want to see why a capacitive dip on a TDR becomes a rising S11,
   and why a via stub notches S21
-- **Instructors** who need a live demo for lecture: 17 built-in examples with notes, and project files to hand out
+- **Instructors** who need a live demo for lecture: 19 built-in examples with notes, and project files to hand out
 - **Engineers new to TDR** learning to read a scope trace: launches, via stubs, rise-time resolution, masking by an
   earlier mismatch, ghost reflections
-- **Lab engineers** learning what good and bad probe contact on a calibration short look like on a TDR
-  (experimental 1 mΩ to 1 MΩ range, log axis)
+- **Lab engineers** learning what a good landing, a bad signal contact and a lifted ground look like, on a
+  calibration short and on a microstrip (the short uses the experimental 1 mΩ to 1 MΩ range and a log axis)
 
 If something looks wrong or could teach better, please
 [open an issue](https://github.com/Sparamix/tdr-painter/issues). That's how the tool gets better.
@@ -71,14 +71,15 @@ If something looks wrong or could teach better, please
 
 ## Examples
 
-The Example menu groups 17 channels, each with a short note on what to look at and what to try next:
+The Example menu groups 19 channels, each with a short note on what to look at and what to try next:
 
 | Group | Examples |
 |---|---|
 | Basics | clean line, impedance tolerance ripple, painted taper, lossy creep on a 10 in line |
 | Discontinuities | shunt C vs series L, via stub resonance, a pad compensated with series L, Rx pad capacitance |
 | TDR artifacts | resolution of two close pads, masking by an earlier mismatch, a ghost spike after a via stub |
-| Realistic channels | board launch with a via stub, probed 42 Ω stripline with good and bad contact, a 5 in serpentine with corner capacitance, a GSG probe on a short standard with good and bad contact |
+| Realistic channels | board launch with a via stub, a 5 in serpentine with corner capacitance |
+| Probing | a GSG probe on a cal short and on a 42 Ω microstrip, each with a good landing, a bad signal contact and a lifted ground tip |
 
 Each example is a plain project file in [`examples/`](examples/), bundled into the page at build time. New ones are
 welcome: see [CONTRIBUTING.md](CONTRIBUTING.md).
