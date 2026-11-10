@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.9 (2026-11-09)
+
+- Compact layout is tighter: much less vertical padding, margin and gap around buttons, fields, panels and rows, and slightly closer line spacing, with every font at its normal size. The memory buttons to the bottom of the insertion-loss plot take 659 px, down from 719 (836 in the normal layout). Compact is no longer on by default on touch screens, which keep the larger touch targets.
+
 ## 0.8.8 (2026-11-09)
 
 - Export JSON is now a floppy icon with the word JSON, and Undo an undo arrow. Reset profile keeps its words and turns red, since it is the destructive one; Undo still brings the profile back.
