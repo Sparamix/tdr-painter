@@ -182,7 +182,7 @@ npm run validate                 # optional: the validation suite and report (pi
 ## Future features
 
 [ROADMAP.md](ROADMAP.md) keeps the list with design notes: a TDR rise-time setting (and the window behind it), a
-Smith chart view, and Touchstone import as a memory trace.
+TDR from the Rx port, a transmission-line drop-in element, a Smith chart view, and Touchstone import as a memory trace.
 
 
 ## Contributing
