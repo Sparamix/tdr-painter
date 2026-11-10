@@ -473,8 +473,11 @@ async def compact_layout():
         await pg.wait_for_timeout(200)
         v = await pg.evaluate(probe)
         check("800 px tall window: compact by default, TDR 290 px, plots 160 px", v[:4] == [True, True, 290, 160], v)
-        check("compact: memory buttons to the bottom of the insertion-loss plot fit in 730 px", v[4] <= 730, v[4])
+        check("compact: memory buttons to the bottom of the insertion-loss plot fit in 680 px", v[4] <= 680, v[4])
+        fonts = "[...document.querySelectorAll('h1, .dek, button, select, input[type=text], .label-sm, .card h3, .group h2, .legend, .readout, .exnote p')].map(e => getComputedStyle(e).fontSize).join()"
+        f_compact = await pg.evaluate(fonts)
         await pg.click("#gear"); await pg.click("#optCompact")
+        check("compact changes no font size", await pg.evaluate(fonts) == f_compact)
         v = await pg.evaluate(probe)
         check("unticking Compact layout restores the normal sizes", v[:4] == [False, False, 340, 190], v)
         await pg.set_viewport_size({"width": 1440, "height": 700})
@@ -488,6 +491,13 @@ async def compact_layout():
         await pg.set_viewport_size({"width": 1440, "height": 780})
         await pg.wait_for_timeout(100)
         check("until the user picks, shrinking the window turns compact on", (await pg.evaluate(probe))[:3] == [True, True, 290])
+        await pg.close()
+        ctx = await browser.new_context(viewport={"width": 390, "height": 760}, has_touch=True, is_mobile=True)
+        pg = await ctx.new_page()
+        await pg.goto((ROOT / "dist" / "index.html").as_uri())
+        await pg.wait_for_timeout(200)
+        check("touch screen in a short window: compact stays off by default", await pg.evaluate("document.documentElement.classList.contains('compact')") is False)
+        await ctx.close()
         await browser.close()
 
 
