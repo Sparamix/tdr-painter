@@ -473,7 +473,8 @@ async def compact_layout():
         await pg.wait_for_timeout(200)
         v = await pg.evaluate(probe)
         check("800 px tall window: compact by default, TDR 290 px, plots 160 px", v[:4] == [True, True, 290, 160], v)
-        check("compact: memory buttons to the bottom of the insertion-loss plot fit in 680 px", v[4] <= 680, v[4])
+        # 659 px in v0.8.9; the TDR Canvas title row (v0.8.10) adds 24 px of content, not padding.
+        check("compact: memory buttons to the bottom of the insertion-loss plot fit in 690 px", v[4] <= 690, v[4])
         fonts = "[...document.querySelectorAll('h1, .dek, button, select, input[type=text], .label-sm, .card h3, .group h2, .legend, .readout, .exnote p')].map(e => getComputedStyle(e).fontSize).join()"
         f_compact = await pg.evaluate(fonts)
         await pg.click("#gear"); await pg.click("#optCompact")

@@ -49,7 +49,7 @@ If something looks wrong or could teach better, please
 
 ## What you can do
 
-- **Paint** the profile with Draw, Push / pull, Plateau, Smooth and Erase. Short bumps are labeled with their
+- **Paint** the profile on the TDR Canvas with Draw, Push / pull, Plateau, Smooth and Erase. Short bumps are labeled with their
   equivalent lumped L or C.
 - **Drop in** a shunt C, series L, series R, a stub (open, like a via stub, or shorted to ground) or a resistive
   attenuator (a T pad between Zin and Zout). Drag the chips along the strip under the plot; set copies and pitch for
