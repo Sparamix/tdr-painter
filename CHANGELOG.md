@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.10 (2026-11-09)
+
+- The main panel has a title, **TDR Canvas**, styled like the Return loss and Insertion loss cards, with a short description on the right. In the compact layout it adds 24 px: the memory buttons to the bottom of the insertion-loss plot now take 683 px.
+- Roadmap: a read-only TDR from the Rx port (from S22) and a transmission-line drop-in element with its own length, Z₀, Dk, Df and loss, each with design notes, options and open questions.
+
 ## 0.8.9 (2026-11-09)
 
 - Compact layout is tighter: much less vertical padding, margin and gap around buttons, fields, panels and rows, and slightly closer line spacing, with every font at its normal size. The memory buttons to the bottom of the insertion-loss plot take 659 px, down from 719 (836 in the normal layout). Compact is no longer on by default on touch screens, which keep the larger touch targets.
