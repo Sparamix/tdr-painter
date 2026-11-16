@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.12 (2026-11-16)
+
+- **[doc/SOURCES.md](doc/SOURCES.md)** lists every source used in the literature check of v0.8.10, 43 in all: the 31 the repository cites, 5 that were checked but not cited, and 7 that were withdrawn or not read. Each entry gives the statement the source supports and the page or equation where it is. A section lists what is stated without a published source (the 70 pH lifted ground, the 2 Ω poor contact, derivations, the R′/L′/C′ scaling assumption). The README's reference list, its AI disclosure and the validation README link to it.
+- The engine test that prints the dielectric-loss rule of thumb now names its source (Bogatin, *Signal and Power Integrity—Simplified*, 3rd ed., eq. (9-69)).
+
 ## 0.8.11 (2026-11-16)
 
 Fixes from an independent literature fact-check of v0.8.10 (133 checks against the cited sources, page by page).
