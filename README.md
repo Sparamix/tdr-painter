@@ -123,7 +123,7 @@ pass.**
 | A | scikit-rf, same structure: S11, S21, S22 | agree to 4e-11 or better (limit 1e-9) |
 | B | scikit-rf windowed step response: the TDR | agree to 2e-4 in ρ, about 0.02 Ω at 50 Ω (limit 1e-3) |
 | P | Physics: DC limit, passivity, energy conservation, causality | all pass; non-causal negative controls are caught |
-| X | Textbook: Beatty closed form, quarter-wave stub null, Bloch stopband, attenuator match and loss, contact resistance on a short | all pass |
+| X | Closed forms with page references: Beatty section, quarter-wave stub null, Bloch stopband, attenuator match and loss; and a DC-limit check of contact resistance on a short | all pass |
 | C | Painting the TDR you see: how close are the S-parameters? | informational, per case |
 | R | A VNA measurement and an ANSYS Circuit simulation from scikit-rf's examples | TDR within 3.5 Ω of the measurement; \|S11\| within 0.023 of ANSYS |
 
@@ -138,19 +138,39 @@ against your board).
 
 ## How it works
 
+Numbers in brackets refer to the [References](#references) below.
+
 - The profile is 500 equal cells. Each cell is a uniform lossy line of its painted impedance; lumped elements sit on
-  cell boundaries. S-parameters come from the ABCD cascade, so they are exact for that structure.
+  cell boundaries. S-parameters come from the ABCD cascade [1, Sec. 4.4], converted to S with port impedances Z_Tx
+  and Z_Rx that may differ [2, Table III], so they are exact for that structure.
 - R′ and L′ scale with Z and C′ with 1/Z, so loss per inch is the same everywhere and only reflections change with
   what you paint.
-- Dielectric: Djordjevic-Sarkar, `ε(f) = ε∞ + Δε·ln((f₂+jf)/(f₁+jf)) / ln(f₂/f₁)`, anchored to Dk and Df at f_ref
-  (same form and corner defaults as scikit-rf's `djordjevicsvensson`). Defaults are the MEGTRON 6 R-5775(N)
-  datasheet point, Dk 3.35 and Df 0.004 at 12 GHz.
-- Conductor: `R_dc + (1+j)·K·√f` per unit length, which keeps the line causal.
-- TDR: S11 times a Kaiser half-window centered on DC (β 4.2 by default), inverse FFT, trapezoid-rule integration (as
-  scikit-rf's `step_response`), then `Z = Z_Tx(1+ρ)/(1−ρ)`. Time zero falls on a sample.
-- Equivalent L/C labels use the TDR area method, `L = 2Z₀∫ρ dt` and `C = −(2/Z₀)∫ρ dt` over round-trip time; the label is that area computed from the painted profile, exact on a lossless line.
-- ILD is the insertion loss, −dB(S21), minus its fitted value `a0 + a1√f + a2·f + a4·f²` (f in GHz). The fit weights each point by |S21| and runs from 0.05 GHz to f_max, as in OIF-CEI-04.0; positive ILD means more loss than the fit. Unlike OIF, the coefficients are not bounded, the fit ends at f_max rather than at a baud rate, and the sweep's step (f_max/1000, 50 MHz at the default 50 GHz) is coarser than the 10 MHz OIF asks for.
-- 1-D TEM only: no radiation, coupling or mode conversion.
+- Dielectric: Djordjević-Sarkar [3, eq. (5)] without its DC-conductivity term,
+  `ε(f) = ε∞ + Δε·ln((f₂+jf)/(f₁+jf)) / ln(f₂/f₁)`, anchored at one (Dk, Df) point at f_ref [4, Sec. 6.3.5], [5]:
+  the same form as scikit-rf's `djordjevicsvensson` [6], [7], with its corner defaults of 1 kHz and 1 THz ([3] fitted
+  10⁴ and 10¹² rad/s to FR-4). Defaults: MEGTRON 6 R-5775(N) laminate, Dk 3.35 and Df 0.004 at 12 GHz [8] (0.75 mm
+  core, disk-resonator method); the 2022 data sheet gives 3.34 and 0.0037 at 13 GHz.
+- Conductor: `R_dc + (1+j)·K·√f` per unit length. The skin term carries its internal inductance, a reactance equal to
+  its resistance [9, eqs. (5)–(7)], which a causal √f resistance requires [10, Sec. 2.8], [4, App. E],
+  [11, eq. (5)]. R_dc and the skin term are simply added, the simple approximation of [10, eq. [2.51]]: exact at DC,
+  about R_dc high above the skin-effect onset.
+- TDR: S11 times a Kaiser half-window centered on DC [12, eq. (1)], [13] (β 4.2 by default), inverse FFT,
+  trapezoid-rule integration (as scikit-rf's `step_response` [6]), then `Z = Z_Tx(1+ρ)/(1−ρ)` [14, eq. (14.6)]:
+  exact for a single termination, an estimate along a profile with several reflections. Time zero falls on a sample.
+- Rise time is the 10–90 % rise time of the windowed step, as VNAs define it [16]. Resolution is the one-way distance
+  v·t_r/2 that two reflections need to show separately, a rule of thumb [15, p. 14].
+- Equivalent L/C labels use the TDR area method [17], `L = 2Z₀∫ρ dt` and `C = −(2/Z₀)∫ρ dt` over round-trip time; the
+  label is that area computed from the painted profile, exact on a lossless line.
+- ILD is the insertion loss, −dB(S21), minus its fitted value `a0 + a1√f + a2·f + a4·f²` (f in GHz). The fit weights
+  each point by |S21| and runs from 0.05 GHz to f_max, as in OIF-CEI-04.0 [18, Sec. 12.2.1.1, eqs. (12-1)–(12-3)];
+  positive ILD means more loss than the fit [18, eq. (10-3)]. Unlike OIF, the coefficients are not bounded, the fit
+  ends at f_max rather than at a baud rate, and the sweep's step (f_max/1000, 50 MHz at the default 50 GHz) is
+  coarser than the 10 MHz OIF asks for. An earlier IEEE 802.3 proposal fitted three terms, a1√f + a2·f + a4·f², from
+  50 MHz to 7.5 GHz [19].
+- Attenuator: an ideal resistive T pad between its image impedances [1, Sec. 8.2]. Between unequal impedances a pad
+  matched at both ends loses at least `20·log₁₀(√r + √(r−1))` dB, r being the impedance ratio: the minimum-loss
+  pad [10, Table 5.6], [20, ch. 11].
+- 1-D TEM only: no radiation, coupling or mode conversion, and smooth conductors (no surface roughness).
 
 A full solve plus TDR takes milliseconds, so every plot follows the mouse as you paint.
 
@@ -169,7 +189,7 @@ npm run validate                 # optional: the validation suite and report (pi
 |---|---|
 | `src/engine.js` | Physics: dielectric model, cascade, S-parameters, TDR, ILD fit |
 | `src/project.js` | Project format: defaults, limits and the validating parser, shared with the tests |
-| `src/tdrp.js` | `.tdrp` container: ZIP writer and reader with CRC-32 checks |
+| `src/tdrp.js` | `.tdrp` container: ZIP writer and reader with CRC-32 checks, per APPNOTE.TXT [27] |
 | `src/page.html` | UI; the `/*…*/` placeholders are replaced by the modules and examples at build time |
 | `build.js` | Produces the two single-file builds in `dist/` |
 | `examples/`, `tools/make-examples.js` | Built-in example projects and the script that generates them |
@@ -277,14 +297,77 @@ owners. The validation's measurement and simulation data come from scikit-rf's e
 
 ## References
 
-- A. R. Djordjevic, R. M. Biljic, V. D. Likar-Smiljanic, T. K. Sarkar, "Wideband frequency-domain characterization
-  of FR-4 and time-domain causality," IEEE Trans. EMC, vol. 43, no. 4, pp. 662–667, 2001.
-- D. J. Dascher, "Measuring Parasitic Capacitance and Inductance Using TDR," Hewlett-Packard Journal, Apr. 1996.
-- A. Healey, "Fitted insertion loss and insertion loss deviation," IEEE P802.3ba Task Force, Jul. 2009.
-- Panasonic MEGTRON 6 R-5775(N) data sheet.
-- H. Johnson, "Who's Afraid of the Big Bad Bend?", EDN (right-angle corner capacitance).
-- PKWARE, APPNOTE.TXT, .ZIP File Format Specification.
-- The validation report lists the references for each case: [validation/report/REPORT.md](validation/report/REPORT.md#references).
+Model, cited under [How it works](#how-it-works):
+
+1. D. M. Pozar, *Microwave Engineering*, 4th ed. Hoboken, NJ, USA: Wiley, 2012.
+2. D. A. Frickey, "Conversions between S, Z, Y, h, ABCD, and T parameters which are valid for complex source and load
+   impedances," *IEEE Trans. Microw. Theory Techn.*, vol. 42, no. 2, pp. 205–211, Feb. 1994,
+   doi: [10.1109/22.275248](https://doi.org/10.1109/22.275248).
+3. A. R. Djordjević, R. M. Biljić, V. D. Likar-Smiljanić, and T. K. Sarkar, "Wideband frequency-domain
+   characterization of FR-4 and time-domain causality," *IEEE Trans. Electromagn. Compat.*, vol. 43, no. 4,
+   pp. 662–667, Nov. 2001, doi: [10.1109/15.974647](https://doi.org/10.1109/15.974647).
+4. S. H. Hall and H. L. Heck, *Advanced Signal Integrity for High-Speed Digital Designs*. Hoboken, NJ, USA: Wiley,
+   2009.
+5. Y. Shlepnev, "Broadband material model identification with GMS-parameters," in *Proc. IEEE 24th Elect. Perform.
+   Electron. Packag. Syst. (EPEPS)*, San Jose, CA, USA, Oct. 2015, pp. 155–158,
+   doi: [10.1109/EPEPS.2015.7347151](https://doi.org/10.1109/EPEPS.2015.7347151).
+6. scikit-rf developers, *scikit-rf*, ver. 2.2.0. [Online]. Available: https://scikit-rf.org
+7. A. Arsenovic *et al.*, "scikit-rf: An open source Python package for microwave network creation, analysis, and
+   calibration [Speaker's Corner]," *IEEE Microw. Mag.*, vol. 23, no. 1, pp. 98–105, Jan. 2022,
+   doi: [10.1109/MMM.2021.3117139](https://doi.org/10.1109/MMM.2021.3117139).
+8. Panasonic, "Laminate R-5775(N), prepreg R-5670(N): High speed, low loss multi-layer materials (low Dk glass cloth
+   version)," Data Sheet No. 17061630, Jun. 2017. Superseded by No. 22040130, Apr. 2022.
+9. H. A. Wheeler, "Formulas for the skin effect," *Proc. IRE*, vol. 30, no. 9, pp. 412–424, Sep. 1942,
+   doi: [10.1109/JRPROC.1942.232015](https://doi.org/10.1109/JRPROC.1942.232015).
+10. H. Johnson and M. Graham, *High-Speed Signal Propagation: Advanced Black Magic*. Upper Saddle River, NJ, USA:
+    Prentice Hall, 2003.
+11. C. Svensson and G. E. Dermer, "Time domain modeling of lossy interconnects," *IEEE Trans. Adv. Packag.*, vol. 24,
+    no. 2, pp. 191–196, May 2001, doi: [10.1109/6040.928754](https://doi.org/10.1109/6040.928754).
+12. J. F. Kaiser and R. W. Schafer, "On the use of the I0-sinh window for spectrum analysis," *IEEE Trans. Acoust.,
+    Speech, Signal Process.*, vol. ASSP-28, no. 1, pp. 105–107, Feb. 1980,
+    doi: [10.1109/TASSP.1980.1163349](https://doi.org/10.1109/TASSP.1980.1163349). It calls the window parameter α;
+    TDR Painter calls it β.
+13. SciPy developers, "scipy.signal.windows.kaiser," in *SciPy v1.18.0 Manual*. [Online]. Available:
+    https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.windows.kaiser.html
+14. P. J. Pupalaikis, *S-Parameters for Signal Integrity*. Cambridge, U.K.: Cambridge Univ. Press, 2020,
+    doi: [10.1017/9781108784863](https://doi.org/10.1017/9781108784863).
+15. Keysight Technologies, "High precision time domain reflectometry (TDR)," Appl. Note 5988-9826EN, Jan. 29, 2024.
+16. Keysight Technologies, "Transformation to time domain," E5071C network analyzer online help. [Online]. Available:
+    https://helpfiles.keysight.com/csg/e5071c/measurement_with_options/time_domain_analysis/transformation_to_time_domain.htm
+17. D. J. Dascher, "Measuring parasitic capacitance and inductance using TDR," *Hewlett-Packard J.*, vol. 47, no. 2,
+    pp. 83–96, Apr. 1996.
+18. Optical Internetworking Forum, "Common electrical I/O (CEI): Electrical and jitter interoperability agreements for
+    6G+ bps, 11G+ bps, 25G+ bps I/O and 56G+ bps," Implementation Agreement OIF-CEI-04.0, Dec. 29, 2017. [Online].
+    Available: https://www.oiforum.com/wp-content/uploads/2019/01/OIF-CEI-04.0.pdf
+19. A. Healey, "Proposed text for fitted insertion loss," IEEE P802.3ba Task Force, San Francisco, CA, USA,
+    doc. healey_05_0709, Jul. 15, 2009. [Online]. Available:
+    https://www.ieee802.org/3/ba/public/jul09/healey_05_0709.pdf
+20. W. M. Middleton and M. E. Van Valkenburg, Eds., *Reference Data for Engineers: Radio, Electronics, Computer, and
+    Communications*, 9th ed. Boston, MA, USA: Newnes, 2002, ch. 11.
+
+Examples, file format and roadmap:
+
+21. H. Johnson, "Who's afraid of the big bad bend?," *EDN*, May 11, 2000. [Online]. Available:
+    https://sigcon.com/Pubs/edn/bigbadbend.htm (the corner capacitance in the serpentine example).
+22. E. Hammerstad and Ø. Jensen, "Accurate models for microstrip computer-aided design," in *IEEE MTT-S Int. Microw.
+    Symp. Dig.*, Washington, DC, USA, May 1980, pp. 407–409,
+    doi: [10.1109/MWSYM.1980.1124303](https://doi.org/10.1109/MWSYM.1980.1124303) (the microstrip examples).
+23. FormFactor, "InfinityXT probe: RF/mmW probe series," Data Sheet INFINITYXT-DS-0820, 2020 (probe contact
+    resistance).
+24. FormFactor, "Infinity Probe mechanical layout rules," Appl. Note InfLayoutRule-AN-1115, 2022; and FormFactor,
+    "Layout rules for GHz-probing," Appl. Note Layout-0720, 2020 (GS and GSG inductance).
+25. [Author not named on the slides], "Probe tip characterization using self-calibration," Lab. RF Modeling,
+    Fachhochschule Würzburg-Schweinfurt, presented at AK Bipolarmodellierung, 2008. [Online]. Available:
+    https://www.iee.et.tu-dresden.de/iee/eb/forsch/AK-Bipo/2008/AKB2008_10_Baureis_Probe_Characterization2.pdf
+    (short-standard inductance through GS and GSG probes).
+26. E. Bogatin, *Bogatin's Practical Guide to Transmission Line Design and Characterization for Signal Integrity
+    Applications*. Norwood, MA, USA: Artech House, 2020 (TDR masking, series resistance and time to distance, in the
+    [roadmap](ROADMAP.md)).
+27. PKWARE Inc., "APPNOTE.TXT – .ZIP file format specification," ver. 6.3.10, Nov. 1, 2022. [Online]. Available:
+    https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT (the `.tdrp` container).
+
+The validation report lists the references for each case:
+[validation/report/REPORT.md](validation/report/REPORT.md#references).
 
 
 ## License
