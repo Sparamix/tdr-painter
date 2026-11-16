@@ -2,7 +2,8 @@
 
 Does TDR Painter compute the right S-parameters and TDR for what you paint, and is the physics sound enough to teach with? This folder answers that with independent scikit-rf models, textbook results and two published scikit-rf cases (a VNA measurement and an ANSYS Circuit simulation).
 
-**Read the results in [`report/REPORT.md`](report/REPORT.md).**
+**Read the results in [`report/REPORT.md`](report/REPORT.md).** Every source behind the model and these checks, with
+the page each statement is on, is in [`doc/SOURCES.md`](../doc/SOURCES.md).
 
 ```sh
 pip install -r validation/requirements.txt

@@ -115,7 +115,7 @@ const db = (r, i) => 20 * Math.log10(mag(r, i));
   const e = ds.eps(10e9);
   const ad = 8.686 * Math.PI * 10e9 * Math.sqrt(e[0]) * (-e[1] / e[0]) / C0 * IN; // dB/in
   const want = (0.4 + ad) * 2;
-  console.log(`      dielectric loss @10 GHz: ${ad.toFixed(4)} dB/in (Bogatin rule 2.3*f*Df*sqrt(Dk) = ${(2.3*10*(-e[1]/e[0])*Math.sqrt(e[0])).toFixed(4)})`);
+  console.log(`      dielectric loss @10 GHz: ${ad.toFixed(4)} dB/in (Bogatin, SPI Simplified 3e, eq. (9-69): 2.3*f*Df*sqrt(Dk) = ${(2.3*10*(-e[1]/e[0])*Math.sqrt(e[0])).toFixed(4)})`);
   check('2-in IL @10 GHz vs (alpha_c+alpha_d)*l', il, want, 0.01);
   console.log(`      IL @50 GHz: ${(-db(s.s21r[1000], s.s21i[1000])).toFixed(3)} dB`);
 }

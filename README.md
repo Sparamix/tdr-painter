@@ -196,7 +196,7 @@ npm run validate                 # optional: the validation suite and report (pi
 | `fonts/` | Self-hosted Archivo, Instrument Sans and JetBrains Mono, with their licenses |
 | `test/` | Engine, container, example and privacy tests, scikit-rf cross-check, browser smoke test |
 | `validation/` | Verification against scikit-rf, textbook results and published data, with its report |
-| `doc/` | Icons, light and dark screenshots and the [project file format](doc/FILE_FORMAT.md) |
+| `doc/` | Icons, light and dark screenshots, the [project file format](doc/FILE_FORMAT.md) and the [sources](doc/SOURCES.md) behind the model |
 
 
 ## Future features
@@ -263,22 +263,26 @@ verification protocol before it ships:
    controls that must fail), the Beatty closed form, the quarter-wave stub null, the Bloch stopband and the
    minimum-loss pad formula.
 
-3. **The protocol finds real bugs**: it showed that the TDR was drawn half a sample (1.2 ps) early, up to 3 Ω off on
+3. **Literature check**: a separate Claude session checked every cited statement, equation and reference entry of
+   v0.8.10 against the sources, page by page (133 items), under the author's direction. Its findings were fixed in
+   v0.8.11; [doc/SOURCES.md](doc/SOURCES.md) lists every source and what it supports.
+
+4. **The protocol finds real bugs**: it showed that the TDR was drawn half a sample (1.2 ps) early, up to 3 Ω off on
    sharp edges, which was fixed before release. See the
    [findings](validation/report/REPORT.md#findings).
 
-4. **Outside data**: a VNA measurement and an ANSYS Circuit simulation published with scikit-rf are compared as well
+5. **Outside data**: a VNA measurement and an ANSYS Circuit simulation published with scikit-rf are compared as well
    (informational).
 
-5. **Automated tests**: 147 unit, container, example and privacy checks run on every push; every built-in example
+6. **Automated tests**: 147 unit, container, example and privacy checks run on every push; every built-in example
    must open cleanly and simulate as passive; a browser smoke test exercises the UI and confirms that the page makes
    no network requests.
 
-6. **Clean-room implementation**: the engine is written from published equations (Djordjevic-Sarkar, the TDR area
+7. **Clean-room implementation**: the engine is written from published equations (Djordjevic-Sarkar, the TDR area
    method, the fitted-loss ILD); no proprietary code was referenced. scikit-rf is used only as an independent
    reference in the validation, not in the page.
 
-7. **Open to community scrutiny**: the validation code, reference files and report are in the repository.
+8. **Open to community scrutiny**: the validation code, reference files and report are in the repository.
    Independent checks and bug reports are welcome via [GitHub Issues](https://github.com/Sparamix/tdr-painter/issues).
 
 The AI assisted with code generation, documentation and the verification workflow. The human author (a signal
@@ -367,7 +371,9 @@ Examples, file format and roadmap:
     https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT (the `.tdrp` container).
 
 The validation report lists the references for each case:
-[validation/report/REPORT.md](validation/report/REPORT.md#references).
+[validation/report/REPORT.md](validation/report/REPORT.md#references). [doc/SOURCES.md](doc/SOURCES.md) lists every
+source used to check the model and the docs, with the statement each supports and where: the ones cited here, the
+ones checked but not cited, and the ones withdrawn.
 
 
 ## License
