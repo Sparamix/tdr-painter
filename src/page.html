@@ -1273,8 +1273,8 @@ html.compact .card canvas { height: 160px; }
       const pr = E.padResistors(e.zIn, e.zOut, e.value), amin = E.padMinLoss(e.zIn, e.zOut);
       const r = (x) => x < 0.005 ? '0' : (+x.toPrecision(4)) + ' Ω';
       hint = `T pad: ${r(pr.r1)} in series on the Tx side, ${r(pr.r3)} to ground, ${r(pr.r2)} in series on the Rx side. ` +
-        (amin > 0.005 ? `Between ${trimNum(e.zIn)} and ${trimNum(e.zOut)} Ω no resistive pad can lose less than ${amin.toFixed(2)} dB (a minimum-loss L pad). ` : '') +
-        `Seen through it, a mismatch behind the pad returns ${(2 * pr.dB).toFixed(1)} dB weaker.`;
+        (amin > 0.005 ? `Between ${trimNum(e.zIn)} and ${trimNum(e.zOut)} Ω no resistive pad matched at both ends can lose less than ${amin.toFixed(2)} dB (a minimum-loss L pad). ` : '') +
+        `Seen through it, a mismatch behind the pad returns ${(2 * pr.dB).toFixed(1)} dB weaker, when the pad sits between the impedances it was designed for.`;
     }
     if (e.count > 1) hint += ` Periodic: first stopband near v/(2p) = ${(v / (2 * e.pitch) / 1e9).toFixed(1)} GHz.`;
     $('#edHint').textContent = hint;
