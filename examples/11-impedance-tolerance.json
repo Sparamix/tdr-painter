@@ -38,7 +38,7 @@
  "example": {
   "category": "Basics",
   "order": 11,
-  "note": "The whole trace is 10% low. The TDR reads 45 Ω, and S11 ripples with nulls every 1/(2τ) ≈ 1.6 GHz, where τ is the one-way delay. Change the Length and watch the ripple spacing follow.",
+  "note": "The whole trace is 10% low. The TDR reads about 45 Ω at the start and creeps up with the line’s loss, and S11 ripples with nulls every 1/(2τ) ≈ 1.6 GHz, where τ is the one-way delay. Change the Length and watch the ripple spacing follow.",
   "author": "TDR Painter"
  }
 }

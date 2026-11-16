@@ -62,7 +62,7 @@ example({
 });
 example({
   slug: 'impedance-tolerance', order: 11, category: 'Basics', name: '45 Ω trace (impedance tolerance)',
-  note: 'The whole trace is 10% low. The TDR reads 45 Ω, and S11 ripples with nulls every 1/(2τ) ≈ 1.6 GHz, where τ is the one-way delay. Change the Length and watch the ripple spacing follow.',
+  note: 'The whole trace is 10% low. The TDR reads about 45 Ω at the start and creeps up with the line’s loss, and S11 ripples with nulls every 1/(2τ) ≈ 1.6 GHz, where τ is the one-way delay. Change the Length and watch the ripple spacing follow.',
   paint: (t) => t.fill(45),
 });
 example({
@@ -126,7 +126,7 @@ example({
 });
 example({
   slug: 'serpentine-corners', order: 41, category: 'Realistic channels', name: 'Serpentine, 5 in, corner capacitance',
-  note: 'A 5 in trace with 13 U-turns, each made of two 90° corners of about 0.012 pF. One corner is negligible, but at a regular 0.3 in pitch they add up near v/(2p) ≈ 11 GHz and its harmonics; look at S11 and ILD there. This 1-D model leaves out coupling between the parallel runs, which in a real serpentine shortens the delay.',
+  note: 'A 5 in trace with 13 U-turns, each made of two 90° corners of about 0.012 pF (Johnson’s figure for an 8 mil, 50 Ω microstrip in FR-4; it scales with trace width). One corner is negligible, but at a regular 0.3 in pitch they add up near v/(2p) ≈ 11 GHz and its harmonics; look at S11 and ILD there. This 1-D model leaves out coupling between the parallel runs, which in a real serpentine shortens the delay.',
   params: { lenIn: 5 },
   elements: [C(0.6, 0.012, { count: 13, pitch: 0.3 }), C(0.62, 0.012, { count: 13, pitch: 0.3 })],
 });
