@@ -598,7 +598,8 @@ def write_report(results, neg, ms, failed):
     w(tr('A', 'Same structure, same S-parameters?', f'max complex difference ≤ {LIM["sparam"]:.0e}'))
     w(tr('B', 'Same TDR as scikit-rf’s windowed step response?', f'max |Δρ| ≤ {LIM["tdr_rho"]:.0e} (≈ 0.1 Ω at 50 Ω)'))
     w(tr('P', 'Physics: DC limit, passivity, energy conservation when lossless, causality', 'see each table'))
-    w(tr('X', 'Textbook results: Beatty closed form, quarter-wave stub null, Bloch stopband', 'see each table'))
+    w(tr('X', 'Closed forms with a page reference (Beatty section, quarter-wave stub null, Bloch stopband, T pad) and '
+         'a DC-limit check of a probe contact on a short', 'see each table'))
     w(tr('C', 'If you paint the TDR trace you see, how close are the S-parameters?',
          f'informational: band where |ΔS21| ≤ {PAINT_S21_DB} dB and abs(Δ|S11|) ≤ {PAINT_S11}'))
     w(tr('R', 'How close to a measurement and a commercial solver (cases from scikit-rf’s documentation)?', 'informational'))
@@ -654,8 +655,9 @@ def write_report(results, neg, ms, failed):
         w('')
         w(NOTES.get(case['slug'], '') + '\n')
     w('## Causality: the check catches non-causal models\n')
-    w('Djordjevic et al. showed that a dielectric with frequency-independent Dk and Df is not causal; the same holds for '
-      'skin-effect resistance without its internal inductance. Each makes S21 respond before the light-speed front '
+    w('Djordjević et al. showed that a dielectric with frequency-independent Dk and Df is not causal (see also Hall and '
+      'Heck, Sec. 8.2.1); the same holds for skin-effect resistance without its internal inductance (Johnson and Graham, '
+      'Sec. 2.8). Each makes S21 respond before the light-speed front '
       '(set by the permittivity at infinite frequency). The check measures the largest impulse-response sample more than '
       f'four rise times (Kaiser β 10) before that front, relative to the peak, on a 10 in line. Limit {LIM["causal"]:.0e}.\n')
     w(tr('Line model', 'Precursor / peak', 'Expected', 'Result'))
@@ -703,8 +705,9 @@ def findings(results):
    t = 0 on a sample so that both tools sample the same instants. With the v0.5.0 engine the TDR differed from
    scikit-rf by up to 0.029 in ρ (about 3 Ω at 50 Ω) on sharp edges; now the largest difference over all cases is
    {tdr_b:.0e}, the size of a one-bin difference in how the two tools define the Kaiser window’s edge.
-3. **scikit-rf’s `step_response` sits slightly off on lossy lines.** It extrapolates S11 to DC linearly and integrates
-   from half a record (1/(2Δf)) before t = 0, so the slow conductor-loss tail that wraps around the record turns into
+3. **scikit-rf’s `step_response` sits slightly off on lossy lines.** Run as this script runs it (S11 extrapolated to DC
+   with `extrapolate_to_dc(kind='linear')`, then `step_response`), scikit-rf integrates from half a record (1/(2Δf))
+   before t = 0, so the slow conductor-loss tail that wraps around the record turns into
    a small offset. Run that way, it differs from TDR Painter by up to {worst[1]['user']:.0e} in ρ (on the
    {worst[0][0].lower() + worst[0][1:]}). {truth_txt}For lossless structures the two agree. The tier B pass/fail
    check therefore compares like with like (same DC value, same integration start), and the as-a-user comparison is
@@ -760,12 +763,18 @@ LIMITS_TEXT = """## Limits of this verification
   assumption there would not show up in tier A. The physics checks (causality, passivity, energy, DC, textbook
   results) and the scikit-rf examples are the guard against that.
 - **1-D TEM only.** Neither build includes coupling, radiation, mode conversion or microstrip dispersion.
+- **Smooth conductors.** Neither build includes conductor surface roughness: the √f law and the equal skin resistance
+  and internal reactance are smooth-conductor results (Wheeler, 1942; Hall and Heck, Sec. 5.2.3 and 5.3).
 """
 
-REFERENCES = """- A. R. Djordjevic, R. M. Biljic, V. D. Likar-Smiljanic, T. K. Sarkar, “Wideband frequency-domain characterization of FR-4 and time-domain causality,” IEEE Trans. Electromagn. Compat., vol. 43, no. 4, pp. 662–667, Nov. 2001, [doi:10.1109/15.974647](https://doi.org/10.1109/15.974647).
-- D. M. Pozar, *Microwave Engineering*, 4th ed., Wiley, 2012, Sec. 8.1 (periodic structures, Bloch impedance and stopbands).
-- scikit-rf documentation: [`Network.step_response`](https://scikit-rf.readthedocs.io/en/latest/api/generated/skrf.network.Network.step_response.html), [Time domain reflectometry, measurement vs simulation](https://scikit-rf.readthedocs.io/en/latest/examples/networktheory/Time%20domain%20reflectometry%2C%20measurement%20vs%20simulation.html), [Tapered transmission lines](https://scikit-rf.readthedocs.io/en/latest/examples/taper/tapered_transmission_lines.html).
-- Anritsu VectorStar verification kit components (stepped-impedance “Beatty” standard): [MS4640A manual, ch. 11](https://dl.cdn-anritsu.com/en-us/test-measurement/ohs/10450-00008L/Calibration_and_Measurement/MG_Ch11_VerificationTools.12.3.html).
+REFERENCES = """- A. R. Djordjević, R. M. Biljić, V. D. Likar-Smiljanić, and T. K. Sarkar, “Wideband frequency-domain characterization of FR-4 and time-domain causality,” *IEEE Trans. Electromagn. Compat.*, vol. 43, no. 4, pp. 662–667, Nov. 2001, [doi:10.1109/15.974647](https://doi.org/10.1109/15.974647).
+- D. M. Pozar, *Microwave Engineering*, 4th ed. Hoboken, NJ, USA: Wiley, 2012: Sec. 2.3, eq. (2.46c) (open-stub null); Sec. 5.5, eq. (5.41) (the Beatty section’s closed form; S21 and the 2|Γ|/(1+Γ²) peak follow by derivation); Sec. 8.1, eq. (8.9a) (Bloch relation and stopbands); Sec. 8.2, eqs. (8.27)–(8.31) (image-parameter T pad).
+- H. Johnson and M. Graham, *High-Speed Signal Propagation: Advanced Black Magic*. Upper Saddle River, NJ, USA: Prentice Hall, 2003: Sec. 2.8 (the non-causal conductor control); Table 5.6 (minimum-loss pad).
+- S. H. Hall and H. L. Heck, *Advanced Signal Integrity for High-Speed Digital Designs*. Hoboken, NJ, USA: Wiley, 2009: Sec. 8.2.1 (the non-causal dielectric control).
+- H. A. Wheeler, “Formulas for the skin effect,” *Proc. IRE*, vol. 30, no. 9, pp. 412–424, Sep. 1942, [doi:10.1109/JRPROC.1942.232015](https://doi.org/10.1109/JRPROC.1942.232015).
+- scikit-rf developers, *scikit-rf*, ver. 2.2.0, used as the independent reference: [`Network.step_response`](https://scikit-rf.readthedocs.io/en/latest/api/generated/skrf.network.Network.step_response.html), [Time domain reflectometry, measurement vs simulation](https://scikit-rf.readthedocs.io/en/latest/examples/networktheory/Time%20domain%20reflectometry%2C%20measurement%20vs%20simulation.html), [Tapered transmission lines](https://scikit-rf.readthedocs.io/en/latest/examples/taper/tapered_transmission_lines.html).
+- A. Arsenovic *et al.*, “scikit-rf: An open source Python package for microwave network creation, analysis, and calibration [Speaker’s Corner],” *IEEE Microw. Mag.*, vol. 23, no. 1, pp. 98–105, Jan. 2022, [doi:10.1109/MMM.2021.3117139](https://doi.org/10.1109/MMM.2021.3117139).
+- Anritsu, “Verification kit components,” in *VectorStar MS4640A Series Microwave Vector Network Analyzer Calibration and Measurement*, doc. 10450-00008, Rev. L, ch. “Verification” (stepped-impedance “Beatty” standard). [Online]. Available: [dl.cdn-anritsu.com](https://dl.cdn-anritsu.com/en-us/test-measurement/ohs/10450-00008L/Calibration_and_Measurement/MG_Ch11_VerificationTools.12.3.html).
 """
 
 if __name__ == '__main__':

@@ -271,7 +271,7 @@ def pad_min_loss(z1, z2):
 
 def pad_resistors(z1, z2, db):
     """Resistive T pad with image impedances z1 (Tx side), z2 (Rx side): series r1, shunt r3, series r2.
-    Written from the textbook formulas, independently of the engine's code."""
+    Written from the image-parameter relations (Pozar, Sec. 8.2), independently of the engine's code."""
     a = max(db, pad_min_loss(z1, z2), 1e-6)
     k = 10 ** (a / 10)
     r3 = 2 * math.sqrt(k * z1 * z2) / (k - 1)
