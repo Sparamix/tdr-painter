@@ -1267,7 +1267,7 @@ html.compact .card canvas { height: 160px; }
         : `Short to ground at DC, about ${(+(e.stubZ * lenM / vm * 1e12).toPrecision(3))} pH (Z·ℓ/v) at low frequency, and an open at v/(4ℓ) = ${fq} GHz, where the line passes.`;
       else hint = e.stubZ < 1 ? `A ${fmtZ(e.stubZ)} open stub is a ${fmtC(lenM / vm / e.stubZ)} capacitor, not a short: it is open at DC, so after it the TDR reads high and creeps up (the 1001-point sweep can't resolve so slow a charge). For a short to ground, set the far end to Shorted.`
         : e.stubZ > 1e3 ? `A ${fmtZ(e.stubZ)} open stub draws almost no current: it is nearly invisible.`
-        : `Quarter-wave notch in S21 near v/(4ℓ) = ${fq} GHz; the TDR only shows a modest dip.`;
+        : `Quarter-wave notch in S21 near v/(4ℓ) = ${fq} GHz; the TDR shows only the dip of a capacitor ℓ/(vZ) = ${fmtC(lenM / vm / e.stubZ)}.`;
     }
     if (e.type === 'pad') {
       const pr = E.padResistors(e.zIn, e.zOut, e.value), amin = E.padMinLoss(e.zIn, e.zOut);

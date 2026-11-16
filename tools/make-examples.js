@@ -84,7 +84,7 @@ example({
 });
 example({
   slug: 'via-stub', order: 21, category: 'Discontinuities', name: 'Via stub resonance, 60 mil',
-  note: 'An open 60 mil stub notches S21 near v/(4ℓ) ≈ 27 GHz, yet the TDR shows only a modest dip. Select the S chip and drag Stub length: the notch moves while the TDR barely changes. Back-drilling shortens exactly this stub.',
+  note: 'An open 60 mil stub notches S21 near v/(4ℓ) ≈ 27 GHz, yet the TDR shows just a capacitive dip, with no sign of the resonance. Select the S chip and drag Stub length: the notch moves while the TDR barely changes. Back-drilling shortens exactly this stub.',
   elements: [C(1.0, 0.08), STUB(1.0, 60, 45)],
 });
 example({

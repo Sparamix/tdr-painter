@@ -57,7 +57,7 @@
  "example": {
   "category": "Discontinuities",
   "order": 21,
-  "note": "An open 60 mil stub notches S21 near v/(4ℓ) ≈ 27 GHz, yet the TDR shows only a modest dip. Select the S chip and drag Stub length: the notch moves while the TDR barely changes. Back-drilling shortens exactly this stub.",
+  "note": "An open 60 mil stub notches S21 near v/(4ℓ) ≈ 27 GHz, yet the TDR shows just a capacitive dip, with no sign of the resonance. Select the S chip and drag Stub length: the notch moves while the TDR barely changes. Back-drilling shortens exactly this stub.",
   "author": "TDR Painter"
  }
 }
