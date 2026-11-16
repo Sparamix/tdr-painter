@@ -29,7 +29,7 @@ release (or [`dist/index.html`](dist/index.html) here) and open it from disk. It
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="doc/screenshot-dark.png">
-  <img src="doc/screenshot.png" alt="TDR Painter with the &quot;Board launch + via stub&quot; example: painted profile and the TDR a scope would show, return loss, insertion loss with the stub notch near 27 GHz, the power balance and ILD">
+  <img src="doc/screenshot.png" alt="TDR Painter with the &quot;Board launch + via stub&quot; example: painted profile and the TDR an instrument would show, return loss, insertion loss with the stub notch near 27 GHz, the power balance and ILD">
 </picture>
 
 
@@ -38,7 +38,7 @@ release (or [`dist/index.html`](dist/index.html) here) and open it from disk. It
 - **Students** in SI/PI, microwave and EM courses who want to see why a capacitive dip on a TDR becomes a rising S11,
   and why a via stub notches S21
 - **Instructors** who need a live demo for lecture: 19 built-in examples with notes, and project files to hand out
-- **Engineers new to TDR** learning to read a scope trace: launches, via stubs, rise-time resolution, masking by an
+- **Engineers new to TDR** learning to read an instrument’s TDR trace: launches, via stubs, rise-time resolution, masking by an
   earlier mismatch, ghost reflections
 - **Lab engineers** learning what a good landing, a bad signal contact and a lifted ground look like, on a
   calibration short and on a microstrip (the short uses the experimental 1 mΩ to 1 MΩ range and a log axis)
@@ -56,7 +56,7 @@ If something looks wrong or could teach better, please
   periodic loading; **Lock** an element, **Clone** it, or untick **Enabled** for a quick before and after.
 - **Compare** with Data → Memory, as on a VNA: the stored curves stay on every plot as dots while solid lines follow
   your edits. Show/Hide and Clear memory sit next to it.
-- **Read** the TDR a scope would show next to the profile you painted, with rise time, resolution and line delay;
+- **Read** the TDR an instrument would show next to the profile you painted, with rise time, resolution and line delay;
   S11 and S22, S21 with its fitted loss, ILD, and where the power goes (transmitted, reflected, absorbed).
 - **Tune** the line (length, Z₀), a Djordjevic-Sarkar dielectric (defaults: MEGTRON 6 datasheet point), skin-effect
   and DC conductor loss, port impedances, sweep range and the TDR window. Conductor and dielectric loss can each be
