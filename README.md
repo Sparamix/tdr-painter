@@ -21,7 +21,7 @@
 A teaching tool for signal and power integrity: it shows how the shapes you see on a TDR become return loss and
 insertion loss, and where that picture stops being enough.
 
-**Current release: v0.8.10.** TDR Painter is pre-1.0 and still changing; see [Releases](https://github.com/Sparamix/tdr-painter/releases),
+**Current release: v0.8.11.** TDR Painter is pre-1.0 and still changing; see [Releases](https://github.com/Sparamix/tdr-painter/releases),
 the [changelog](CHANGELOG.md) and the [roadmap](ROADMAP.md).
 
 **[Open TDR Painter](https://sparamix.github.io/tdr-painter/)** in your browser, or download `index.html` from a
@@ -223,7 +223,7 @@ Using TDR Painter in a course, a talk or a paper? *We'd love to hear about it!*
 
 Click **"Cite this repository"** in the GitHub sidebar (it reads [`CITATION.cff`](CITATION.cff)), or use:
 
-> G. Maghlakelidze, "TDR Painter: an in-browser TDR and S-parameter teaching tool," version 0.8.10, 2026.
+> G. Maghlakelidze, "TDR Painter: an in-browser TDR and S-parameter teaching tool," version 0.8.11, 2026.
 > [Online]. Available: <https://github.com/Sparamix/tdr-painter>
 
 ```bibtex
@@ -231,7 +231,7 @@ Click **"Cite this repository"** in the GitHub sidebar (it reads [`CITATION.cff`
   author  = {Maghlakelidze, Giorgi},
   title   = {{TDR Painter}: an in-browser {TDR} and {S}-parameter teaching tool},
   year    = {2026},
-  version = {0.8.10},
+  version = {0.8.11},
   url     = {https://github.com/Sparamix/tdr-painter}
 }
 ```
@@ -270,7 +270,7 @@ verification protocol before it ships:
 4. **Outside data**: a VNA measurement and an ANSYS Circuit simulation published with scikit-rf are compared as well
    (informational).
 
-5. **Automated tests**: 131 unit, container, example and privacy checks run on every push; every built-in example
+5. **Automated tests**: 147 unit, container, example and privacy checks run on every push; every built-in example
    must open cleanly and simulate as passive; a browser smoke test exercises the UI and confirms that the page makes
    no network requests.
 

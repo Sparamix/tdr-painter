@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.8.11 (2026-11-16)
+
+Fixes from an independent literature fact-check of v0.8.10 (133 checks against the cited sources, page by page).
+
+- **L and C labels on painted bumps** now use the area of the true TDR. They integrated the painted reflection coefficient and read low by 1 − ρ² (5 % at 80 Ω, 11 % at 100 Ω or 25 Ω); they now agree with the integral of the simulated TDR to better than 0.5 % on a lossless line.
+- **ILD follows OIF-CEI-04.0:** insertion loss as a positive number, a fit weighted by |S21|, from 0.05 GHz to f_max, and ILD = IL − IL_fitted, so extra loss now points up. A deep notch no longer drags the fit down. The fitted curve stays on the dB(S21) plot.
+- **Example notes:** the ghost after a via stub lands about 0.6 in after the via, not 1.2 in; an open stub gives a clear capacitive dip in the TDR (what it hides is the resonance); the 10 %-low trace creeps up with loss; the corner capacitance is Johnson's figure for one geometry.
+- **Probing examples:** 30 mΩ on the gold cal short is a fair landing (FormFactor's typical figure on gold is under 20 mΩ); 2 Ω is illustrative; 70 pH for a lifted ground is a contributor's measurement with a 150 µm GSG probe, with published GS and GSG figures given only for scale; resistance in the two ground tips counts in parallel; the microstrip effective permittivity is 2.71 by Hammerstad and Jensen.
+- **Hints and notes:** the minimum-loss bound holds for pads matched at both ends; the 2A dB return-loss hint holds between the pad's design impedances; the conductor slider is "Skin-effect loss at 10 GHz", and the note says DC resistance adds on top; the dielectric note names the data sheet; scikit-rf's Kaiser β = 6 is the default of `windowed()` and `time_gate()`, not of `step_response()`.
+- **Documentation:** every statement under How it works in the README carries a checked citation, the reference list is in IEEE style, and the validation report gives page and equation numbers for its closed-form checks, describes scikit-rf's DC extrapolation correctly, and states that conductors are smooth. A series L on a short moves the TDR edge by 2L/Z₀ in round-trip time, not L/Z₀. The roadmap cites Bogatin (2020) in place of a 1988 HP note.
+
 ## 0.8.10 (2026-11-09)
 
 - The main panel has a title, **TDR Canvas**, styled like the Return loss and Insertion loss cards, with a short description on the right. In the compact layout it adds 24 px: the memory buttons to the bottom of the insertion-loss plot now take 683 px.
