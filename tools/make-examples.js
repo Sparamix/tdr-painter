@@ -112,7 +112,7 @@ example({
 });
 example({
   slug: 'via-stub-ghost', order: 32, category: 'TDR artifacts', name: 'Ghost after a via stub',
-  note: 'Look past the via: around 1.8 in the TDR shows an inductive-looking spike, but nothing is painted there. It is the via’s reflection bouncing off the capacitive pad at 0.5 in and coming back, so it lands about 2 × (1.1 − 0.5) in after the via. Remove the pad and the spike disappears.',
+  note: 'Look past the via: around 1.8 in the TDR shows an inductive-looking spike, but nothing is painted there. It is the via’s reflection bouncing off the capacitive pad at 0.5 in and coming back, so it travels 2 × (1.1 − 0.5) in further and lands about 0.6 in after the via on the TDR’s distance axis (a little more, because of the stub’s own delay). Remove the pad and the spike disappears.',
   params: { lenIn: 2.5 },
   elements: [C(0.5, 0.25), C(1.1, 0.08), STUB(1.1, 60, 45)],
 });
