@@ -64,7 +64,7 @@ Every element has `type`, a position `x` in inches, `count` copies (1 to 30) at 
 | `L` | Series L | `value` in nH, 0.01 to 2 |
 | `R` | Series R | `value` in Ω, 0.01 to 25 (1 mΩ to 1 MΩ with `extremeZ`) |
 | `stub` | Shunt stub | `stubZ` Ω (20 to 90, or the wide range), `stubLen` mil (2 to 250), `end` `"open"` or `"short"` |
-| `pad` | Resistive T attenuator | `value` dB (0.1 to 60), `zIn` Ω facing Tx and `zOut` Ω facing Rx (5 to 500). Between unequal impedances the loss is raised to at least the minimum-loss pad, 20·log₁₀(√r + √(r−1)) dB with r = Z_high / Z_low. |
+| `pad` | Resistive T attenuator | `value` dB (0.1 to 60), `zIn` Ω facing Tx and `zOut` Ω facing Rx (5 to 500). Between unequal impedances the loss is raised to at least the minimum-loss pad, 20·log₁₀(√r + √(r−1)) dB with r = Z_high / Z_low (Johnson and Graham, *Advanced Black Magic*, Table 5.6; *Reference Data for Engineers*, 9th ed., ch. 11). |
 
 ### `view`
 

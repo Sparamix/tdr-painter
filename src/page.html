@@ -393,11 +393,11 @@ html.compact .card canvas { height: 160px; }
       <li>R′ and L′ scale with Z and C′ with 1/Z, as if width alone changed the impedance. Loss per inch is the same everywhere, and only the reflections change with what you paint.</li>
       <li>Dielectric: <code>ε(f) = ε∞ + Δε·ln((f₂+jf)/(f₁+jf)) / ln(f₂/f₁)</code>, anchored to Dk and Df at f_ref. Conductor: <code>R_dc + (1+j)·K·√f</code>.</li>
       <li>TDR: S11 times a Kaiser half-window, inverse FFT, trapezoid-rule integration, then <code>Z = Z_Tx(1+ρ)/(1−ρ)</code>. The window sets rise time and ringing; the orange trace is what a TDR would show, the indigo line is the truth.</li>
-      <li>With loss on, the orange trace sits a little above the painted line and creeps upward along it. Skin-effect resistance and internal inductance raise the low-frequency impedance. Tick Lossless conductor to see it vanish.</li>
+      <li>With loss on, the orange trace sits a little above the painted line and creeps upward along it: series resistance (DC and skin effect, with its internal inductance) adds up along the line and raises the impedance the TDR sees. Tick Lossless conductor and the climb disappears; the dielectric alone leaves a much smaller droop.</li>
       <li>Labels on short painted bumps use the TDR area method: <code>L = 2Z₀∫ρ dt</code>, <code>C = −(2/Z₀)∫ρ dt</code> over round-trip time, with the area computed from the painted profile (exact on a lossless line). Long or large excursions show average impedance and length instead.</li>
       <li>ILD is the insertion loss, −dB(S21), minus its fitted value a0 + a1√f + a2·f + a4·f² (f in GHz). The fit weights each point by |S21| and runs from 0.05 GHz to f_max, as in OIF-CEI-04.0; the coefficients are not bounded. Positive ILD means more loss than the fit.</li>
       <li>Privacy: the page makes no network requests and keeps nothing, not even in browser storage. Save writes a .tdrp file to your computer (a ZIP holding project.json, with a CRC-32 that Open verifies) and Open reads it back; Export JSON writes the same project as readable text. The standalone build adds a Content-Security-Policy that blocks every outgoing connection, so the browser itself enforces this.</li>
-      <li>Attenuator: an ideal resistive T pad with image impedances Zin (Tx side) and Zout (Rx side). With K = 10^(dB/10), the shunt resistor is <code>2√(K·Zin·Zout)/(K−1)</code> and each series resistor <code>Z(K+1)/(K−1)</code> minus it. When Zin ≠ Zout the loss can't go below the minimum-loss pad, <code>20·log₁₀(√r + √(r−1))</code> with r the impedance ratio.</li>
+      <li>Attenuator: an ideal resistive T pad with image impedances Zin (Tx side) and Zout (Rx side). With K = 10^(dB/10), the shunt resistor is <code>2√(K·Zin·Zout)/(K−1)</code> and each series resistor <code>Z(K+1)/(K−1)</code> minus it. When Zin ≠ Zout the loss can't go below the minimum-loss pad, <code>20·log₁₀(√r + √(r−1))</code> with r the impedance ratio (Johnson and Graham, Advanced Black Magic, Table 5.6; Reference Data for Engineers, ch. 11).</li>
       <li>Nothing radiates and nothing couples. Power that is neither reflected nor transmitted is absorbed in the line, in series R or in an attenuator.</li>
       <li>Experimental impedance range (gear menu): 1 mΩ is a short and 1 MΩ an open, for the ports, the profile, stubs and series R. The S-parameters stay referenced to Tx and Rx, so with Rx shorted S21 is tiny by definition; the TDR is the useful view. A painted 1 mΩ section keeps the same loss per inch as any other cell. Stubs can be open or shorted at the far end: a 1 mΩ shorted stub is a short to ground at its position, DC included, while a 1 mΩ open stub is a nanofarad capacitor that is open at DC.</li>
       </ul></details>
@@ -1351,15 +1351,15 @@ html.compact .card canvas { height: 160px; }
       { k: 'lenIn', label: 'Length', unit: 'in', min: 0.25, max: 10, step: 0.05, m: { unit: 'mm', f: 25.4, step: 0.5 } },
       { k: 'z0', label: 'Line Z₀', tip: 'The impedance Reset profile and Erase paint back to, and the line the loss settings describe', unit: 'Ω', min: 20, max: 120, step: 0.5 },
     ] },
-    { key: 'diel', title: 'Dielectric, Djordjevic-Sarkar', loss: { k: 'dielLossless', label: 'Lossless dielectric (Df = 0)' }, note: 'Defaults: Megtron 6 R-5775(N) datasheet point, Dk 3.35 and Df 0.004 at 12 GHz.', items: [
+    { key: 'diel', title: 'Dielectric, Djordjevic-Sarkar', loss: { k: 'dielLossless', label: 'Lossless dielectric (Df = 0)' }, note: 'Defaults: MEGTRON 6 R-5775(N) laminate, Dk 3.35 and Df 0.004 at 12 GHz (Panasonic data sheet No. 17061630, 2017; 0.75 mm core, disk-resonator method). The 2022 sheet gives 3.34 and 0.0037 at 13 GHz.', items: [
       { k: 'Dk', label: 'Dk at f_ref', unit: '', min: 1, max: 6, step: 0.01 },
       { k: 'Df', label: 'Df at f_ref', unit: '', min: 0, max: 0.03, step: 0.0005 },
       { k: 'frefGHz', label: 'f_ref', unit: 'GHz', min: 0.1, max: 60, step: 0.1 },
       { k: 'dsLowHz', label: 'Lower corner f₁', unit: 'kHz', min: 0.01, max: 1000, step: 0.01, scale: 1e3 },
       { k: 'dsHighHz', label: 'Upper corner f₂', unit: 'GHz', min: 100, max: 10000, step: 10, scale: 1e9 },
     ] },
-    { key: 'cond', title: 'Conductor', loss: { k: 'condLossless', label: 'Lossless conductor (no skin effect, no DC resistance)' }, note: 'Skin-effect loss scales with √f and carries its internal inductance, so the line stays causal.', items: [
-      { k: 'condLoss', label: 'Conductor loss at 10 GHz', unit: 'dB/in', min: 0, max: 2, step: 0.01, m: { unit: 'dB/cm', f: 1 / 2.54, step: 0.002 } },
+    { key: 'cond', title: 'Conductor', loss: { k: 'condLossless', label: 'Lossless conductor (no skin effect, no DC resistance)' }, note: 'Skin-effect loss scales with √f and carries its internal inductance (reactance = resistance), as causality requires. DC resistance adds R_dc/(2Z₀) on top at every frequency.', items: [
+      { k: 'condLoss', label: 'Skin-effect loss at 10 GHz', unit: 'dB/in', min: 0, max: 2, step: 0.01, m: { unit: 'dB/cm', f: 1 / 2.54, step: 0.002 } },
       { k: 'rdc', label: 'DC resistance', unit: 'Ω/in', min: 0, max: 2, step: 0.01, m: { unit: 'Ω/cm', f: 1 / 2.54, step: 0.002 } },
     ] },
     { key: 'ports', title: 'Ports', note: 'Tx is also the TDR source impedance. Both set the S-parameter reference.', items: [
