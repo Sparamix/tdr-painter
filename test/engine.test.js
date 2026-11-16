@@ -182,6 +182,32 @@ const db = (r, i) => 20 * Math.log10(mag(r, i));
   check('painted dip readout vs TDR integral (pF)', ex[0].C * 1e12, -2 * area / 50 * 1e12, 0.01);
 }
 
+// 11a) Area labels of shaped excursions match the area of the engine's own TDR (lossless line).
+//      Cases from the v0.8.10 fact-check (checks/area_labels_shapes.js); before the 1/(1 - rho^2) term
+//      the labels read low by 1 - rho^2.
+{
+  const P = { ...base, lossless: true, condLossless: true, dielLossless: true, fmaxGHz: 110, beta: 6 };
+  const prep = E.prepare(P);
+  const x = (i) => (i + 0.5) / NS * P.lenIn;
+  const cases = [
+    ['uniform 80 ohm, 0.1 in', (p) => { for (let i = 0; i < NS; i++) if (x(i) > 0.95 && x(i) < 1.05) p[i] = 80; }],
+    ['Gaussian bump +30 ohm', (p) => { for (let i = 0; i < NS; i++) { const u = (x(i) - 1) / 0.04; p[i] += 30 * Math.exp(-0.5 * u * u); } }],
+    ['Gaussian dip -20 ohm', (p) => { for (let i = 0; i < NS; i++) { const u = (x(i) - 1) / 0.04; p[i] -= 20 * Math.exp(-0.5 * u * u); } }],
+    ['triangle to 100 ohm', (p) => { for (let i = 0; i < NS; i++) { const d = Math.abs(x(i) - 1); if (d < 0.1) p[i] = 50 + 50 * (1 - d / 0.1); } }],
+    ['two steps, 70 then 90 ohm', (p) => { for (let i = 0; i < NS; i++) { if (x(i) > 0.9 && x(i) < 1.0) p[i] = 70; if (x(i) >= 1.0 && x(i) < 1.1) p[i] = 90; } }],
+  ];
+  for (const [name, paint] of cases) {
+    const prof = flat(50); paint(prof);
+    const ex = E.excursions(prof, P, 0.25);
+    const s = E.solve(prep, E.buildCascade(prof, [], P));
+    const r = E.tdr(prep, s.s11r, s.s11i, 3 * 2 * P.lenIn * IN / prep.vRef);
+    let area = 0; for (let n = 1; n < r.t.length; n++) area += 0.5 * (r.rho[n] + r.rho[n - 1]) * (r.t[n] - r.t[n - 1]);
+    const label = ex.length === 1 ? (ex[0].L > 0 ? ex[0].L : -ex[0].C * 50 * 50) : NaN; // C as -C*Z0^2 has the area's units
+    const want = 2 * 50 * area;
+    check(`area label = TDR integral, ${name} (rel.)`, label / want, 1, 0.005);
+  }
+}
+
 // 11b) Experimental wide impedance range: parser limits, quantization, shorts and opens
 {
   const ok = (name, cond, detail) => { if (!cond) fails++; console.log(`${cond ? 'PASS' : 'FAIL'}  ${name}${cond ? '' : '  ' + detail}`); };

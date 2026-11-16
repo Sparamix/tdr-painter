@@ -148,7 +148,7 @@ against your board).
 - Conductor: `R_dc + (1+j)·K·√f` per unit length, which keeps the line causal.
 - TDR: S11 times a Kaiser half-window centered on DC (β 4.2 by default), inverse FFT, trapezoid-rule integration (as
   scikit-rf's `step_response`), then `Z = Z_Tx(1+ρ)/(1−ρ)`. Time zero falls on a sample.
-- Equivalent L/C labels use the TDR area method, `L = 2Z₀∫ρ dt` and `C = −(2/Z₀)∫ρ dt` over round-trip time.
+- Equivalent L/C labels use the TDR area method, `L = 2Z₀∫ρ dt` and `C = −(2/Z₀)∫ρ dt` over round-trip time; the label is that area computed from the painted profile, exact on a lossless line.
 - ILD is dB(S21) minus a least-squares fit of `a0 + a1√f + a2·f + a4·f²` over the sweep.
 - 1-D TEM only: no radiation, coupling or mode conversion.
 

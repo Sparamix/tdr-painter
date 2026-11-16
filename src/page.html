@@ -394,7 +394,7 @@ html.compact .card canvas { height: 160px; }
       <li>Dielectric: <code>ε(f) = ε∞ + Δε·ln((f₂+jf)/(f₁+jf)) / ln(f₂/f₁)</code>, anchored to Dk and Df at f_ref. Conductor: <code>R_dc + (1+j)·K·√f</code>.</li>
       <li>TDR: S11 times a Kaiser half-window, inverse FFT, trapezoid-rule integration, then <code>Z = Z_Tx(1+ρ)/(1−ρ)</code>. The window sets rise time and ringing; the orange trace is what a TDR would show, the indigo line is the truth.</li>
       <li>With loss on, the orange trace sits a little above the painted line and creeps upward along it. Skin-effect resistance and internal inductance raise the low-frequency impedance. Tick Lossless conductor to see it vanish.</li>
-      <li>Labels on short painted bumps use the TDR area method: <code>L = 2Z₀∫ρ dt</code>, <code>C = −(2/Z₀)∫ρ dt</code> over round-trip time. Long excursions show average impedance and length instead.</li>
+      <li>Labels on short painted bumps use the TDR area method: <code>L = 2Z₀∫ρ dt</code>, <code>C = −(2/Z₀)∫ρ dt</code> over round-trip time, with the area computed from the painted profile (exact on a lossless line). Long or large excursions show average impedance and length instead.</li>
       <li>ILD is dB(S21) minus a least-squares fit of a0 + a1√f + a2·f + a4·f² over the whole sweep.</li>
       <li>Privacy: the page makes no network requests and keeps nothing, not even in browser storage. Save writes a .tdrp file to your computer (a ZIP holding project.json, with a CRC-32 that Open verifies) and Open reads it back; Export JSON writes the same project as readable text. The standalone build adds a Content-Security-Policy that blocks every outgoing connection, so the browser itself enforces this.</li>
       <li>Attenuator: an ideal resistive T pad with image impedances Zin (Tx side) and Zout (Rx side). With K = 10^(dB/10), the shunt resistor is <code>2√(K·Zin·Zout)/(K−1)</code> and each series resistor <code>Z(K+1)/(K−1)</code> minus it. When Zin ≠ Zout the loss can't go below the minimum-loss pad, <code>20·log₁₀(√r + √(r−1))</code> with r the impedance ratio.</li>
@@ -786,7 +786,7 @@ html.compact .card canvas { height: 160px; }
         const xc = cellX(Math.round((ex.i0 + ex.i1 - 1) / 2));
         const cx = F.X(xc); if (cx - lastPx[ex.sign] < 70) continue;
         let txt;
-        // the area method assumes small reflections, so big excursions get their impedance instead
+        // one lumped L or C stops being a good model of a long or large excursion, so those get their impedance instead
         const small = ex.peak > 0.5 * P.z0 && ex.peak < 2 * P.z0;
         if (ex.delay < 30e-12 && small) txt = ex.sign > 0 ? '≈' + (ex.L * 1e9).toFixed(2) + ' nH' : '≈' + (ex.C * 1e12).toFixed(3) + ' pF';
         else txt = fmtZ(ex.avgZ) + ' · ' + smallTxt((ex.i1 - ex.i0) / NS * L);

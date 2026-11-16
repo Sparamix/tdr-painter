@@ -400,7 +400,11 @@
     return { a, fit, ild };
   }
 
-  /* Equivalent lumped L or C of painted excursions (HP Journal / Dascher TDR area method). */
+  /* Equivalent lumped L or C of painted excursions: the TDR area method of Dascher (HP Journal, Apr. 1996),
+     L = 2·Z0·∫ρ dt and C = −(2/Z0)·∫ρ dt over round-trip time. The area is computed from the painted profile:
+     to first order in frequency the cells' series L and shunt C add, so a cell of impedance Z and one-way delay
+     dτ adds dτ·(Z² − Z0²)/(2·Z0·Z) = 2dτ·ρ/(1 − ρ²) to the area of the true step response. Exact on a lossless
+     line; integrating ρ alone would read low by 1 − ρ² (5 % at 80 Ω). */
   function excursions(prof, P, thresh) {
     const ns = prof.length, z0 = P.z0;
     const tauSeg = (P.lenIn * IN / ns) * Math.sqrt(P.Dk) / C0; // one-way delay per cell
@@ -412,7 +416,7 @@
       let j = i, area = 0, peak = 0, sumZ = 0;
       while (j < ns && Math.abs(prof[j] - z0) > thresh && Math.sign(prof[j] - z0) === sign) {
         const rho = (prof[j] - z0) / (prof[j] + z0);
-        area += rho * 2 * tauSeg; // integral of rho over round-trip time
+        area += rho / (1 - rho * rho) * 2 * tauSeg; // this cell's share of the true TDR's ∫ρ dt (round-trip time)
         if (Math.abs(prof[j] - z0) > Math.abs(peak - z0) || peak === 0) peak = prof[j];
         sumZ += prof[j];
         j++;
