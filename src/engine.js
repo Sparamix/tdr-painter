@@ -369,14 +369,20 @@
     return t90 - t10;
   }
 
-  /* Least-squares fit IL(f) = a0 + a1 sqrt(f) + a2 f + a4 f^2 (f in GHz) over (0, fmax]; returns fit and ILD. */
-  function ildFit(f, ilDb) {
-    const n = f.length;
+  /* Fitted insertion loss and ILD as OIF-CEI-04.0 defines them (Sec. 12.2.1.1, eqs. (12-1) to (12-3); Sec. 10.2.6.4,
+     eq. (10-3)). ilDb is the insertion loss IL = -dB(S21), a positive number. IL_fitted(f) = a0 + a1 sqrt(f) + a2 f
+     + a4 f^2 (f in GHz) is a least-squares fit in which every row is weighted by |S21| = 10^(-IL/20), so a deep notch
+     counts little, over the sweep points from fminHz (0.05 GHz, OIF Table 10-4) up to f_max. ILD = IL - IL_fitted:
+     positive means more loss than the fit. Unlike OIF the coefficients are not bounded, and the fit ends at f_max
+     rather than at a baud rate. Points below fminHz get NaN. */
+  function ildFit(f, ilDb, fminHz = 0.05e9) {
+    const n = f.length, lo = fminHz * (1 - 1e-9);
     const A = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], b = [0, 0, 0, 0];
     const basis = (x) => [1, Math.sqrt(x), x, x * x];
-    for (let k = 1; k < n; k++) {
-      const x = f[k] / 1e9, v = basis(x);
-      for (let i = 0; i < 4; i++) { b[i] += v[i] * ilDb[k]; for (let j = 0; j < 4; j++) A[i][j] += v[i] * v[j]; }
+    for (let k = 0; k < n; k++) {
+      if (f[k] < lo) continue;
+      const x = f[k] / 1e9, v = basis(x), w = Math.pow(10, -ilDb[k] / 10); // |S21|^2 in the normal equations
+      for (let i = 0; i < 4; i++) { b[i] += w * v[i] * ilDb[k]; for (let j = 0; j < 4; j++) A[i][j] += w * v[i] * v[j]; }
     }
     // Gaussian elimination with partial pivoting
     for (let c = 0; c < 4; c++) {
@@ -393,9 +399,10 @@
     for (let c = 3; c >= 0; c--) { let s = b[c]; for (let j = c + 1; j < 4; j++) s -= A[c][j] * a[j]; a[c] = s / A[c][c]; }
     const fit = new Float64Array(n), ild = new Float64Array(n);
     for (let k = 0; k < n; k++) {
+      if (f[k] < lo) { fit[k] = NaN; ild[k] = NaN; continue; }
       const v = basis(f[k] / 1e9);
       fit[k] = a[0] * v[0] + a[1] * v[1] + a[2] * v[2] + a[3] * v[3];
-      ild[k] = k === 0 ? NaN : ilDb[k] - fit[k];
+      ild[k] = ilDb[k] - fit[k];
     }
     return { a, fit, ild };
   }

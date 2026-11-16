@@ -382,9 +382,9 @@ html.compact .card canvas { height: 160px; }
           <div class="legend"><span><i style="background:var(--trans)"></i>Transmitted</span><span><i style="background:var(--refl)"></i>Reflected</span><span><i style="background:var(--dissip)"></i>Absorbed in line and R</span></div>
         </div>
         <div class="card">
-          <h3>Insertion loss deviation <small>dB(S21) minus fit</small></h3>
+          <h3>Insertion loss deviation <small>loss minus its fit</small></h3>
           <canvas id="cILD" aria-label="Insertion loss deviation versus frequency"></canvas>
-          <div class="legend"><span><i style="background:var(--trans)"></i>ILD (extra loss points down)</span><span class="lgRef" hidden><i class="dots" style="--dc:var(--trans)"></i>Memory ILD</span></div>
+          <div class="legend"><span><i style="background:var(--trans)"></i>ILD (extra loss points up)</span><span class="lgRef" hidden><i class="dots" style="--dc:var(--trans)"></i>Memory ILD</span></div>
         </div>
       </div>
       <div class="readout" id="fread"></div>
@@ -395,7 +395,7 @@ html.compact .card canvas { height: 160px; }
       <li>TDR: S11 times a Kaiser half-window, inverse FFT, trapezoid-rule integration, then <code>Z = Z_Tx(1+ρ)/(1−ρ)</code>. The window sets rise time and ringing; the orange trace is what a TDR would show, the indigo line is the truth.</li>
       <li>With loss on, the orange trace sits a little above the painted line and creeps upward along it. Skin-effect resistance and internal inductance raise the low-frequency impedance. Tick Lossless conductor to see it vanish.</li>
       <li>Labels on short painted bumps use the TDR area method: <code>L = 2Z₀∫ρ dt</code>, <code>C = −(2/Z₀)∫ρ dt</code> over round-trip time, with the area computed from the painted profile (exact on a lossless line). Long or large excursions show average impedance and length instead.</li>
-      <li>ILD is dB(S21) minus a least-squares fit of a0 + a1√f + a2·f + a4·f² over the whole sweep.</li>
+      <li>ILD is the insertion loss, −dB(S21), minus its fitted value a0 + a1√f + a2·f + a4·f² (f in GHz). The fit weights each point by |S21| and runs from 0.05 GHz to f_max, as in OIF-CEI-04.0; the coefficients are not bounded. Positive ILD means more loss than the fit.</li>
       <li>Privacy: the page makes no network requests and keeps nothing, not even in browser storage. Save writes a .tdrp file to your computer (a ZIP holding project.json, with a CRC-32 that Open verifies) and Open reads it back; Export JSON writes the same project as readable text. The standalone build adds a Content-Security-Policy that blocks every outgoing connection, so the browser itself enforces this.</li>
       <li>Attenuator: an ideal resistive T pad with image impedances Zin (Tx side) and Zout (Rx side). With K = 10^(dB/10), the shunt resistor is <code>2√(K·Zin·Zout)/(K−1)</code> and each series resistor <code>Z(K+1)/(K−1)</code> minus it. When Zin ≠ Zout the loss can't go below the minimum-loss pad, <code>20·log₁₀(√r + √(r−1))</code> with r the impedance ratio.</li>
       <li>Nothing radiates and nothing couples. Power that is neither reflected nor transmitted is absorbed in the line or in series R.</li>
@@ -552,7 +552,8 @@ html.compact .card canvas { height: 160px; }
       s11db[k] = 10 * Math.log10(Math.max(a, 1e-14)); s21db[k] = 10 * Math.log10(Math.max(b, 1e-14)); s22db[k] = 10 * Math.log10(Math.max(c, 1e-14));
       pT[k] = b; pR[k] = a;
     }
-    const fit = E.ildFit(prep.f, s21db);
+    const fit = E.ildFit(prep.f, Float64Array.from(s21db, v => -v));   // fitted on the loss, IL = -dB(S21)
+    const fitS21 = Float64Array.from(fit.fit, v => -v);                 // drawn on the dB(S21) axis
     const tx = new Float64Array(td.t.length), tz = new Float64Array(td.t.length);
     const rhoLim = P.extremeZ ? 1 - 1e-9 : 0.999;   // a short or an open sits right at |rho| = 1
     for (let n = 0; n < td.t.length; n++) {
@@ -560,7 +561,7 @@ html.compact .card canvas { height: 160px; }
       const r = Math.max(-rhoLim, Math.min(rhoLim, td.rho[n]));
       tz[n] = P.zTx * (1 + r) / (1 - r);
     }
-    R = { s, f: prep.f, s11db, s22db, s21db, fit: fit.fit, ild: fit.ild, pT, pR, tx, tz, ms: performance.now() - t0, ex: E.excursions(state.prof, P, 0.25) };
+    R = { s, f: prep.f, s11db, s22db, s21db, fit: fitS21, ild: fit.ild, pT, pR, tx, tz, ms: performance.now() - t0, ex: E.excursions(state.prof, P, 0.25) };
   }
 
   let raf = 0, dirty = true;

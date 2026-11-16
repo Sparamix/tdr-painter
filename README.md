@@ -149,7 +149,7 @@ against your board).
 - TDR: S11 times a Kaiser half-window centered on DC (β 4.2 by default), inverse FFT, trapezoid-rule integration (as
   scikit-rf's `step_response`), then `Z = Z_Tx(1+ρ)/(1−ρ)`. Time zero falls on a sample.
 - Equivalent L/C labels use the TDR area method, `L = 2Z₀∫ρ dt` and `C = −(2/Z₀)∫ρ dt` over round-trip time; the label is that area computed from the painted profile, exact on a lossless line.
-- ILD is dB(S21) minus a least-squares fit of `a0 + a1√f + a2·f + a4·f²` over the sweep.
+- ILD is the insertion loss, −dB(S21), minus its fitted value `a0 + a1√f + a2·f + a4·f²` (f in GHz). The fit weights each point by |S21| and runs from 0.05 GHz to f_max, as in OIF-CEI-04.0; positive ILD means more loss than the fit. Unlike OIF, the coefficients are not bounded, the fit ends at f_max rather than at a baud rate, and the sweep's step (f_max/1000, 50 MHz at the default 50 GHz) is coarser than the 10 MHz OIF asks for.
 - 1-D TEM only: no radiation, coupling or mode conversion.
 
 A full solve plus TDR takes milliseconds, so every plot follows the mouse as you paint.

@@ -208,6 +208,25 @@ const db = (r, i) => 20 * Math.log10(mag(r, i));
   }
 }
 
+// 11c) ILD as OIF-CEI-04.0 defines it: IL = -dB(S21) fitted with |S21| weighting from 0.05 GHz, ILD = IL - fit.
+//      Reference values from an independent implementation in the v0.8.10 fact-check (checks/ild_reference.js).
+{
+  const fs = require('fs'), PJ = require(path.join(__dirname, '..', 'src', 'project.js'));
+  const run = (file) => {
+    const o = PJ.parse(JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'examples', file), 'utf8')), NS);
+    const prep = E.prepare(o.P), s = E.solve(prep, E.buildCascade(o.prof, o.elements, o.P));
+    const il = Float64Array.from(prep.f, (_, k) => -10 * Math.log10(Math.max(s.s21r[k] ** 2 + s.s21i[k] ** 2, 1e-14)));
+    const r = E.ildFit(prep.f, il);
+    return { r, at: (g) => r.ild[Math.round(g * 1e9 / prep.df)] };
+  };
+  const clean = run('10-clean-line.json');
+  [0.03225, 0.25294, 0.03415, -0.00002].forEach((v, i) => check(`ILD fit, clean line: a${[0, 1, 2, 4][i]}`, clean.r.a[i], v, 1e-4));
+  check('ILD fit: DC is outside the fit band', isNaN(clean.r.ild[0]) ? 1 : 0, 1, 0);
+  const via = run('40-board-launch-via.json');
+  [[5, -0.294], [10, 0.513], [20, 5.178], [26.85, 35.404], [40, -1.478], [50, 2.355]].forEach(([g, v]) =>
+    check(`ILD, board launch + via stub, ${g} GHz (dB)`, via.at(g), v, 0.002));
+}
+
 // 11b) Experimental wide impedance range: parser limits, quantization, shorts and opens
 {
   const ok = (name, cond, detail) => { if (!cond) fails++; console.log(`${cond ? 'PASS' : 'FAIL'}  ${name}${cond ? '' : '  ' + detail}`); };
