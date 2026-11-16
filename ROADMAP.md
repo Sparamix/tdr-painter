@@ -4,7 +4,7 @@ Ideas worth building, with enough design to start from. Add to it; when somethin
 
 ## TDR rise time as a setting (and the window that sets it)
 
-**Today.** The TDR is the step response of S11 times a Kaiser half-window that spans the whole sweep, 0 to f_max. The rise time is an output, about k(β)/f_max: 16.9 ps at 50 GHz with β = 4.2 (k ≈ 0.85). To change it you change f_max or β, and β also changes the ringing.
+**Today.** The TDR is the step response of S11 times a Kaiser half-window that spans the whole sweep, 0 to f_max. The rise time is an output, about k(β)/f_max: 16.9 ps at 50 GHz with β = 4.2 (k ≈ 0.84). To change it you change f_max or β, and β also changes the ringing.
 
 **What instruments do.** On the Keysight E5071C the 10–90 % step rise time runs from 0.45/f_max with the minimum window (Kaiser β = 0) to 1.466/f_max with the maximum (β = 13). Setting a rise time picks the window for you, so rise time and ringing move together. [1]
 
@@ -37,8 +37,8 @@ Ideas worth building, with enough design to start from. Add to it; when somethin
 **What.** An optional, read-only TDR plot under the TDR Canvas, computed from S22 with Z_Rx as the source impedance, through the same window as the main TDR. Painting stays on the canvas.
 
 **Why it teaches.**
-- Each discontinuity changes the step that reaches the ones behind it: the step incident on a second mismatch is (1 + ρ₁) times the original, and re-reflections between the two arrive later [2, pp. 15–16]. Energy reflected early never reaches later discontinuities, which can mask their true response, and VNA time gating does not undo this [3]. From the Rx end the order reverses, so what was behind is now in front. The *Masking: two identical 30 Ω sections* example would show both views at once.
-- Loss and a real taper look alike from one end. Series resistance makes the reflected voltage rise along the line [2, p. 12], [4]. A real impedance trend flips its slope when you launch from the other end; the rise from resistance does not [4]. Two TDRs side by side tell them apart.
+- Each discontinuity changes the step that reaches the ones behind it: the step incident on a second mismatch is (1 + ρ₁) times the original, and re-reflections between the two arrive later [2, Sec. 9.9]. Energy reflected early never reaches later discontinuities, which can mask their true response, and VNA time gating does not undo this [3]. From the Rx end the order reverses, so what was behind is now in front. The *Masking: two identical 30 Ω sections* example would show both views at once.
+- Loss and a real taper look alike from one end. Series resistance makes the reflected voltage rise along the line, and a real impedance trend flips its slope when you launch from the other end while the rise from resistance does not [2, Sec. 10.6]. Two TDRs side by side tell them apart.
 
 **Changes.**
 - Engine: none to the model. `solve()` already returns S22; the plot needs one more `tdr()` call and Z = Z_Rx (1 + ρ)/(1 − ρ) in place of Z_Tx.
@@ -57,7 +57,7 @@ Ideas worth building, with enough design to start from. Add to it; when somethin
 
 **What.** A drop-in element that is a uniform line with its own length, Z₀, Dk, Df, f_ref, conductor loss and R_dc: a cable or connector body between two boards, a section on another laminate, a short segment with much more or less loss.
 
-**Why it teaches.** A TDR turns time into distance with one propagation velocity, v = c/√ε_r, from one dielectric constant set for the whole path [2, pp. 4, 7], [5]. A section with a different Dk then shows up on the distance axis longer or shorter than it is, and everything behind it moves. The canvas would show the section at its physical place and length, and the TDR where an instrument puts it.
+**Why it teaches.** A TDR turns time into distance with one propagation velocity, v = c/√ε_r, from one dielectric constant set for the whole path [2, Sec. 9.2], [4]. A section with a different Dk then shows up on the distance axis longer or shorter than it is, and everything behind it moves. The canvas would show the section at its physical place and length, and the TDR where an instrument puts it.
 
 **Options.**
 
@@ -75,7 +75,7 @@ Ideas worth building, with enough design to start from. Add to it; when somethin
 
 **Verification.**
 - With the line's own parameters, the span gives the same S-parameters as painting those cells at its Z₀, to round-off.
-- Delay: an edge crosses the span in len·√Dk/c, so on the distance axis it appears len·√(Dk_span/Dk_line) long.
+- Delay: on a lossless span an edge crosses in len·√Dk/c, so on the distance axis it appears len·√(Dk_span/Dk_line) long; with loss on, dispersion adds a little.
 - Tier B: a scikit-rf cascade with a second line built from the element's parameters.
 
 **Open questions.**
@@ -93,12 +93,10 @@ Read a .s2p from the user's computer, entirely in the page and with no upload, a
 
 ---
 
-[1] Keysight E5071C help, *Transformation to time domain*: https://helpfiles.keysight.com/csg/e5071c/measurement_with_options/time_domain_analysis/transformation_to_time_domain.htm
+[1] Keysight Technologies, "Transformation to time domain," E5071C network analyzer online help: https://helpfiles.keysight.com/csg/e5071c/measurement_with_options/time_domain_analysis/transformation_to_time_domain.htm
 
-[2] Agilent Technologies, *Time Domain Reflectometry Theory*, Application Note 1304-2: velocity and distance pp. 4 and 7, cable loss p. 12, multiple discontinuities pp. 15–16. https://www.hpmemoryproject.org/an/pdf/an_1304-2.pdf
+[2] E. Bogatin, *Bogatin's Practical Guide to Transmission Line Design and Characterization for Signal Integrity Applications*. Norwood, MA, USA: Artech House, 2020: time to distance Sec. 9.2, multiple reflections and masking Sec. 9.9, series resistance seen from either end Sec. 10.6.
 
-[3] Keysight E5080B help, *Time Domain*, section "Gating" (masking): https://helpfiles.keysight.com/csg/e5080b/Time/TimeDomain.htm
+[3] Keysight Technologies, "Time domain," E5080B network analyzer online help, section "Gating" (masking): https://helpfiles.keysight.com/csg/e5080b/Time/TimeDomain.htm
 
-[4] J.-P. Joosting, "TDR interconnect analysis applications: measurement caveats, tips and techniques," eeNews Europe, Feb. 5, 2018: https://www.eenewseurope.com/en/tdr-interconnect-analysis-applications-measurement-caveats-tips-and-techniques/
-
-[5] Keysight FlexDCA programmer's guide, `:DCONstant` (dielectric constant for the distance axis): https://helpfiles.keysight.com/scopes/FlexDCA-PG/Content/Topics/Commands/GRAPh/T_OHMS_X_DCONstant.htm
+[4] Keysight Technologies, ":GRAPh:T:OHMS:X:DCONstant," FlexDCA programming online help (dielectric constant for the distance axis): https://helpfiles.keysight.com/scopes/FlexDCA-PG/Content/Topics/Commands/GRAPh/T_OHMS_X_DCONstant.htm
