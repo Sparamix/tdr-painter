@@ -85,7 +85,7 @@ Ideas worth building, with enough design to start from. Add to it; when somethin
 
 ## Smith chart and S11 phase
 
-A lifted ground on a GSG probe mostly adds loop inductance. On a short standard that barely moves the TDR edge (about L/Z₀) and does not show in |S11|, but on a Smith chart it is a clockwise turn along the outer circle. A series contact resistance moves the point inward along the real axis. A small Smith view of S11, and of S22, with memory traces, would make the probe-on-short examples complete.
+A lifted ground on a GSG probe mostly adds loop inductance. On a short standard that barely moves the TDR edge (about 2L/Z₀ in round-trip time) and does not show in |S11|, but on a Smith chart it is a clockwise turn along the outer circle. A series contact resistance moves the point inward along the real axis. A small Smith view of S11, and of S22, with memory traces, would make the probe-on-short examples complete.
 
 ## Touchstone import as a memory trace
 

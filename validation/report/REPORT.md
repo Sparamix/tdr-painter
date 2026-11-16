@@ -1,6 +1,6 @@
 # TDR Painter verification report
 
-Generated 2026-11-09 by `validation/run_validation.py` with TDR Painter 0.8.10, scikit-rf 2.2.0, NumPy 2.5.3, SciPy 1.18.1, Python 3.13.18 and Node v22.23.4. Rerun the script to regenerate this file; do not edit it by hand.
+Generated 2026-11-16 by `validation/run_validation.py` with TDR Painter 0.8.10, scikit-rf 2.2.0, NumPy 2.5.3, SciPy 1.18.1, Python 3.13.18 and Node v22.23.4. Rerun the script to regenerate this file; do not edit it by hand.
 
 **Result: all pass/fail checks passed** (178 passed).
 
@@ -450,7 +450,7 @@ Project files: [`cases/probe-on-short.json`](../cases/probe-on-short.json) (open
 | scikit-rf 50 GHz TDR | 0.7 GHz | 37.97 dB | 38.0 dB | -40.969 vs -41.056 dB |
 | scikit-rf 110 GHz TDR | 0.7 GHz | 34.80 dB | 37.7 dB | -40.969 vs -41.056 dB |
 
-Shown and painted here: the bad contact. Its TDR traces back to the 50 Ω lead and a 0.5 Ω section, and inside the TDR window a 0.5 Ω line and a 0.5 Ω resistor look the same. They are not the same network: the resistor absorbs power, so |S11| of the short reads about −0.17 dB, while the painted line only stores it, reads about 0 dB, and rings between the lead and the short with quarter-wave resonances the real contact does not have. The traced profile also cannot say where the resistance sits in the loop (signal or ground tips), or show the 20 pH of tip inductance, which moves the falling edge by only about L/Z₀ ≈ 0.4 ps.
+Shown and painted here: the bad contact. Its TDR traces back to the 50 Ω lead and a 0.5 Ω section, and inside the TDR window a 0.5 Ω line and a 0.5 Ω resistor look the same. They are not the same network: the resistor absorbs power, so |S11| of the short reads about −0.17 dB, while the painted line only stores it, reads about 0 dB, and rings between the lead and the short with quarter-wave resonances the real contact does not have. The traced profile also cannot say where the resistance sits in the loop (signal or ground tips), or show the 20 pH of tip inductance, which moves the falling edge by only about 2L/Z₀ ≈ 0.8 ps.
 
 ## Causality: the check catches non-causal models
 

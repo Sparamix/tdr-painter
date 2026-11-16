@@ -741,7 +741,7 @@ NOTES = {
                       'while the painted line only stores it, reads about 0 dB, and rings between the lead and the '
                       'short with quarter-wave resonances the real contact does not have. The traced profile also '
                       'cannot say where the resistance sits in the loop (signal or ground tips), or show the 20 pH of '
-                      'tip inductance, which moves the falling edge by only about L/Z₀ ≈ 0.4 ps.',
+                      'tip inductance, which moves the falling edge by only about 2L/Z₀ ≈ 0.8 ps.',
     'attenuator': 'Shown and painted here: the 6 dB pad ahead of the 30 Ω section. The pad itself is invisible in the '
                   'TDR, because it is matched, and the 30 Ω section behind it shows as a dip to only about 45 Ω: its '
                   'reflection (Γ = −0.25) comes back through the pad twice, 12 dB weaker. Painting that TDR gives a '
