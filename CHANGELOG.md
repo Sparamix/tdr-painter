@@ -21,7 +21,7 @@
 ## 0.8.6 (2026-11-09)
 
 - Header: the project name has a Project label and a wider field; Open and Save are icon buttons (an open folder and a floppy disk) with the same tooltips; Example has its own row, lined up under the project field. Theme and Settings stay at the end of the first row.
-- The lifted-ground microstrip example is now Giorgi Maghlakelidze's setup, matched to a TDR he measured: a peak in the middle of the 50 to 42 Ω transition. All three microstrip examples now have some line loss, so they are not ideal.
+- The lifted-ground microstrip example is now a contributor's setup, matched to a TDR he measured: a peak in the middle of the 50 to 42 Ω transition. All three microstrip examples now have some line loss, so they are not ideal.
 
 ## 0.8.5 (2026-11-09)
 

@@ -56,7 +56,7 @@
  "example": {
   "category": "Probing",
   "order": 51,
-  "note": "The same short with 2 Ω at the signal tip. The TDR now settles at 2 Ω, almost two decades above a good landing, and |S11| drops to about −0.7 dB. Two resistive ground tips would look the same: a one-port sees one current loop and can’t tell where in it the resistance sits. Set R to 1 MΩ for a tip that never landed.",
+  "note": "The same short with 2 Ω at the signal tip, an illustrative value for a poor contact. The TDR now settles at 2 Ω, almost two decades above the 30 mΩ landing, and |S11| drops to about −0.7 dB. Resistance in the ground tips would look the same: a one-port sees one current loop and can’t tell where in it the resistance sits. The two grounds are in parallel, so 2 Ω in each adds 1 Ω. Set R to 1 MΩ for a tip that never landed.",
   "author": "TDR Painter"
  }
 }

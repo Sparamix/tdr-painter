@@ -56,7 +56,7 @@
  "example": {
   "category": "Probing",
   "order": 50,
-  "note": "A GSG probe landed on the short of a cal substrate, seen from the calibrated tips: a lossless 50 Ω lead, a 30 mΩ signal contact, and the short (a 1 mΩ section into a 1 mΩ Rx). 30 mΩ is a good landing; FormFactor quotes under 50 mΩ on aluminum pads for its InfinityXT probes. On the log axis the TDR falls from 50 Ω to about 30 mΩ and stays there, and |S11| reads about −0.01 dB. Store it with Data → Memory, then open the next two. Uses the experimental impedance range (Settings).",
+  "note": "A GSG probe landed on the gold short of a cal substrate, seen from the calibrated tips: a lossless 50 Ω lead, a 30 mΩ signal contact, and the short (a 1 mΩ section into a 1 mΩ Rx). 30 mΩ is a fair landing: FormFactor quotes typically under 20 mΩ on gold pads and under 50 mΩ on aluminum for its InfinityXT probes. On the log axis the TDR falls from 50 Ω to about 30 mΩ and stays there, and |S11| reads about −0.01 dB. Store it with Data → Memory, then open the next two. Uses the experimental impedance range (Settings).",
   "author": "TDR Painter"
  }
 }

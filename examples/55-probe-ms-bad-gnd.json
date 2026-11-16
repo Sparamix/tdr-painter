@@ -76,7 +76,7 @@
  "example": {
   "category": "Probing",
   "order": 55,
-  "note": "Set up by Giorgi Maghlakelidze to match a TDR he measured with a lifted ground tip: a peak in the middle of the 50 to 42 Ω transition. Here 70 pH, 35 mil past the tip, reproduces it. The edge levels off near 47 Ω, peaks at about 48.3 Ω where a good landing already reads 43 Ω, then drops to the line. |S11| is about 0.7 dB worse at 20 GHz and 11 dB worse at 67 GHz. Drag the L chip along the line to see the peak follow it. A real lifted ground also excites unwanted modes and radiates, which this 1-D model leaves out.",
-  "author": "Giorgi Maghlakelidze"
+  "note": "Set up by a contributor to match a TDR he measured with a lifted ground tip on a 150 µm GSG probe: a peak in the middle of the 50 to 42 Ω transition. Here 70 pH, 35 mil past the tip, reproduces it; no published value for a lifted ground was found. The edge levels off near 47 Ω, peaks at about 48.3 Ω where a good landing already reads 43 Ω, then drops to the line. |S11| is about 0.7 dB worse at 20 GHz and 11 dB worse at 67 GHz. Drag the L chip along the line to see the peak follow it. A real lifted ground also excites unwanted modes and radiates, which this 1-D model leaves out.",
+  "author": "TDR Painter"
  }
 }

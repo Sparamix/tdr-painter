@@ -131,19 +131,23 @@ example({
   elements: [C(0.6, 0.012, { count: 13, pitch: 0.3 }), C(0.62, 0.012, { count: 13, pitch: 0.3 })],
 });
 /* ---------------- Probing ----------------
- * A GSG probe seen from its calibrated tips, landed on the short of a cal substrate or on a 42 Ω microstrip.
- * Contact values: 30 mΩ is a good landing (FormFactor, InfinityXT data sheet INFINITYXT-DS-0820: typical contact
- * resistance < 0.05 Ω on Al pads, < 0.02 Ω on Au); 2 Ω is a bad one. A lifted ground tip (an unplanarized probe)
- * leaves the return current one ground, which adds loop inductance. 70 pH is the value Giorgi Maghlakelidze matched
- * to a TDR he measured with a lifted ground (the microstrip case below). It is the same order as published figures:
+ * A GSG probe seen from its calibrated tips, landed on the gold short of a cal substrate or on a 42 Ω microstrip.
+ * Contact values: FormFactor's InfinityXT data sheet (INFINITYXT-DS-0820) gives a typical contact resistance
+ * < 0.05 Ω on Al pads and < 0.02 Ω on Au pads. 30 mΩ is a fair landing: inside the aluminum figure, a little above
+ * the gold one. 2 Ω is an illustrative value for a poor contact; no published typical value was found.
+ * A lifted ground tip (an unplanarized probe) leaves the return current one ground, which adds loop inductance.
+ * 70 pH is the value a contributor matched to a lifted-ground TDR he measured using a 150 µm GSG probe (the
+ * microstrip case below); no published value was found. Published GS and GSG figures are given only for scale:
  * FormFactor reports about four times the common-mode inductance for SG/GS probes as for GSG (InfLayoutRule-AN-1115,
- * p. 2), and published short models for Cascade probes are 49.8 pH (ACP, GS) and 2.4 pH (HPC, GSG) (Baureis, "Probe
- * tip characterization using self-calibration", FH Würzburg, 2008, slide 10). The 1-D model shows only that loop
- * inductance; the odd modes
- * and radiation a lifted ground also causes are out of its reach.
+ * p. 2), and the short standard reads 49.8 pH through a Cascade ACP GS probe against 4.8 pH through an ACP40 GSG and
+ * 2.4 pH through an HPC GSG ("Probe tip characterization using self-calibration", FH Würzburg-Schweinfurt, 2008,
+ * slides 10 and 11). The 1-D model shows only that loop inductance; the odd modes and radiation a lifted ground also
+ * causes are out of its reach.
  * Microstrip: probes need the trace on the surface, so a microstrip, not a stripline. Its field is partly in air:
- * Dk is the quasi-static effective value of a 42 Ω microstrip on Dk 3.35 (Hammerstad's formulas: W/h = 3.04,
- * eps_eff = 2.70), and Df is scaled by the dielectric filling factor (q = 0.90).
+ * Dk is the quasi-static effective value of a 42 Ω microstrip on Dk 3.35 (Hammerstad and Jensen's formulas, MTT-S
+ * 1980: W/h = 3.04, eps_eff = 2.71), and Df is scaled by eps_r (eps_eff − 1)/(eps_eff (eps_r − 1)) = 0.90, the share
+ * of the loss that falls in the dielectric. The effective permittivity of a real microstrip rises a little with
+ * frequency; the examples keep the quasi-static value.
  */
 const GND_LIFT = 0.07;   // nH, see above
 const onShort = (rSig, lGnd) => ({
@@ -154,21 +158,21 @@ const onShort = (rSig, lGnd) => ({
 });
 example({
   slug: 'probe-short-good', order: 50, category: 'Probing', name: 'GSG on cal short: good SIG contact (30 mΩ)',
-  note: 'A GSG probe landed on the short of a cal substrate, seen from the calibrated tips: a lossless 50 Ω lead, a 30 mΩ signal contact, and the short (a 1 mΩ section into a 1 mΩ Rx). 30 mΩ is a good landing; FormFactor quotes under 50 mΩ on aluminum pads for its InfinityXT probes. On the log axis the TDR falls from 50 Ω to about 30 mΩ and stays there, and |S11| reads about −0.01 dB. Store it with Data → Memory, then open the next two. Uses the experimental impedance range (Settings).',
+  note: 'A GSG probe landed on the gold short of a cal substrate, seen from the calibrated tips: a lossless 50 Ω lead, a 30 mΩ signal contact, and the short (a 1 mΩ section into a 1 mΩ Rx). 30 mΩ is a fair landing: FormFactor quotes typically under 20 mΩ on gold pads and under 50 mΩ on aluminum for its InfinityXT probes. On the log axis the TDR falls from 50 Ω to about 30 mΩ and stays there, and |S11| reads about −0.01 dB. Store it with Data → Memory, then open the next two. Uses the experimental impedance range (Settings).',
   ...onShort(0.03, 0),
 });
 example({
   slug: 'probe-short-bad-sig', order: 51, category: 'Probing', name: 'GSG on cal short: bad SIG contact (2 Ω)',
-  note: 'The same short with 2 Ω at the signal tip. The TDR now settles at 2 Ω, almost two decades above a good landing, and |S11| drops to about −0.7 dB. Two resistive ground tips would look the same: a one-port sees one current loop and can’t tell where in it the resistance sits. Set R to 1 MΩ for a tip that never landed.',
+  note: 'The same short with 2 Ω at the signal tip, an illustrative value for a poor contact. The TDR now settles at 2 Ω, almost two decades above the 30 mΩ landing, and |S11| drops to about −0.7 dB. Resistance in the ground tips would look the same: a one-port sees one current loop and can’t tell where in it the resistance sits. The two grounds are in parallel, so 2 Ω in each adds 1 Ω. Set R to 1 MΩ for a tip that never landed.',
   ...onShort(2, 0),
 });
 example({
   slug: 'probe-short-bad-gnd', order: 52, category: 'Probing', name: 'GSG on cal short: bad GND contact (G lifted)',
-  note: 'One ground tip lifted, as with a probe that is not planarized: the return current takes the other ground alone, adding loop inductance. 70 pH reproduces a lifted-ground TDR Giorgi Maghlakelidze measured (the microstrip case), the same order as published short models for Cascade probes: about 50 pH for GS against 2 pH for GSG. On a short it hides: |S11| stays at 0 dB and the TDR edge moves by about 3 ps. It shows in the phase of S11, about 20° at 20 GHz and 61° at 67 GHz, which this tool does not plot yet.',
+  note: 'One ground tip lifted, as with a probe that is not planarized: the return current takes the other ground alone, adding loop inductance. 70 pH is the value a contributor matched to a lifted-ground TDR he measured using a 150 µm GSG probe; no published value was found. Published GS and GSG figures are given only for scale: about 50 pH for a GS probe on a short standard, 2 to 5 pH for GSG. On a short it hides: |S11| stays at 0 dB and the TDR edge moves by about 3 ps. It shows in the phase of S11, about 20° at 20 GHz and 61° at 67 GHz, which this tool does not plot yet.',
   ...onShort(0.03, GND_LIFT),
 });
 // The microstrip lines carry modest loss so they are not ideal: 0.2 dB/in of conductor loss at 10 GHz, 0.1 Ω/in at DC,
-// and the effective Df. These are the values of the lifted-ground case below, set up by Giorgi Maghlakelidze.
+// and the effective Df. These are the values of the lifted-ground case below, set up by a contributor.
 const onMicrostrip = (elements) => ({
   params: { lenIn: 1.5, Dk: 2.7, Df: 0.0036, condLoss: 0.2, rdc: 0.1, lossless: false, condLossless: false, dielLossless: false, fmaxGHz: 67 },
   paint: (t) => t.plateau(0.5, 1.0, 42, 0),
@@ -177,7 +181,7 @@ const onMicrostrip = (elements) => ({
 });
 example({
   slug: 'probe-ms-good', order: 53, category: 'Probing', name: 'GSG on 42 Ω microstrip: good SIG contact (30 mΩ)',
-  note: 'Two GSG probes on 0.5 in of 42 Ω microstrip, seen from the calibrated tips; the 50 Ω sections stand for the probes. A microstrip, not a stripline: a probe needs the trace on the surface. Its field is partly in air, so Dk is the effective 2.70 of a 42 Ω microstrip on Dk 3.35. Both contacts are 30 mΩ. The lines have some loss (0.2 dB/in at 10 GHz, 0.1 Ω/in at DC), so the TDR creeps up a little: the 42 Ω line reads about 42.7 Ω. Pads and ground vias are left out; add a C chip at the tip to see how a launch pad changes the picture. Store it with Data → Memory before opening the next two.',
+  note: 'Two GSG probes on 0.5 in of 42 Ω microstrip, seen from the calibrated tips; the 50 Ω sections stand for the probes. A microstrip, not a stripline: a probe needs the trace on the surface. Its field is partly in air, so Dk is about 2.7, the effective value for 42 Ω on Dk 3.35. Both contacts are 30 mΩ. The lines have some loss (0.2 dB/in at 10 GHz, 0.1 Ω/in at DC), so the TDR creeps up a little: the 42 Ω line reads about 42.7 Ω. Pads and ground vias are left out; add a C chip at the tip to see how a launch pad changes the picture. Store it with Data → Memory before opening the next two.',
   ...onMicrostrip([R(0.5, 0.03), R(1.0, 0.03)]),
 });
 example({
@@ -185,11 +189,10 @@ example({
   note: 'The Tx signal tip lands with 2 Ω. The TDR steps up by 2 Ω at the tip and stays up, so the line reads about 44.6 Ω instead of 42.7 Ω: a bad contact quietly shifts every impedance behind it. |S11| even improves by about 1.5 dB, because the line now looks closer to 50 Ω, so a better return loss is no proof of a good landing. S11 and S22 no longer agree.',
   ...onMicrostrip([R(0.5, 2), R(1.0, 0.03)]),
 });
-// Set up by Giorgi Maghlakelidze to match a TDR he measured with a lifted ground tip: a peak in the middle of the
-// 50 to 42 Ω transition. 70 pH placed 35 mil past the tip reproduces it.
+// Set up by a contributor to match a TDR he measured with a lifted ground tip on a 150 µm GSG probe: a peak in the
+// middle of the 50 to 42 Ω transition. 70 pH placed 35 mil past the tip reproduces it.
 example({
   slug: 'probe-ms-bad-gnd', order: 55, category: 'Probing', name: 'GSG on 42 Ω microstrip: bad GND contact (G lifted)',
-  author: 'Giorgi Maghlakelidze',
-  note: 'Set up by Giorgi Maghlakelidze to match a TDR he measured with a lifted ground tip: a peak in the middle of the 50 to 42 Ω transition. Here 70 pH, 35 mil past the tip, reproduces it. The edge levels off near 47 Ω, peaks at about 48.3 Ω where a good landing already reads 43 Ω, then drops to the line. |S11| is about 0.7 dB worse at 20 GHz and 11 dB worse at 67 GHz. Drag the L chip along the line to see the peak follow it. A real lifted ground also excites unwanted modes and radiates, which this 1-D model leaves out.',
+  note: 'Set up by a contributor to match a TDR he measured with a lifted ground tip on a 150 µm GSG probe: a peak in the middle of the 50 to 42 Ω transition. Here 70 pH, 35 mil past the tip, reproduces it; no published value for a lifted ground was found. The edge levels off near 47 Ω, peaks at about 48.3 Ω where a good landing already reads 43 Ω, then drops to the line. |S11| is about 0.7 dB worse at 20 GHz and 11 dB worse at 67 GHz. Drag the L chip along the line to see the peak follow it. A real lifted ground also excites unwanted modes and radiates, which this 1-D model leaves out.',
   ...onMicrostrip([L(0.535, 0.07), R(0.5, 0.03), R(1.0, 0.03)]),
 });
