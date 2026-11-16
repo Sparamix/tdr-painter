@@ -2,7 +2,11 @@
 // Copyright (C) 2026 Giorgi Maghlakelidze. Part of TDR Painter (Sparamix).
 /* TDR Painter engine: impedance profile + lumped elements -> S-parameters -> band-limited TDR.
  * Model: 1-D TEM cascade. Each profile cell is a uniform lossy line of impedance Z_i.
- * Dielectric: Djordjevic-Sarkar (causal). Conductor: (1+j)*K*sqrt(f) surface impedance + Rdc.
+ * Dielectric: Djordjevic-Sarkar (causal). Conductor: Rdc + (1+j)*K*sqrt(f) per unit length. The (1+j) is the
+ * surface impedance of a good conductor, resistance = internal reactance (Wheeler, "Formulas for the skin effect",
+ * Proc. IRE 1942, eqs. (5)-(7); Pozar, Microwave Engineering 4th ed., eq. (1.114)); K comes from
+ * alpha_c = R/(2 Z0) (Pozar eq. (2.85a)). Rdc and the skin term simply add (Johnson and Graham, Advanced Black
+ * Magic, eq. [2.51]): exact at DC, about Rdc high above the skin-effect onset. Smooth conductors: no roughness.
  * Per-unit-length R and L scale with Z_i and C scales with 1/Z_i, so gamma is the same in every
  * cell and only reflections change with the painted impedance.
  */
@@ -12,8 +16,10 @@
   const IN = 0.0254;
   const TWO_PI = 2 * Math.PI;
 
-  // Djordjevic-Sarkar: eps(f) = eps_inf + d_eps/ln(f2/f1) * ln((f2 + jf)/(f1 + jf)), anchored at (Dk, Df) @ f_ref.
-  // f1/f2 in Hz (scikit-rf convention, defaults 1 kHz / 1 THz).
+  // Djordjevic-Sarkar: eps(f) = eps_inf + d_eps/ln(f2/f1) * ln((f2 + jf)/(f1 + jf)) (Djordjevic et al., IEEE Trans.
+  // EMC 2001, eq. (5), without its DC-conductivity term), anchored at one (Dk, Df) point at f_ref, as in Hall and
+  // Heck, Advanced Signal Integrity, Sec. 6.3.5, and Shlepnev, EPEPS 2015. f1/f2 in Hz; the defaults 1 kHz and
+  // 1 THz are scikit-rf's (Djordjevic et al. fitted 1e4 and 1e12 rad/s to FR-4).
   function makeDS(Dk, Df, frefHz, f1, f2) {
     const s = 1 / Math.log(f2 / f1);
     function F(f) {
@@ -98,6 +104,7 @@
     const sqDk = Math.sqrt(Dk);
     const Lu = sqDk / C0;                     // H/m per ohm
     // conductor: alpha_c [Np/m] at fc for the nominal line -> normalized surface impedance coefficient
+    // An entered 0.400 dB/in gives 0.398 dB/in with Rdc = 0: the internal reactance raises Zc slightly. Expected.
     const alphaC = noCond ? 0 : (P.condLoss / 8.685889638) / IN;        // Np/m at condRef
     const kc = 2 * alphaC / Math.sqrt(P.condRefGHz * 1e9);              // per ohm, * sqrt(f)
     const rdcN = noCond ? 0 : (P.rdc / IN) / P.z0;                       // per ohm
@@ -123,7 +130,9 @@
       const z = csqrt(qr, qi);
       zRe[k] = z[0]; zIm[k] = z[1];
     }
-    // Kaiser half-window over [0, fmax], centered on DC (as a symmetric 2N-1 Kaiser window)
+    // Kaiser half-window over [0, fmax], centered on DC (as a symmetric 2N-1 Kaiser window):
+    // w = I0(beta sqrt(1 - x^2)) / I0(beta) (Kaiser and Schafer, IEEE Trans. ASSP 1980, eq. (1), where the
+    // parameter is called alpha; SciPy's signal.windows.kaiser states it the same way)
     const win = new Float64Array(nf);
     const beta = P.beta, i0b = besselI0(beta);
     for (let k = 0; k < nf; k++) {
@@ -143,7 +152,10 @@
   }
 
   /* Build the ordered cascade: runs of equal-Z cells and lumped elements (expanded by count/pitch). */
-  /** The least loss a resistive pad can have between z1 and z2 (a minimum-loss L pad); 0 dB when they are equal. */
+  /** The least loss a resistive pad matched at both ends can have between z1 and z2 (a minimum-loss L pad); 0 dB when
+   *  they are equal. Johnson and Graham, Advanced Black Magic, Table 5.6 (the pad); Reference Data for Engineers,
+   *  9th ed., ch. 11, p. 11-3 (the dB formula). The T pad below follows from the image-parameter relations
+   *  (Pozar, Sec. 8.2). */
   function padMinLoss(z1, z2) {
     const r = Math.max(z1, z2) / Math.min(z1, z2);
     return 20 * Math.log10(Math.sqrt(r) + Math.sqrt(r - 1));
@@ -312,7 +324,9 @@
           }
         }
       }
-      // ABCD -> S with real reference impedances Z1 (port 1) and Z2 (port 2)
+      // ABCD -> S with real reference impedances Z1 (port 1) and Z2 (port 2): Frickey, IEEE Trans. MTT 1994,
+      // Table III; Pupalaikis, S-Parameters for Signal Integrity, Table 3.6 agrees (its B and C carry the opposite
+      // sign, from its ABCD definition)
       const Dr = ar * Z2 + br + cr * Z1 * Z2 + dr * Z1;
       const Di = ai * Z2 + bi + ci * Z1 * Z2 + di * Z1;
       const den = Dr * Dr + Di * Di;
